@@ -50,6 +50,7 @@ CLAUDE.md
 .claude/
 # Personal account/setup notes — may contain credentials; keep out of the repo
 docs/*.pdf
+docs/PREP_CHECKLIST.md
 
 # Secrets and signing material — never commit
 *.jks
