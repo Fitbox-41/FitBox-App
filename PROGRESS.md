@@ -18,11 +18,20 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 - **Scope confirmed.** The app is a full fitness app (steps, calories, distance, pace, activity history,
   goals/streaks) plus the territory-capture game and the rewards wallet.
 - **Owner deliverables produced:** system architecture PDF and an access/keys-required PDF.
+- **Frontend foundation built (Riverpod + go_router).** App shell with bottom navigation
+  (Home / Activity / Wallet / Profile), FitBox theme, clean `lib/src` layout, and a mock data
+  layer behind Riverpod `FutureProvider`s (so real loading/error states are exercised now and
+  only the provider bodies change when the live backend arrives).
+- **First screens working on mock data:** Home dashboard (steps ring, calories/distance/active
+  minutes, weekly bar chart), Activity history (runs with distance/time/pace/calories), Wallet
+  (points balance + transaction ledger). `flutter analyze` clean, widget test passing, debug APK
+  built and installed on a physical Android device.
 
 ### Next (weeks 1–2)
-- Set up the Flutter frontend foundation (state management, navigation, folder structure, theme).
-- Build first screens with mock data: login, home/dashboard (fitness stats), wallet.
-- Wire the app to the live backend + shared database once the backend URL is available (~week 2).
+- Login screen + auth flow against the website's existing endpoints.
+- Wire the app to the live backend + shared database once the backend URL is available (~week 2)
+  by swapping the mock providers for `dio` API calls.
+- Begin GPS/run and map screens.
 
 ### Blocked on / needed
 - MongoDB Atlas access, `JWT_SECRET`, Google Maps API keys (see the access/keys doc).
