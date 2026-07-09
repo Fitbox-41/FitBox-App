@@ -85,6 +85,19 @@ router.post('/credit', auth, async (req, res) => {
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
+
+    // Concurrent requests with the same idempotencyKey can both pass the
+    // findOne check and race to insert; the unique index rejects the loser
+    // with a duplicate-key error. Treat that as already-processed.
+    if (error.code === 11000) {
+      const existingTx = await WalletTransaction.findOne({
+        idempotencyKey: req.body.idempotencyKey,
+      });
+      if (existingTx) {
+        return res.json({ success: true, message: 'Already processed', transaction: existingTx });
+      }
+    }
+
     console.error('Credit error:', error);
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }

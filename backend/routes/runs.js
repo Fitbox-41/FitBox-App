@@ -21,10 +21,12 @@ router.post('/', auth, async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
     const runData = req.body;
-    
+
+    // Spread first, then set userId, so a client cannot override the
+    // authenticated user by passing userId in the request body.
     const run = new Run({
-      userId,
-      ...runData
+      ...runData,
+      userId
     });
     
     await run.save();

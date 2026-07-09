@@ -31,4 +31,4 @@ const TerritorySchema = new mongoose.Schema({
 TerritorySchema.index({ polygon: '2dsphere' });
 TerritorySchema.index({ weekOf: 1 });
 
-module.exports = mongoose.model('Territory', TerritorySchema);
+module.exports = mongoose.model('Territory', TerritorySchema, 'territories');

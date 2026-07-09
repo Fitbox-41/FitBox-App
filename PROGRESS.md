@@ -4,6 +4,24 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 9 July 2026 — App backend added + hardened
+
+- **App backend built** (Node/Express, in `backend/`): wallet, runs and territory Mongoose models;
+  JWT-verify middleware using the shared `JWT_SECRET`; an idempotent, transactional wallet `/credit`
+  plus `GET /wallet`; and basic runs/territory routes. Geospatial models use GeoJSON + `2dsphere` indexes.
+- **Hardened for deployment:**
+  - Removed `node_modules` from version control (was committed by mistake) and fixed the ignore rule.
+  - Made it cloud-ready (Vercel): the server is exported for serverless, database connections are reused,
+    a health check works even if the DB is down, and a `vercel.json` was added.
+  - Security fix: a run/territory can no longer be saved under another user's id via the request body.
+  - Pinned exact database collection names so the app, website and admin all share the same wallet data
+    (`wallets`, `wallet_transactions`) — coordinated with the website developer.
+  - Aligned the database setting name with the website (`MONGO_URI`) and added a safe `.env.example`.
+- Verified locally: server boots and the health endpoint responds; the Flutter app is unchanged.
+- Progress report for the mentor generated (`docs/FitBox_App_Progress_Report.pdf`).
+
+---
+
 ## Week 1 — commencing 6 July 2026
 
 **Status:** foundation complete; architecture agreed; repos live. App frontend coding starts 7 July.

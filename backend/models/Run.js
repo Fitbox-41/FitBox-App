@@ -48,4 +48,4 @@ const RunSchema = new mongoose.Schema({
 RunSchema.index({ route: '2dsphere' });
 RunSchema.index({ userId: 1, startedAt: -1 });
 
-module.exports = mongoose.model('Run', RunSchema);
+module.exports = mongoose.model('Run', RunSchema, 'runs');

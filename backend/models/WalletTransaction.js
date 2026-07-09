@@ -36,4 +36,6 @@ const WalletTransactionSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('WalletTransaction', WalletTransactionSchema);
+// Explicit shared-DB collection name. Must match the website + admin exactly so
+// the wallet ledger is a single source of truth (coordinated with Diwakar).
+module.exports = mongoose.model('WalletTransaction', WalletTransactionSchema, 'wallet_transactions');
