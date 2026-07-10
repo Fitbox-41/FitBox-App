@@ -4,6 +4,16 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 — Auth glass polish + motion
+
+- **Login** form now sits in a frosted glass card with the logo badge above it; **sign-up** gained the
+  logo badge in its header too. All auth screens (login/signup/reset/change-password) are now glassy.
+- **Hero logo transition**: the logo badge animates smoothly between splash → login → sign-up.
+- **Dashboard step ring** now animates a count-up (ring fills + step number/percent count from 0).
+- Verified: analyze clean, test passing, web + APK build; redeployed.
+
+---
+
 ## 11 July 2026 — Light/dark theming, animations, logo fix
 
 - **Light + dark glass themes**, following the **system theme by default**, with a **System / Light / Dark

@@ -14,7 +14,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            LogoBadge(width: 150),
+            LogoBadge(width: 150, heroTag: 'fitbox-logo'),
             SizedBox(height: 28),
             SizedBox(
               width: 24,

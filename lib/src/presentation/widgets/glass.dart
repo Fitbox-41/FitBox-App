@@ -116,13 +116,14 @@ class GlassCard extends StatelessWidget {
 /// The FitBox logo on a crisp white rounded "chip" so it reads well on any
 /// theme (no per-pixel recolouring).
 class LogoBadge extends StatelessWidget {
-  const LogoBadge({super.key, this.width = 140});
+  const LogoBadge({super.key, this.width = 140, this.heroTag});
 
   final double width;
+  final Object? heroTag;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    Widget badge = Container(
       padding: EdgeInsets.symmetric(horizontal: width * 0.12, vertical: width * 0.09),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -137,5 +138,15 @@ class LogoBadge extends StatelessWidget {
       ),
       child: Image.asset('assets/images/logo_mark.png', width: width),
     );
+    if (heroTag != null) {
+      badge = Hero(
+        tag: heroTag!,
+        // Keep the material transparent so the shadow doesn't box during flight.
+        flightShuttleBuilder: (_, _, _, _, toContext) =>
+            (toContext.widget as Hero).child,
+        child: Material(type: MaterialType.transparency, child: badge),
+      );
+    }
+    return badge;
   }
 }

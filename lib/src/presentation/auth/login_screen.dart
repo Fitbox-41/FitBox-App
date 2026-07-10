@@ -76,24 +76,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  const Center(child: LogoBadge(width: 116)),
-                  const SizedBox(height: 16),
-                  Text('Welcome back',
-                      textAlign: TextAlign.center,
-                      style: text.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.bold)),
-                  Text('Log in to your FitBox account',
-                      textAlign: TextAlign.center,
-                      style: text.bodyMedium
-                          ?.copyWith(color: Theme.of(context).hintColor)),
-                  const SizedBox(height: 28),
-                  TextFormField(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      const LogoBadge(width: 108, heroTag: 'fitbox-logo'),
+                      const SizedBox(height: 22),
+                      GlassCard(
+                        radius: 26,
+                        padding: const EdgeInsets.all(22),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              Text('Welcome back',
+                                  textAlign: TextAlign.center,
+                                  style: text.headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.bold)),
+                              Text('Log in to your FitBox account',
+                                  textAlign: TextAlign.center,
+                                  style: text.bodyMedium?.copyWith(
+                                      color: Theme.of(context).hintColor)),
+                              const SizedBox(height: 24),
+                              TextFormField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
                     textInputAction: TextInputAction.next,
@@ -191,6 +197,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ],
               ),
+              ),
+              ),
+                ],
               ),
             ),
           ),

@@ -116,38 +116,48 @@ class _StepsRing extends StatelessWidget {
         child: SizedBox(
           width: 196,
           height: 196,
-          child: Stack(
-            alignment: Alignment.center,
-            children: <Widget>[
-              SizedBox(
-                width: 196,
-                height: 196,
-                child: CircularProgressIndicator(
-                  value: stats.stepProgress,
-                  strokeWidth: 14,
-                  strokeCap: StrokeCap.round,
-                  backgroundColor: cs.onSurface.withValues(alpha: 0.10),
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(FitBoxColors.red),
-                ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: 0, end: 1),
+            duration: const Duration(milliseconds: 1100),
+            curve: Curves.easeOutCubic,
+            builder: (context, t, _) {
+              final int animatedSteps = (stats.steps * t).round();
+              final double animatedProgress = stats.stepProgress * t;
+              return Stack(
+                alignment: Alignment.center,
                 children: <Widget>[
-                  Text(fmt.format(stats.steps),
-                      style: text.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold, color: cs.onSurface)),
-                  Text('of ${fmt.format(stats.stepGoal)} steps',
-                      style: text.bodySmall
-                          ?.copyWith(color: cs.onSurfaceVariant)),
-                  const SizedBox(height: 4),
-                  Text('${(stats.stepProgress * 100).round()}%',
-                      style: text.titleMedium?.copyWith(
-                          color: FitBoxColors.red,
-                          fontWeight: FontWeight.bold)),
+                  SizedBox(
+                    width: 196,
+                    height: 196,
+                    child: CircularProgressIndicator(
+                      value: animatedProgress,
+                      strokeWidth: 14,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: cs.onSurface.withValues(alpha: 0.10),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          FitBoxColors.red),
+                    ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(fmt.format(animatedSteps),
+                          style: text.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: cs.onSurface)),
+                      Text('of ${fmt.format(stats.stepGoal)} steps',
+                          style: text.bodySmall
+                              ?.copyWith(color: cs.onSurfaceVariant)),
+                      const SizedBox(height: 4),
+                      Text('${(animatedProgress * 100).round()}%',
+                          style: text.titleMedium?.copyWith(
+                              color: FitBoxColors.red,
+                              fontWeight: FontWeight.bold)),
+                    ],
+                  ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

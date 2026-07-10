@@ -100,10 +100,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       appBar: AppBar(title: const Text('Create account')),
       body: SafeArea(
         child: ResponsiveFormBody(
-          child: GlassCard(
-            radius: 24,
-            padding: const EdgeInsets.all(20),
-            child: _step == _Step.details ? _detailsForm() : _verifyForm(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const LogoBadge(width: 92, heroTag: 'fitbox-logo'),
+              const SizedBox(height: 18),
+              GlassCard(
+                radius: 24,
+                padding: const EdgeInsets.all(20),
+                child: _step == _Step.details ? _detailsForm() : _verifyForm(),
+              ),
+            ],
           ),
         ),
       ),
