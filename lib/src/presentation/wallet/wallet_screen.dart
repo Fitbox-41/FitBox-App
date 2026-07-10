@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/wallet.dart';
 import '../../data/providers.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
@@ -19,15 +20,10 @@ class WalletScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(walletProvider.future),
         child: wallet.when(
-          loading: () => ListView(
-            children: const <Widget>[
-              SizedBox(height: 240),
-              Center(child: CircularProgressIndicator()),
-            ],
-          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
           error: (Object e, _) => ListView(
             children: <Widget>[
-              const SizedBox(height: 180),
+              const SizedBox(height: 160),
               AsyncRetry(
                 message: "Couldn't load your wallet.",
                 onRetry: () => ref.invalidate(walletProvider),
@@ -35,19 +31,29 @@ class WalletScreen extends ConsumerWidget {
             ],
           ),
           data: (WalletData w) => ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: <Widget>[
               _BalanceCard(points: w.balance),
               const SizedBox(height: 24),
               const SectionHeader('Recent activity'),
               if (w.transactions.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(32),
+                const GlassCard(
+                  padding: EdgeInsets.all(28),
                   child: Center(
-                      child: Text('No transactions yet. Get active to earn points!')),
+                    child: Text('No transactions yet.\nGet active to earn points!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white60)),
+                  ),
                 )
               else
-                ...w.transactions.map((t) => _TxTile(t)),
+                GlassCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  child: Column(
+                    children: <Widget>[
+                      for (final t in w.transactions) _TxTile(t),
+                    ],
+                  ),
+                ),
             ],
           ),
         ),
@@ -69,11 +75,17 @@ class _BalanceCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: <Color>[FitBoxColors.charcoal, FitBoxColors.red],
+          colors: <Color>[FitBoxColors.redDark, FitBoxColors.red],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+              color: FitBoxColors.red.withValues(alpha: 0.35),
+              blurRadius: 24,
+              offset: const Offset(0, 10)),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -87,7 +99,7 @@ class _BalanceCard extends StatelessWidget {
               Text(fmt.format(points),
                   style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 40,
+                      fontSize: 42,
                       fontWeight: FontWeight.bold)),
               const SizedBox(width: 8),
               const Text('pts',
@@ -115,12 +127,15 @@ class _TxTile extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: color.withValues(alpha: 0.12),
+        backgroundColor: color.withValues(alpha: 0.18),
         child: Icon(tx.isCredit ? Icons.add : Icons.remove, color: color),
       ),
       title: Text(tx.description.isEmpty ? 'Transaction' : tx.description,
-          maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.date)),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(color: Colors.white)),
+      subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.date),
+          style: const TextStyle(color: Colors.white54)),
       trailing: Text('$sign${tx.amount}',
           style: TextStyle(
               color: color, fontWeight: FontWeight.bold, fontSize: 16)),

@@ -4,6 +4,19 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 — Glassmorphism redesign + sign-in spinner
+
+- **Premium dark "glass" redesign** (Apple-style, on the FitBox charcoal/red brand): app-wide deep
+  gradient background with a soft red glow; frosted-glass cards (`GlassCard`) across the dashboard,
+  wallet, activity and profile; a frosted bottom nav bar; red accents and white text.
+- Dashboard now greets the user by name; wallet balance is a glowing red gradient card.
+- **Google sign-in loading overlay** on web while the account is being verified (the earlier delay).
+- All platforms (Android + iOS + Web) from one codebase; analyze clean, widget test passing, web + APK
+  build. Redeployed to https://fitboxsports-8d1c0.web.app.
+- This is a first cohesive glass pass; will refine (and can swap in Stitch designs later).
+
+---
+
 ## 11 July 2026 — Web/UI fixes round 2
 
 - **Login logo was oversized** (it sat in a stretch column so `width` was ignored → filled the screen and

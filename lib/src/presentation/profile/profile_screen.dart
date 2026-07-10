@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../auth/auth_controller.dart';
+import '../widgets/glass.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -16,46 +17,63 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              const CircleAvatar(
-                radius: 32,
-                backgroundColor: FitBoxColors.charcoal,
-                child: Icon(Icons.person, color: Colors.white, size: 34),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(user?.name.isNotEmpty == true ? user!.name : 'Athlete',
-                        style: text.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.bold)),
-                    Text(user?.email ?? 'Not signed in',
-                        style: text.bodyMedium
-                            ?.copyWith(color: Theme.of(context).hintColor)),
-                  ],
+          GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: <Widget>[
+                const CircleAvatar(
+                  radius: 30,
+                  backgroundColor: FitBoxColors.red,
+                  child: Icon(Icons.person, color: Colors.white, size: 32),
                 ),
-              ),
-            ],
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(user?.name.isNotEmpty == true ? user!.name : 'Athlete',
+                          style: text.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white)),
+                      Text(user?.email ?? 'Not signed in',
+                          style: text.bodyMedium
+                              ?.copyWith(color: Colors.white54)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
-          const _MenuItem(icon: Icons.emoji_events_outlined, label: 'Leaderboard'),
-          const _MenuItem(icon: Icons.flag_outlined, label: 'Goals'),
-          _MenuItem(
-            icon: Icons.lock_outline,
-            label: 'Set / change password',
-            onTap: () => context.push('/change-password'),
+          const SizedBox(height: 16),
+          GlassCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: Column(
+              children: <Widget>[
+                const _MenuItem(
+                    icon: Icons.emoji_events_outlined, label: 'Leaderboard'),
+                const _MenuItem(icon: Icons.flag_outlined, label: 'Goals'),
+                _MenuItem(
+                  icon: Icons.lock_outline,
+                  label: 'Set / change password',
+                  onTap: () => context.push('/change-password'),
+                ),
+                const _MenuItem(
+                    icon: Icons.settings_outlined, label: 'Settings'),
+                const _MenuItem(
+                    icon: Icons.help_outline, label: 'Help & support'),
+              ],
+            ),
           ),
-          const _MenuItem(icon: Icons.settings_outlined, label: 'Settings'),
-          const _MenuItem(icon: Icons.help_outline, label: 'Help & support'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           OutlinedButton.icon(
             onPressed: () => _confirmLogout(context, ref),
             icon: const Icon(Icons.logout),
             label: const Text('Log out'),
+            style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(50)),
           ),
         ],
       ),
@@ -95,9 +113,9 @@ class _MenuItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(label),
-      trailing: const Icon(Icons.chevron_right),
+      leading: Icon(icon, color: Colors.white70),
+      title: Text(label, style: const TextStyle(color: Colors.white)),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white38),
       onTap: onTap ?? () {},
     );
   }

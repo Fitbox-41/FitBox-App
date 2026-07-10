@@ -45,12 +45,19 @@ class AuthController extends Notifier<AuthState> {
       try {
         await _google.initializeForWeb();
         _google.accountStream().listen((account) async {
+          ref.read(googleSigningInProvider.notifier).set(true);
           try {
             final result = await _repo.googleLogin(
                 name: account.name, email: account.email);
             await _storage.saveToken(result.token);
             state = AuthState(AuthStatus.authenticated, result.user);
-          } catch (_) {/* ignore; user can retry */}
+          } catch (_) {
+            /* ignore; user can retry */
+          } finally {
+            try {
+              ref.read(googleSigningInProvider.notifier).set(false);
+            } catch (_) {}
+          }
         });
       } catch (_) {/* google web unavailable; email login still works */}
     }));
@@ -161,3 +168,14 @@ class AuthController extends Notifier<AuthState> {
 
 final authControllerProvider =
     NotifierProvider<AuthController, AuthState>(AuthController.new);
+
+/// True while a web Google sign-in is being completed (network round-trip),
+/// so the UI can show a brief loading overlay.
+class GoogleSigningIn extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void set(bool value) => state = value;
+}
+
+final googleSigningInProvider =
+    NotifierProvider<GoogleSigningIn, bool>(GoogleSigningIn.new);

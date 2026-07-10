@@ -6,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
 import '../../data/providers.dart';
 import '../widgets/common.dart';
+import '../widgets/glass.dart';
 
 class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
@@ -24,12 +25,15 @@ class ActivityScreen extends ConsumerWidget {
         ),
         data: (List<RunActivity> list) {
           if (list.isEmpty) {
-            return const Center(child: Text('No runs recorded yet.'));
+            return const Center(
+              child: Text('No runs recorded yet.',
+                  style: TextStyle(color: Colors.white60)),
+            );
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(runsProvider),
             child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               itemCount: list.length,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (BuildContext context, int i) => _RunCard(list[i]),
@@ -56,12 +60,9 @@ class _RunCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
-    return Container(
+    return GlassCard(
+      radius: 22,
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -77,11 +78,11 @@ class _RunCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(run.title,
-                        style:
-                            text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                        style: text.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold, color: Colors.white)),
                     Text(DateFormat('EEE d MMM, h:mm a').format(run.date),
                         style: text.bodySmall
-                            ?.copyWith(color: Theme.of(context).hintColor)),
+                            ?.copyWith(color: Colors.white54)),
                   ],
                 ),
               ),
@@ -106,9 +107,11 @@ class _RunCard extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
     return Column(
       children: <Widget>[
-        Text(value, style: text.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+        Text(value,
+            style: text.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
         Text(label,
-            style: text.bodySmall?.copyWith(color: Theme.of(context).hintColor)),
+            style: text.bodySmall?.copyWith(color: Colors.white54)),
       ],
     );
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'glass.dart';
+
 /// A compact stat tile (icon + value + label) used across the dashboard.
 class StatTile extends StatelessWidget {
   const StatTile({
@@ -18,20 +20,20 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
-    return Container(
+    return GlassCard(
+      radius: 18,
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Icon(icon, color: color, size: 22),
           const SizedBox(height: 10),
-          Text(value, style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(value,
+              style: text.titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
           const SizedBox(height: 2),
-          Text(label, style: text.bodySmall?.copyWith(color: Theme.of(context).hintColor)),
+          Text(label,
+              style: text.bodySmall?.copyWith(color: Colors.white54)),
         ],
       ),
     );
@@ -53,12 +55,15 @@ class AsyncRetry extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.cloud_off, size: 40),
+            const Icon(Icons.cloud_off, size: 40, color: Colors.white70),
             const SizedBox(height: 12),
             Text(
               message ?? 'Something went wrong.',
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.white70),
             ),
             const SizedBox(height: 12),
             FilledButton.tonal(onPressed: onRetry, child: const Text('Retry')),
@@ -78,13 +83,11 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10, top: 4),
+      padding: const EdgeInsets.only(bottom: 12, top: 4),
       child: Text(
         title,
-        style: Theme.of(context)
-            .textTheme
-            .titleMedium
-            ?.copyWith(fontWeight: FontWeight.bold),
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold, color: Colors.white),
       ),
     );
   }

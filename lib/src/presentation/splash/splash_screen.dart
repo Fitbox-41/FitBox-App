@@ -7,12 +7,12 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.transparent,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Image.asset('assets/images/logo_mark.png', width: 200),
+            Image.asset('assets/images/logo_mark_dark.png', width: 200),
             const SizedBox(height: 28),
             const SizedBox(
               width: 24,

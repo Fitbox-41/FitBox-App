@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Persistent app scaffold. Phones get a bottom navigation bar; wider screens
-/// (PC/tablet, incl. web on desktop) get a side navigation rail, with the
-/// content centred and width-capped so it stays comfortable to read.
+import '../../core/theme/app_theme.dart';
+
+/// Persistent app scaffold. Phones get a frosted-glass bottom bar; wider screens
+/// get a side navigation rail, with content centred and width-capped.
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -47,19 +50,20 @@ class AppShell extends StatelessWidget {
         body: Row(
           children: <Widget>[
             NavigationRail(
+              backgroundColor: Colors.white.withValues(alpha: 0.04),
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: _onTap,
               labelType: NavigationRailLabelType.all,
+              indicatorColor: FitBoxColors.red.withValues(alpha: 0.25),
               destinations: <NavigationRailDestination>[
                 for (final t in _tabs)
                   NavigationRailDestination(
                     icon: Icon(t.icon),
-                    selectedIcon: Icon(t.active),
+                    selectedIcon: Icon(t.active, color: Colors.white),
                     label: Text(t.label),
                   ),
               ],
             ),
-            const VerticalDivider(width: 1),
             Expanded(child: content),
           ],
         ),
@@ -67,18 +71,35 @@ class AppShell extends StatelessWidget {
     }
 
     return Scaffold(
+      extendBody: true,
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: _onTap,
-        destinations: <NavigationDestination>[
-          for (final t in _tabs)
-            NavigationDestination(
-              icon: Icon(t.icon),
-              selectedIcon: Icon(t.active),
-              label: t.label,
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              border: Border(
+                top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+              ),
             ),
-        ],
+            child: NavigationBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              indicatorColor: FitBoxColors.red.withValues(alpha: 0.28),
+              selectedIndex: navigationShell.currentIndex,
+              onDestinationSelected: _onTap,
+              destinations: <NavigationDestination>[
+                for (final t in _tabs)
+                  NavigationDestination(
+                    icon: Icon(t.icon),
+                    selectedIcon: Icon(t.active, color: Colors.white),
+                    label: t.label,
+                  ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
