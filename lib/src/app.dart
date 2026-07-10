@@ -20,6 +20,8 @@ class FitBoxApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
+      themeAnimationDuration: const Duration(milliseconds: 350),
+      themeAnimationCurve: Curves.easeInOut,
       routerConfig: router,
       builder: (context, child) =>
           AppBackground(child: child ?? const SizedBox.shrink()),

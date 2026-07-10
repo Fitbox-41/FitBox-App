@@ -14,7 +14,9 @@ class AppBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool dark = Theme.of(context).brightness == Brightness.dark;
-    return DecoratedBox(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,

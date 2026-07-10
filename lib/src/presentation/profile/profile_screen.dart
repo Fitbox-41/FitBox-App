@@ -69,26 +69,7 @@ class ProfileScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                SegmentedButton<ThemeMode>(
-                  segments: const <ButtonSegment<ThemeMode>>[
-                    ButtonSegment(
-                        value: ThemeMode.system,
-                        icon: Icon(Icons.brightness_auto),
-                        label: Text('System')),
-                    ButtonSegment(
-                        value: ThemeMode.light,
-                        icon: Icon(Icons.light_mode),
-                        label: Text('Light')),
-                    ButtonSegment(
-                        value: ThemeMode.dark,
-                        icon: Icon(Icons.dark_mode),
-                        label: Text('Dark')),
-                  ],
-                  selected: <ThemeMode>{mode},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (Set<ThemeMode> s) =>
-                      ref.read(themeModeProvider.notifier).set(s.first),
-                ),
+                _ThemeSelector(mode: mode),
               ],
             ),
           ),
@@ -144,6 +125,68 @@ class ProfileScreen extends ConsumerWidget {
     if (ok == true) {
       await ref.read(authControllerProvider.notifier).logout();
     }
+  }
+}
+
+/// iOS-style equal-thirds theme selector — always fits (PC + mobile).
+class _ThemeSelector extends ConsumerWidget {
+  const _ThemeSelector({required this.mode});
+
+  final ThemeMode mode;
+
+  static const List<(ThemeMode, IconData, String)> _options = <(ThemeMode, IconData, String)>[
+    (ThemeMode.system, Icons.brightness_auto, 'System'),
+    (ThemeMode.light, Icons.light_mode, 'Light'),
+    (ThemeMode.dark, Icons.dark_mode, 'Dark'),
+  ];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: cs.onSurface.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: <Widget>[
+          for (final (ThemeMode value, IconData icon, String label) in _options)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => ref.read(themeModeProvider.notifier).set(value),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  decoration: BoxDecoration(
+                    color: mode == value
+                        ? FitBoxColors.red
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Icon(icon,
+                          size: 18,
+                          color: mode == value
+                              ? Colors.white
+                              : cs.onSurfaceVariant),
+                      const SizedBox(height: 3),
+                      Text(label,
+                          style: TextStyle(
+                              fontSize: 11.5,
+                              color: mode == value
+                                  ? Colors.white
+                                  : cs.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

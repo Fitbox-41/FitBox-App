@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/api_client.dart';
 import '../auth/auth_controller.dart';
+import '../widgets/glass.dart';
 import '../widgets/responsive_form_body.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -60,7 +61,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       appBar: AppBar(title: const Text('Password')),
       body: SafeArea(
         child: ResponsiveFormBody(
-          child: Form(
+          child: GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.all(20),
+            child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -121,6 +125,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),
