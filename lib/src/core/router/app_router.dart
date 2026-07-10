@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../presentation/activity/activity_screen.dart';
 import '../../presentation/auth/auth_controller.dart';
 import '../../presentation/auth/login_screen.dart';
+import '../../presentation/auth/reset_password_screen.dart';
 import '../../presentation/auth/signup_screen.dart';
 import '../../presentation/home/home_screen.dart';
+import '../../presentation/profile/change_password_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
@@ -28,7 +30,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final status = ref.read(authControllerProvider).status;
       final loc = state.matchedLocation;
       final atSplash = loc == '/splash';
-      final atAuth = loc == '/login' || loc == '/signup';
+      final atAuth =
+          loc == '/login' || loc == '/signup' || loc == '/reset';
 
       if (status == AuthStatus.unknown) {
         return atSplash ? null : '/splash';
@@ -44,6 +47,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, _) => const SignupScreen()),
+      GoRoute(path: '/reset', builder: (_, _) => const ResetPasswordScreen()),
+      GoRoute(
+          path: '/change-password',
+          builder: (_, _) => const ChangePasswordScreen()),
       StatefulShellRoute.indexedStack(
         builder: (BuildContext context, GoRouterState state,
                 StatefulNavigationShell navigationShell) =>

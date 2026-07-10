@@ -4,6 +4,17 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 — Password management
+
+- **Set / change password** (Profile → "Set / change password"): new password + confirm, with an
+  optional current-password field (Google users who never set one can leave it blank). The current
+  password is verified client-side via the login endpoint (no website change; login sends no OTP).
+- **Forgot password** (login → "Forgot password?"): email → 6-digit OTP → set a new password; the user
+  is signed in afterwards. Uses `forgot-password-otp` + `verify-reset-otp` + `password` endpoints.
+- No website changes required. Verified: analyze clean, test passing, APK built + installed.
+
+---
+
 ## 10 July 2026 (eve) — Google sign-in
 
 - **Google sign-in implemented** (`google_sign_in` v7): "Continue with Google" on login and sign-up.

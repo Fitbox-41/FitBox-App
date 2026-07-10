@@ -124,7 +124,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Enter your password' : null,
                   ),
-                  const SizedBox(height: 22),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _loading ? null : () => context.push('/reset'),
+                      child: const Text('Forgot password?'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   FilledButton(
                     onPressed: _loading ? null : _submit,
                     style: FilledButton.styleFrom(

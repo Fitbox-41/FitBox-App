@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../auth/auth_controller.dart';
@@ -43,6 +44,11 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 24),
           const _MenuItem(icon: Icons.emoji_events_outlined, label: 'Leaderboard'),
           const _MenuItem(icon: Icons.flag_outlined, label: 'Goals'),
+          _MenuItem(
+            icon: Icons.lock_outline,
+            label: 'Set / change password',
+            onTap: () => context.push('/change-password'),
+          ),
           const _MenuItem(icon: Icons.settings_outlined, label: 'Settings'),
           const _MenuItem(icon: Icons.help_outline, label: 'Help & support'),
           const SizedBox(height: 12),
@@ -79,10 +85,11 @@ class ProfileScreen extends ConsumerWidget {
 }
 
 class _MenuItem extends StatelessWidget {
-  const _MenuItem({required this.icon, required this.label});
+  const _MenuItem({required this.icon, required this.label, this.onTap});
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +98,7 @@ class _MenuItem extends StatelessWidget {
       leading: Icon(icon),
       title: Text(label),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () {},
+      onTap: onTap ?? () {},
     );
   }
 }

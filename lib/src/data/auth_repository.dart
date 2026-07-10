@@ -62,6 +62,29 @@ class AuthRepository {
     final res = await _dio.get('/auth/profile');
     return AppUser.fromJson(Map<String, dynamic>.from(res.data as Map));
   }
+
+  /// Sets/updates the signed-in user's password (requires a valid token).
+  Future<void> updatePassword(String newPassword) async {
+    await _dio.put('/auth/password', data: {'password': newPassword});
+  }
+
+  /// Step 1 of a forgotten-password reset: emails a 6-digit code.
+  Future<void> requestPasswordResetOtp(String email) async {
+    await _dio.post('/auth/forgot-password-otp', data: {'email': email});
+  }
+
+  /// Step 2 of reset: verifies the code and returns a session (token + user),
+  /// after which the new password can be set via [updatePassword].
+  Future<AuthResult> verifyResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final res = await _dio.post('/auth/verify-reset-otp', data: {
+      'email': email,
+      'otp': otp,
+    });
+    return AuthResult.fromJson(Map<String, dynamic>.from(res.data as Map));
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>(

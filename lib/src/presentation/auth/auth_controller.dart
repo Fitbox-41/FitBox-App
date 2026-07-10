@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_repository.dart';
@@ -82,6 +83,43 @@ class AuthController extends Notifier<AuthState> {
     await _storage.saveToken(result.token);
     state = AuthState(AuthStatus.authenticated, result.user);
     return true;
+  }
+
+  /// Sets or changes the password. If [currentPassword] is provided it is
+  /// verified first via the login endpoint (Google users setting one for the
+  /// first time can leave it empty). Auth state is unchanged.
+  Future<void> changePassword({
+    String? currentPassword,
+    required String newPassword,
+  }) async {
+    final email = state.user?.email;
+    if (email == null) throw Exception('You are not signed in.');
+    if (currentPassword != null && currentPassword.isNotEmpty) {
+      try {
+        await _repo.login(email: email, password: currentPassword);
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 401) {
+          throw Exception('Current password is incorrect.');
+        }
+        rethrow;
+      }
+    }
+    await _repo.updatePassword(newPassword);
+  }
+
+  Future<void> requestPasswordReset(String email) =>
+      _repo.requestPasswordResetOtp(email);
+
+  /// Verifies the reset code, signs the user in, and sets the new password.
+  Future<void> confirmPasswordReset({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    final result = await _repo.verifyResetOtp(email: email, otp: otp);
+    await _storage.saveToken(result.token);
+    await _repo.updatePassword(newPassword);
+    state = AuthState(AuthStatus.authenticated, result.user);
   }
 
   Future<void> logout() async {
