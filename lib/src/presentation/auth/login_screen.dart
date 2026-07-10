@@ -77,8 +77,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Image.asset('assets/images/logo_mark.png', width: 150),
-                  const SizedBox(height: 16),
+                  Center(
+                    child: Image.asset(
+                      Theme.of(context).brightness == Brightness.dark
+                          ? 'assets/images/logo_mark_dark.png'
+                          : 'assets/images/logo_mark.png',
+                      width: 128,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text('Welcome back',
                       textAlign: TextAlign.center,
                       style: text.headlineSmall
