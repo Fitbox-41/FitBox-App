@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import 'auth_controller.dart';
 
@@ -60,9 +59,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  const Icon(Icons.directions_run,
-                      color: FitBoxColors.green, size: 52),
-                  const SizedBox(height: 12),
+                  Image.asset('assets/images/logo.png', width: 170),
+                  const SizedBox(height: 20),
                   Text('Welcome back',
                       textAlign: TextAlign.center,
                       style: text.headlineSmall
