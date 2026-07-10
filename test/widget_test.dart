@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fitbox/src/app.dart';
 
 void main() {
-  testWidgets('App boots to the Home tab', (WidgetTester tester) async {
+  setUp(() {
+    // No stored session → the app should land on the login screen.
+    FlutterSecureStorage.setMockInitialValues(<String, String>{});
+  });
+
+  testWidgets('Signed-out start shows the login screen', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: FitBoxApp()));
 
-    // The Home app bar renders immediately (before mock data resolves).
-    expect(find.text('FitBox'), findsOneWidget);
+    // First frame is the splash.
+    expect(find.text('FitBox'), findsWidgets);
 
-    // Let the mocked futures complete so no timers stay pending.
-    await tester.pump(const Duration(seconds: 1));
-    expect(find.byType(NavigationBar), findsOneWidget);
+    // Once the (empty) session is checked, it redirects to login.
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Log in'), findsOneWidget);
   });
 }

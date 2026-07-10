@@ -4,6 +4,22 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 10 July 2026 — Authentication + login/signup
+
+- **Live database connected & verified.** App backend `.env` configured with the shared MongoDB
+  Atlas URI (own DB user) and the website's `JWT_SECRET`; test connection succeeds against the shared
+  `test` database (sees `users`, `products`, `orders`, `admin_users`, …). Env files for all repos are
+  gitignored (root `.gitignore` added for the website/admin `.env`).
+- **Auth built (real, against the live website API).** Email/password **login** and a two-step
+  **sign-up** (email → 6-digit OTP → create account) wired to the website's `/api/auth` endpoints;
+  JWT stored in secure storage; auto-restore of the session on app start; **logout** on the profile
+  screen. Riverpod auth state + go_router redirects (splash → login → app shell).
+- Uses the website's shared login so an app account is the same customer as on the website.
+- Verified: `flutter analyze` clean, widget test passing, live login endpoint returns the expected
+  401/JSON, debug APK builds. (Wallet/activity still on mock until the app backend is deployed.)
+
+---
+
 ## 9 July 2026 — App backend added + hardened
 
 - **App backend built** (Node/Express, in `backend/`): wallet, runs and territory Mongoose models;
