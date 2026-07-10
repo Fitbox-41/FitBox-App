@@ -4,6 +4,20 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 10 July 2026 (pm) — Live backend, brand theme, Firebase setup
+
+- **App wired to the live backend** (`fit-box-app.vercel.app`): wallet balance/ledger and run history
+  now load live from the shared MongoDB via authenticated API calls. Daily fitness stats (steps/calories)
+  stay mock until device-sensor integration.
+- **Recolored to the real brand** — charcoal + red (from the logo), replacing the placeholder green/orange.
+- **Firebase configured for Google sign-in**: registered Android + iOS apps in `fitboxsports-8d1c0`,
+  fetched config (`google-services.json`, `firebase_options.dart` — all gitignored, kept out of the public
+  repo). Google flow will be **direct sign-up + optional profile** (no website changes). Remaining before it
+  works: register the app's debug SHA-1 in Firebase, then wire the button and test on a device.
+- Verified: `flutter analyze` clean, widget test passing, APK builds.
+
+---
+
 ## 10 July 2026 — Authentication + login/signup
 
 - **Live database connected & verified.** App backend `.env` configured with the shared MongoDB
