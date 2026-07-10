@@ -12,7 +12,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Image.asset('assets/images/logo.png', width: 220),
+            Image.asset('assets/images/logo_mark.png', width: 200),
             const SizedBox(height: 28),
             const SizedBox(
               width: 24,

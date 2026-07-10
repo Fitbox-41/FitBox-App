@@ -124,8 +124,10 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> logout() async {
     await _storage.clear();
-    await _google.signOut();
+    // Update state first so the router redirects immediately; Google sign-out
+    // is best-effort and must never block the logout.
     state = const AuthState(AuthStatus.unauthenticated);
+    await _google.signOut();
   }
 }
 

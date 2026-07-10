@@ -4,6 +4,22 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 (late) — Web/UI fixes
+
+- **Logout fixed** — it silently failed on web (Google sign-out threw before the state updated); now the
+  auth state clears first (router redirects immediately), Google sign-out is best-effort.
+- **Responsive:** removed the desktop "phone frame". PCs get a **side navigation rail** + centred, width-
+  capped content; phones keep the bottom bar. Auth forms are width-capped so they don't stretch on desktop.
+- **Mobile web now fits** — added the missing HTML **viewport meta** (mobile was laying out at desktop width
+  and overflowing/scrolling).
+- **Logo** now has a transparent background (looks "submerged", not a pasted white block); used on splash/login.
+- **Web branding:** favicon + PWA icons set to the FitBox logo; title/manifest set to "FitBox".
+- Deferred: **Google sign-in on web** (v7 web needs a rendered-button flow + adding the hosting domain to the
+  OAuth client's authorized origins) — next; email login works on web meanwhile.
+- Redeployed: https://fitboxsports-8d1c0.web.app  ·  analyze clean, web build + deploy OK.
+
+---
+
 ## 11 July 2026 (pm) — Web app live (owner testing)
 
 - **Added Flutter Web** (same codebase, same repo) so the owner can test in iPhone Safari / any browser

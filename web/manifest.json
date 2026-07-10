@@ -1,11 +1,11 @@
 {
-    "name": "fitbox",
-    "short_name": "fitbox",
+    "name": "FitBox",
+    "short_name": "FitBox",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#111213",
+    "theme_color": "#E31E24",
+    "description": "FitBox \u2014 fitness tracking, territory game and rewards wallet.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

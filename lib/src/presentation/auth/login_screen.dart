@@ -69,14 +69,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: Form(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Image.asset('assets/images/logo.png', width: 170),
-                  const SizedBox(height: 20),
+                  Image.asset('assets/images/logo_mark.png', width: 150),
+                  const SizedBox(height: 16),
                   Text('Welcome back',
                       textAlign: TextAlign.center,
                       style: text.headlineSmall
@@ -179,6 +181,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ],
                   ),
                 ],
+              ),
               ),
             ),
           ),

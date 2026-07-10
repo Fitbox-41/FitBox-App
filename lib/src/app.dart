@@ -17,27 +17,6 @@ class FitBoxApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       routerConfig: router,
-      builder: (context, child) {
-        if (child == null) return const SizedBox.shrink();
-        final double width = MediaQuery.sizeOf(context).width;
-        // Phones (incl. mobile web): use the full width.
-        if (width <= 600) return child;
-        // Larger screens (PC/tablet): present the mobile app centred in a
-        // phone-sized frame so it stays legible and on-brand.
-        return ColoredBox(
-          color: const Color(0xFF111213),
-          child: Center(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: SizedBox(
-                width: 430,
-                height: MediaQuery.sizeOf(context).height.clamp(0, 920),
-                child: child,
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
