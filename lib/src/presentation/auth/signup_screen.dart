@@ -183,7 +183,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           const Icon(Icons.mark_email_read_outlined,
-              color: FitBoxColors.green, size: 48),
+              color: FitBoxColors.red, size: 48),
           const SizedBox(height: 12),
           Text('Enter the code',
               textAlign: TextAlign.center,

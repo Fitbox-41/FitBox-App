@@ -68,7 +68,7 @@ class _RunCard extends StatelessWidget {
           Row(
             children: <Widget>[
               const CircleAvatar(
-                backgroundColor: FitBoxColors.green,
+                backgroundColor: FitBoxColors.red,
                 child: Icon(Icons.directions_run, color: Colors.white),
               ),
               const SizedBox(width: 12),

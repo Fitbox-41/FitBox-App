@@ -44,7 +44,7 @@ class HomeScreen extends ConsumerWidget {
                       icon: Icons.local_fire_department,
                       value: '${s.caloriesKcal}',
                       label: 'kcal',
-                      color: FitBoxColors.orange,
+                      color: FitBoxColors.red,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -53,7 +53,7 @@ class HomeScreen extends ConsumerWidget {
                       icon: Icons.straighten,
                       value: '${s.distanceKm.toStringAsFixed(1)} km',
                       label: 'distance',
-                      color: FitBoxColors.greenLight,
+                      color: FitBoxColors.charcoal,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -62,7 +62,7 @@ class HomeScreen extends ConsumerWidget {
                       icon: Icons.timer_outlined,
                       value: '${s.activeMinutes}',
                       label: 'active min',
-                      color: FitBoxColors.green,
+                      color: FitBoxColors.redDark,
                     ),
                   ),
                 ],
@@ -110,7 +110,7 @@ class _StepsRing extends StatelessWidget {
                   backgroundColor:
                       Theme.of(context).colorScheme.outlineVariant,
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(FitBoxColors.green),
+                      const AlwaysStoppedAnimation<Color>(FitBoxColors.red),
                 ),
               ),
               Column(
@@ -125,7 +125,7 @@ class _StepsRing extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text('${(stats.stepProgress * 100).round()}%',
                       style: text.titleMedium?.copyWith(
-                          color: FitBoxColors.orange,
+                          color: FitBoxColors.red,
                           fontWeight: FontWeight.bold)),
                 ],
               ),
@@ -171,8 +171,8 @@ class _WeeklyBars extends StatelessWidget {
                       margin: const EdgeInsets.symmetric(horizontal: 5),
                       decoration: BoxDecoration(
                         color: i == weeklySteps.length - 1
-                            ? FitBoxColors.orange
-                            : FitBoxColors.greenLight,
+                            ? FitBoxColors.red
+                            : FitBoxColors.charcoal,
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),

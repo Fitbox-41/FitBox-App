@@ -33,6 +33,35 @@ final websiteDioProvider = Provider<Dio>(
   (ref) => _websiteDio(ref.watch(secureStorageProvider)),
 );
 
+/// Dio client for the app's own backend (wallet / runs / territory). Attaches
+/// the same stored JWT, which the app backend verifies with the shared secret.
+Dio _appDio(SecureStorage storage) {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: '${AppConfig.appApiBase}/api',
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 20),
+      contentType: Headers.jsonContentType,
+    ),
+  );
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        final token = await storage.readToken();
+        if (token != null && token.isNotEmpty) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+    ),
+  );
+  return dio;
+}
+
+final appDioProvider = Provider<Dio>(
+  (ref) => _appDio(ref.watch(secureStorageProvider)),
+);
+
 /// Extracts a human-readable message from a failed request.
 String messageFromError(Object error) {
   if (error is DioException) {

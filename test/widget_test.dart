@@ -14,8 +14,8 @@ void main() {
   testWidgets('Signed-out start shows the login screen', (WidgetTester tester) async {
     await tester.pumpWidget(const ProviderScope(child: FitBoxApp()));
 
-    // First frame is the splash.
-    expect(find.text('FitBox'), findsWidgets);
+    // First frame is the splash (logo + spinner).
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
     // Once the (empty) session is checked, it redirects to login.
     await tester.pumpAndSettle();
