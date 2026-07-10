@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Step counting (pedometer) -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
     <application
         android:label="FitBox"
         android:name="${applicationName}"

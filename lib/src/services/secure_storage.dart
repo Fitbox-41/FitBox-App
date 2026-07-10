@@ -21,6 +21,12 @@ class SecureStorage {
       _storage.write(key: _themeKey, value: value);
 
   Future<String?> readThemeMode() => _storage.read(key: _themeKey);
+
+  // Generic key/value (used e.g. for the daily step baseline).
+  Future<void> write(String key, String value) =>
+      _storage.write(key: key, value: value);
+
+  Future<String?> read(String key) => _storage.read(key: key);
 }
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());

@@ -66,6 +66,8 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMotionUsageDescription</key>
+	<string>FitBox uses motion data to count your steps and activity.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

@@ -4,6 +4,20 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 — Real fitness stats + Stitch prompt
+
+- **Real step tracking** on mobile via the device pedometer: today's steps (with a persisted daily
+  baseline), and derived distance, calories and active minutes. Android asks for Activity Recognition;
+  iOS uses a motion usage string. Web has no sensor, so it falls back to sample data.
+- Dashboard now streams live stats (`fitnessStatsProvider` is a StreamProvider). Weekly-history chart
+  still sample — accurate history needs Health Connect / HealthKit (a later upgrade).
+- Wrote `docs/STITCH_PROMPT.md` — a reusable style block + per-screen prompts covering the full app
+  (auth, dashboard, run tracking, run summary, activity, territory map, leaderboard, wallet, goals,
+  profile, settings, notifications) for generating designs in Google Stitch.
+- Verified: analyze clean, test passing, web + APK build; redeployed.
+
+---
+
 ## 11 July 2026 — Auth glass polish + motion
 
 - **Login** form now sits in a frosted glass card with the logo badge above it; **sign-up** gained the
