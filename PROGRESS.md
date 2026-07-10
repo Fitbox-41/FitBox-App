@@ -4,6 +4,21 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 10 July 2026 (eve) — Google sign-in
+
+- **Google sign-in implemented** (`google_sign_in` v7): "Continue with Google" on login and sign-up.
+  Direct flow — Google verifies the email, so no OTP and no password; new users are created via the
+  website's `/api/auth/google` (no website changes). JWT stored as usual.
+- **Android:** debug SHA-1 registered in Firebase; new `google-services.json` in place (gitignored).
+- **iOS config prepared** (for the later Codemagic build, not testable on Windows): `GoogleService-Info.plist`
+  fetched (gitignored) and the reversed-client-ID URL scheme added to `Info.plist`.
+- Verified: analyze clean, widget test passing, **debug APK built and installed on the phone** for
+  live Google sign-in testing.
+- Note: email-OTP sign-up is kept (Google is pre-verified). Apple sign-in is a future add (needs the
+  Apple Developer account).
+
+---
+
 ## 10 July 2026 (pm) — Live backend, brand theme, Firebase setup
 
 - **App wired to the live backend** (`fit-box-app.vercel.app`): wallet balance/ledger and run history

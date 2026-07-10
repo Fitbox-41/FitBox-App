@@ -45,6 +45,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  Future<void> _google() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(authControllerProvider.notifier).signInWithGoogle();
+      // Success → router redirect; cancel → stay here.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(messageFromError(e))),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
@@ -122,7 +137,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 strokeWidth: 2, color: Colors.white))
                         : const Text('Log in'),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: const <Widget>[
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('or'),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    onPressed: _loading ? null : _google,
+                    icon: const Icon(Icons.g_mobiledata, size: 28),
+                    label: const Text('Continue with Google'),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(50)),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[

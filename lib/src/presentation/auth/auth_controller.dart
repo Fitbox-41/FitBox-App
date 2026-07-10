@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_repository.dart';
 import '../../data/models/app_user.dart';
+import '../../services/google_auth_service.dart';
 import '../../services/secure_storage.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -20,11 +21,13 @@ class AuthState {
 class AuthController extends Notifier<AuthState> {
   late final AuthRepository _repo;
   late final SecureStorage _storage;
+  late final GoogleAuthService _google;
 
   @override
   AuthState build() {
     _repo = ref.read(authRepositoryProvider);
     _storage = ref.read(secureStorageProvider);
+    _google = ref.read(googleAuthServiceProvider);
     _restoreSession();
     return const AuthState(AuthStatus.unknown);
   }
@@ -70,8 +73,20 @@ class AuthController extends Notifier<AuthState> {
     state = AuthState(AuthStatus.authenticated, result.user);
   }
 
+  /// Google sign-in. Returns false if the user cancels the picker.
+  Future<bool> signInWithGoogle() async {
+    final account = await _google.signIn();
+    if (account == null) return false;
+    final result =
+        await _repo.googleLogin(name: account.name, email: account.email);
+    await _storage.saveToken(result.token);
+    state = AuthState(AuthStatus.authenticated, result.user);
+    return true;
+  }
+
   Future<void> logout() async {
     await _storage.clear();
+    await _google.signOut();
     state = const AuthState(AuthStatus.unauthenticated);
   }
 }

@@ -61,6 +61,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  Future<void> _google() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(authControllerProvider.notifier).signInWithGoogle();
+    } catch (e) {
+      _showError(e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _createAccount() async {
     if (!_otpKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -158,6 +169,25 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
                 : const Text('Send verification code'),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: const <Widget>[
+              Expanded(child: Divider()),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Text('or'),
+              ),
+              Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _loading ? null : _google,
+            icon: const Icon(Icons.g_mobiledata, size: 28),
+            label: const Text('Sign up with Google'),
+            style:
+                OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
           ),
           const SizedBox(height: 8),
           Row(

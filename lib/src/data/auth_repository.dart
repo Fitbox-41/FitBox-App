@@ -32,6 +32,19 @@ class AuthRepository {
     return AuthResult.fromJson(Map<String, dynamic>.from(res.data as Map));
   }
 
+  /// Google sign-in: creates the account if new (no password) or signs in an
+  /// existing user, using the website's `/api/auth/google` endpoint.
+  Future<AuthResult> googleLogin({
+    required String name,
+    required String email,
+  }) async {
+    final res = await _dio.post('/auth/google', data: {
+      'name': name,
+      'email': email,
+    });
+    return AuthResult.fromJson(Map<String, dynamic>.from(res.data as Map));
+  }
+
   /// Email + password login.
   Future<AuthResult> login({
     required String email,

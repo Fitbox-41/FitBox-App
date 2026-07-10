@@ -12,4 +12,9 @@ class AppConfig {
     'APP_API_BASE',
     defaultValue: 'https://fit-box-app.vercel.app',
   );
+
+  /// Google OAuth **Web** client ID (public identifier, not a secret) from the
+  /// Firebase project. Used as `serverClientId` for Google sign-in on Android.
+  static const String googleServerClientId =
+      '422023009692-q75tlf263r6g50tio60bffg4gi503g0d.apps.googleusercontent.com';
 }
