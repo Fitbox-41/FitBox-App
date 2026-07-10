@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,12 +37,17 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> _restoreSession() async {
     try {
-      final token = await _storage.readToken();
+      // Never let a slow/hanging storage or network read keep the app on the
+      // splash screen: fall back to signed-out after a short timeout.
+      final token = await _storage
+          .readToken()
+          .timeout(const Duration(seconds: 6), onTimeout: () => null);
       if (token == null || token.isEmpty) {
         state = const AuthState(AuthStatus.unauthenticated);
         return;
       }
-      final user = await _repo.profile();
+      final user =
+          await _repo.profile().timeout(const Duration(seconds: 12));
       state = AuthState(AuthStatus.authenticated, user);
     } catch (_) {
       try {
