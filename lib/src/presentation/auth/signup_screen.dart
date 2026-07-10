@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import 'auth_controller.dart';
+import 'google_web_button.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -171,19 +172,21 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                         strokeWidth: 2, color: Colors.white))
                 : const Text('Send verification code'),
           ),
-          if (!kIsWeb) ...<Widget>[
-            const SizedBox(height: 16),
-            Row(
-              children: const <Widget>[
-                Expanded(child: Divider()),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  child: Text('or'),
-                ),
-                Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 16),
+          const SizedBox(height: 16),
+          Row(
+            children: const <Widget>[
+              Expanded(child: Divider()),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 10),
+                child: Text('or'),
+              ),
+              Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (kIsWeb)
+            Center(child: googleSignInWebButton())
+          else
             OutlinedButton.icon(
               onPressed: _loading ? null : _google,
               icon: const Icon(Icons.g_mobiledata, size: 28),
@@ -191,7 +194,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(50)),
             ),
-          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

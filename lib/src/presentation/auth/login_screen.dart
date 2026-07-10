@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/api_client.dart';
 import 'auth_controller.dart';
+import 'google_web_button.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -154,19 +155,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 strokeWidth: 2, color: Colors.white))
                         : const Text('Log in'),
                   ),
-                  if (!kIsWeb) ...<Widget>[
-                    const SizedBox(height: 16),
-                    Row(
-                      children: const <Widget>[
-                        Expanded(child: Divider()),
-                        Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 10),
-                          child: Text('or'),
-                        ),
-                        Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: const <Widget>[
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Text('or'),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  if (kIsWeb)
+                    Center(child: googleSignInWebButton())
+                  else
                     OutlinedButton.icon(
                       onPressed: _loading ? null : _google,
                       icon: const Icon(Icons.g_mobiledata, size: 28),
@@ -174,7 +177,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(50)),
                     ),
-                  ],
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

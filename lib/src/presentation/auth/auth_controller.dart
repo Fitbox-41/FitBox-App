@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/auth_repository.dart';
@@ -32,7 +33,27 @@ class AuthController extends Notifier<AuthState> {
     _storage = ref.read(secureStorageProvider);
     _google = ref.read(googleAuthServiceProvider);
     _restoreSession();
+    if (kIsWeb) _setupGoogleWeb();
     return const AuthState(AuthStatus.unknown);
+  }
+
+  /// Web Google sign-in is driven by a rendered button; results come on a
+  /// stream. Fully deferred and guarded so it can never throw during build or
+  /// block the app from leaving the splash screen.
+  void _setupGoogleWeb() {
+    unawaited(Future<void>(() async {
+      try {
+        await _google.initializeForWeb();
+        _google.accountStream().listen((account) async {
+          try {
+            final result = await _repo.googleLogin(
+                name: account.name, email: account.email);
+            await _storage.saveToken(result.token);
+            state = AuthState(AuthStatus.authenticated, result.user);
+          } catch (_) {/* ignore; user can retry */}
+        });
+      } catch (_) {/* google web unavailable; email login still works */}
+    }));
   }
 
   Future<void> _restoreSession() async {
