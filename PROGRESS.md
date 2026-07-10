@@ -4,6 +4,19 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 — Web/UI fixes round 2
+
+- **Login logo was oversized** (it sat in a stretch column so `width` was ignored → filled the screen and
+  pushed content off-screen, causing the scroll). Fixed by centering it at a fixed size. This also makes the
+  page fit without scrolling on mobile and look right on PC.
+- **Dark-theme logo:** added a light logo variant so the mark stays visible on dark backgrounds.
+- **Web Google sign-in attempted but reverted:** the GIS init hung the web app on the splash screen on load
+  (the hosting domain likely isn't in the OAuth client's authorized JS origins). Deferred again; email login
+  works on web. Added a **session-restore timeout** so the app can never get stuck on splash.
+- Web redeployed and verified rendering the login screen.
+
+---
+
 ## 11 July 2026 (late) — Web/UI fixes
 
 - **Logout fixed** — it silently failed on web (Google sign-out threw before the state updated); now the
