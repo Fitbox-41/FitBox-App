@@ -1,1 +1,27 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"fitboxsports-8d1c0","appId":"1:422023009692:android:5c6673bfab5fd522a66459","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"fitboxsports-8d1c0","configurations":{"android":"1:422023009692:android:5c6673bfab5fd522a66459","ios":"1:422023009692:ios:f49ba4e4cd8ba153a66459"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "fitboxsports-8d1c0",
+          "appId": "1:422023009692:android:5c6673bfab5fd522a66459",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "fitboxsports-8d1c0",
+          "configurations": {
+            "android": "1:422023009692:android:5c6673bfab5fd522a66459",
+            "ios": "1:422023009692:ios:f49ba4e4cd8ba153a66459"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  }
+}

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -144,25 +145,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 strokeWidth: 2, color: Colors.white))
                         : const Text('Log in'),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: const <Widget>[
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10),
-                        child: Text('or'),
-                      ),
-                      Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    onPressed: _loading ? null : _google,
-                    icon: const Icon(Icons.g_mobiledata, size: 28),
-                    label: const Text('Continue with Google'),
-                    style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50)),
-                  ),
+                  if (!kIsWeb) ...<Widget>[
+                    const SizedBox(height: 16),
+                    Row(
+                      children: const <Widget>[
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 10),
+                          child: Text('or'),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    OutlinedButton.icon(
+                      onPressed: _loading ? null : _google,
+                      icon: const Icon(Icons.g_mobiledata, size: 28),
+                      label: const Text('Continue with Google'),
+                      style: OutlinedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(50)),
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

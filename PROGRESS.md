@@ -4,6 +4,19 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 (pm) — Web app live (owner testing)
+
+- **Added Flutter Web** (same codebase, same repo) so the owner can test in iPhone Safari / any browser
+  before iOS TestFlight is ready. Android/iOS untouched — all three platforms now build from one codebase.
+- **Responsive:** phones/mobile-web use full width; larger screens show the app centred in a phone-sized
+  frame. Google button hidden on web (email/password/OTP all work on web).
+- **Deployed live on Firebase Hosting:** https://fitboxsports-8d1c0.web.app  (redeploy:
+  `flutter build web --release && firebase deploy --only hosting`).
+- From now on: build/verify **Android + iOS + Web together** each change.
+- Verified: analyze clean, web build + deploy succeed, live login screen renders.
+
+---
+
 ## 11 July 2026 — Password management
 
 - **Set / change password** (Profile → "Set / change password"): new password + confirm, with an
