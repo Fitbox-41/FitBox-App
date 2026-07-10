@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -15,6 +16,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<FitnessStats> stats = ref.watch(fitnessStatsProvider);
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final String? name = ref.watch(authControllerProvider).user?.name;
     final String greeting =
         (name != null && name.isNotEmpty) ? name.split(' ').first : 'athlete';
@@ -24,18 +26,18 @@ class HomeScreen extends ConsumerWidget {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            const Text('Welcome back',
-                style: TextStyle(fontSize: 12, color: Colors.white54)),
+            Text('Welcome back',
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             Text('Hi, $greeting',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white)),
+                    color: cs.onSurface)),
           ],
         ),
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.white),
+            icon: Icon(Icons.notifications_none, color: cs.onSurface),
             onPressed: () {},
           ),
         ],
@@ -69,7 +71,7 @@ class HomeScreen extends ConsumerWidget {
                       icon: Icons.straighten,
                       value: '${s.distanceKm.toStringAsFixed(1)} km',
                       label: 'distance',
-                      color: Colors.white,
+                      color: cs.onSurface,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -86,7 +88,10 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               const SectionHeader('This week'),
               _WeeklyBars(weeklySteps: s.weeklySteps),
-            ],
+            ]
+                .animate(interval: 70.ms)
+                .fadeIn(duration: 320.ms)
+                .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
           ),
         ),
       ),
@@ -103,6 +108,7 @@ class _StepsRing extends StatelessWidget {
   Widget build(BuildContext context) {
     final NumberFormat fmt = NumberFormat.decimalPattern();
     final TextTheme text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
       radius: 26,
       padding: const EdgeInsets.symmetric(vertical: 28),
@@ -120,7 +126,7 @@ class _StepsRing extends StatelessWidget {
                   value: stats.stepProgress,
                   strokeWidth: 14,
                   strokeCap: StrokeCap.round,
-                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  backgroundColor: cs.onSurface.withValues(alpha: 0.10),
                   valueColor:
                       const AlwaysStoppedAnimation<Color>(FitBoxColors.red),
                 ),
@@ -130,10 +136,10 @@ class _StepsRing extends StatelessWidget {
                 children: <Widget>[
                   Text(fmt.format(stats.steps),
                       style: text.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold, color: Colors.white)),
+                          fontWeight: FontWeight.bold, color: cs.onSurface)),
                   Text('of ${fmt.format(stats.stepGoal)} steps',
-                      style:
-                          text.bodySmall?.copyWith(color: Colors.white54)),
+                      style: text.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant)),
                   const SizedBox(height: 4),
                   Text('${(stats.stepProgress * 100).round()}%',
                       style: text.titleMedium?.copyWith(
@@ -158,6 +164,7 @@ class _WeeklyBars extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final int maxSteps =
         weeklySteps.isEmpty ? 1 : weeklySteps.reduce((a, b) => a > b ? a : b);
     return GlassCard(
@@ -183,7 +190,7 @@ class _WeeklyBars extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: today
                               ? FitBoxColors.red
-                              : Colors.white.withValues(alpha: 0.22),
+                              : cs.onSurface.withValues(alpha: 0.22),
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -191,8 +198,8 @@ class _WeeklyBars extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(_days[i % _days.length],
-                      style: const TextStyle(
-                          color: Colors.white54, fontSize: 12)),
+                      style:
+                          TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
                 ],
               ),
             );

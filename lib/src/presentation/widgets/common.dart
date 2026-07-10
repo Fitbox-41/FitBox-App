@@ -20,6 +20,7 @@ class StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
       radius: 18,
       padding: const EdgeInsets.all(14),
@@ -29,11 +30,11 @@ class StatTile extends StatelessWidget {
           Icon(icon, color: color, size: 22),
           const SizedBox(height: 10),
           Text(value,
-              style: text.titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
+              style: text.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold, color: cs.onSurface)),
           const SizedBox(height: 2),
           Text(label,
-              style: text.bodySmall?.copyWith(color: Colors.white54)),
+              style: text.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ],
       ),
     );
@@ -49,13 +50,14 @@ class AsyncRetry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.cloud_off, size: 40, color: Colors.white70),
+            Icon(Icons.cloud_off, size: 40, color: cs.onSurfaceVariant),
             const SizedBox(height: 12),
             Text(
               message ?? 'Something went wrong.',
@@ -63,7 +65,7 @@ class AsyncRetry extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(color: Colors.white70),
+                  ?.copyWith(color: cs.onSurfaceVariant),
             ),
             const SizedBox(height: 12),
             FilledButton.tonal(onPressed: onRetry, child: const Text('Retry')),
@@ -87,7 +89,8 @@ class SectionHeader extends StatelessWidget {
       child: Text(
         title,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold, color: Colors.white),
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface),
       ),
     );
   }

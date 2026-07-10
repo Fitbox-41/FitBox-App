@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -14,6 +15,7 @@ class ActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<RunActivity>> runs = ref.watch(runsProvider);
+    final ColorScheme cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Activity')),
@@ -25,9 +27,9 @@ class ActivityScreen extends ConsumerWidget {
         ),
         data: (List<RunActivity> list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Text('No runs recorded yet.',
-                  style: TextStyle(color: Colors.white60)),
+                  style: TextStyle(color: cs.onSurfaceVariant)),
             );
           }
           return RefreshIndicator(
@@ -36,7 +38,10 @@ class ActivityScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               itemCount: list.length,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
-              itemBuilder: (BuildContext context, int i) => _RunCard(list[i]),
+              itemBuilder: (BuildContext context, int i) => _RunCard(list[i])
+                  .animate()
+                  .fadeIn(delay: (i * 60).ms, duration: 320.ms)
+                  .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
             ),
           );
         },
@@ -60,6 +65,7 @@ class _RunCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
       radius: 22,
       padding: const EdgeInsets.all(16),
@@ -79,10 +85,10 @@ class _RunCard extends StatelessWidget {
                   children: <Widget>[
                     Text(run.title,
                         style: text.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold, color: Colors.white)),
+                            fontWeight: FontWeight.bold, color: cs.onSurface)),
                     Text(DateFormat('EEE d MMM, h:mm a').format(run.date),
                         style: text.bodySmall
-                            ?.copyWith(color: Colors.white54)),
+                            ?.copyWith(color: cs.onSurfaceVariant)),
                   ],
                 ),
               ),
@@ -105,13 +111,14 @@ class _RunCard extends StatelessWidget {
 
   Widget _metric(BuildContext context, String value, String label) {
     final TextTheme text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Column(
       children: <Widget>[
         Text(value,
             style: text.titleSmall
-                ?.copyWith(fontWeight: FontWeight.bold, color: Colors.white)),
+                ?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface)),
         Text(label,
-            style: text.bodySmall?.copyWith(color: Colors.white54)),
+            style: text.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
       ],
     );
   }

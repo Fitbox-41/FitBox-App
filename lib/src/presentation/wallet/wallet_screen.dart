@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -14,6 +15,7 @@ class WalletScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<WalletData> wallet = ref.watch(walletProvider);
+    final ColorScheme cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Wallet')),
@@ -37,24 +39,29 @@ class WalletScreen extends ConsumerWidget {
               const SizedBox(height: 24),
               const SectionHeader('Recent activity'),
               if (w.transactions.isEmpty)
-                const GlassCard(
-                  padding: EdgeInsets.all(28),
+                GlassCard(
+                  padding: const EdgeInsets.all(28),
                   child: Center(
-                    child: Text('No transactions yet.\nGet active to earn points!',
+                    child: Text(
+                        'No transactions yet.\nGet active to earn points!',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white60)),
+                        style: TextStyle(color: cs.onSurfaceVariant)),
                   ),
                 )
               else
                 GlassCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                   child: Column(
                     children: <Widget>[
                       for (final t in w.transactions) _TxTile(t),
                     ],
                   ),
                 ),
-            ],
+            ]
+                .animate(interval: 70.ms)
+                .fadeIn(duration: 320.ms)
+                .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
           ),
         ),
       ),
@@ -122,6 +129,7 @@ class _TxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final Color color = tx.isCredit ? FitBoxColors.credit : FitBoxColors.debit;
     final String sign = tx.isCredit ? '+' : '−';
     return ListTile(
@@ -133,9 +141,9 @@ class _TxTile extends StatelessWidget {
       title: Text(tx.description.isEmpty ? 'Transaction' : tx.description,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(color: Colors.white)),
+          style: TextStyle(color: cs.onSurface)),
       subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.date),
-          style: const TextStyle(color: Colors.white54)),
+          style: TextStyle(color: cs.onSurfaceVariant)),
       trailing: Text('$sign${tx.amount}',
           style: TextStyle(
               color: color, fontWeight: FontWeight.bold, fontSize: 16)),

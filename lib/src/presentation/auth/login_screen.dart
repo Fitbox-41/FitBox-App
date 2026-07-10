@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../services/api_client.dart';
+import '../widgets/glass.dart';
 import 'auth_controller.dart';
 import 'google_web_button.dart';
 
@@ -81,15 +82,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  Center(
-                    child: Image.asset(
-                      Theme.of(context).brightness == Brightness.dark
-                          ? 'assets/images/logo_mark_dark.png'
-                          : 'assets/images/logo_mark.png',
-                      width: 128,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const Center(child: LogoBadge(width: 116)),
+                  const SizedBox(height: 16),
                   Text('Welcome back',
                       textAlign: TextAlign.center,
                       style: text.headlineSmall

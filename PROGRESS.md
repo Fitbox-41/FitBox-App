@@ -4,6 +4,19 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 July 2026 — Light/dark theming, animations, logo fix
+
+- **Light + dark glass themes**, following the **system theme by default**, with a **System / Light / Dark
+  toggle** in Profile → Appearance (persisted). All screens use theme-aware colours (adapt to both).
+- **Entrance animations** (staggered fade + slide) on dashboard, wallet, activity and profile via
+  `flutter_animate`.
+- **Logo fix:** the mark now sits on a crisp white rounded "badge" (`LogoBadge`) so it reads perfectly on
+  any theme — no more recolour artifacts on dark.
+- One codebase → same UI/theme on Android + iOS + Web; every change applies to all. Analyze clean, test
+  passing, web + APK build. Redeployed.
+
+---
+
 ## 11 July 2026 — Glassmorphism redesign + sign-in spinner
 
 - **Premium dark "glass" redesign** (Apple-style, on the FitBox charcoal/red brand): app-wide deep

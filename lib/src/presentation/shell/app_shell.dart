@@ -37,6 +37,8 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool wide = MediaQuery.sizeOf(context).width >= 800;
+    final Brightness b = Theme.of(context).brightness;
+    final ColorScheme cs = Theme.of(context).colorScheme;
 
     final Widget content = Center(
       child: ConstrainedBox(
@@ -50,7 +52,7 @@ class AppShell extends StatelessWidget {
         body: Row(
           children: <Widget>[
             NavigationRail(
-              backgroundColor: Colors.white.withValues(alpha: 0.04),
+              backgroundColor: FitBoxColors.glassFill(b),
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: _onTap,
               labelType: NavigationRailLabelType.all,
@@ -59,7 +61,7 @@ class AppShell extends StatelessWidget {
                 for (final t in _tabs)
                   NavigationRailDestination(
                     icon: Icon(t.icon),
-                    selectedIcon: Icon(t.active, color: Colors.white),
+                    selectedIcon: Icon(t.active, color: cs.onSurface),
                     label: Text(t.label),
                   ),
               ],
@@ -78,9 +80,9 @@ class AppShell extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
+              color: FitBoxColors.glassFill(b),
               border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                top: BorderSide(color: FitBoxColors.glassStroke(b)),
               ),
             ),
             child: NavigationBar(
@@ -93,7 +95,7 @@ class AppShell extends StatelessWidget {
                 for (final t in _tabs)
                   NavigationDestination(
                     icon: Icon(t.icon),
-                    selectedIcon: Icon(t.active, color: Colors.white),
+                    selectedIcon: Icon(t.active, color: cs.onSurface),
                     label: t.label,
                   ),
               ],

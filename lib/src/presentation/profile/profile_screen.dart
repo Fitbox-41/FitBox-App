@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_mode_controller.dart';
 import '../auth/auth_controller.dart';
 import '../widgets/glass.dart';
 
@@ -12,7 +14,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final user = ref.watch(authControllerProvider).user;
+    final ThemeMode mode = ref.watch(themeModeProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
@@ -37,12 +41,53 @@ class ProfileScreen extends ConsumerWidget {
                       Text(user?.name.isNotEmpty == true ? user!.name : 'Athlete',
                           style: text.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white)),
+                              color: cs.onSurface)),
                       Text(user?.email ?? 'Not signed in',
                           style: text.bodyMedium
-                              ?.copyWith(color: Colors.white54)),
+                              ?.copyWith(color: cs.onSurfaceVariant)),
                     ],
                   ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlassCard(
+            radius: 22,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Icon(Icons.brightness_6_outlined,
+                        color: cs.onSurface, size: 20),
+                    const SizedBox(width: 10),
+                    Text('Appearance',
+                        style: text.titleSmall?.copyWith(
+                            color: cs.onSurface,
+                            fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SegmentedButton<ThemeMode>(
+                  segments: const <ButtonSegment<ThemeMode>>[
+                    ButtonSegment(
+                        value: ThemeMode.system,
+                        icon: Icon(Icons.brightness_auto),
+                        label: Text('System')),
+                    ButtonSegment(
+                        value: ThemeMode.light,
+                        icon: Icon(Icons.light_mode),
+                        label: Text('Light')),
+                    ButtonSegment(
+                        value: ThemeMode.dark,
+                        icon: Icon(Icons.dark_mode),
+                        label: Text('Dark')),
+                  ],
+                  selected: <ThemeMode>{mode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (Set<ThemeMode> s) =>
+                      ref.read(themeModeProvider.notifier).set(s.first),
                 ),
               ],
             ),
@@ -60,10 +105,7 @@ class ProfileScreen extends ConsumerWidget {
                   label: 'Set / change password',
                   onTap: () => context.push('/change-password'),
                 ),
-                const _MenuItem(
-                    icon: Icons.settings_outlined, label: 'Settings'),
-                const _MenuItem(
-                    icon: Icons.help_outline, label: 'Help & support'),
+                const _MenuItem(icon: Icons.help_outline, label: 'Help & support'),
               ],
             ),
           ),
@@ -75,7 +117,10 @@ class ProfileScreen extends ConsumerWidget {
             style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(50)),
           ),
-        ],
+        ]
+            .animate(interval: 70.ms)
+            .fadeIn(duration: 320.ms)
+            .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
       ),
     );
   }
@@ -111,11 +156,13 @@ class _MenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: Colors.white70),
-      title: Text(label, style: const TextStyle(color: Colors.white)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+      leading: Icon(icon, color: cs.onSurfaceVariant),
+      title: Text(label, style: TextStyle(color: cs.onSurface)),
+      trailing:
+          Icon(Icons.chevron_right, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
       onTap: onTap ?? () {},
     );
   }

@@ -8,6 +8,7 @@ class SecureStorage {
 
   final FlutterSecureStorage _storage;
   static const String _tokenKey = 'jwt_token';
+  static const String _themeKey = 'theme_mode';
 
   Future<void> saveToken(String token) =>
       _storage.write(key: _tokenKey, value: token);
@@ -15,6 +16,11 @@ class SecureStorage {
   Future<String?> readToken() => _storage.read(key: _tokenKey);
 
   Future<void> clear() => _storage.delete(key: _tokenKey);
+
+  Future<void> saveThemeMode(String value) =>
+      _storage.write(key: _themeKey, value: value);
+
+  Future<String?> readThemeMode() => _storage.read(key: _themeKey);
 }
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
