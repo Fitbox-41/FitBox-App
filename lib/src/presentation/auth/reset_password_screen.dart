@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
+import '../widgets/responsive_form_body.dart';
 import 'auth_controller.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
@@ -83,8 +84,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Reset password')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+        child: ResponsiveFormBody(
           child: _step == _Step.email ? _emailForm() : _resetForm(),
         ),
       ),

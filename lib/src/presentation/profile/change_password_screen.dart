@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../services/api_client.dart';
 import '../auth/auth_controller.dart';
+import '../widgets/responsive_form_body.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -58,8 +59,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Password')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+        child: ResponsiveFormBody(
           child: Form(
             key: _formKey,
             child: Column(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
+import '../widgets/responsive_form_body.dart';
 import 'auth_controller.dart';
 import 'google_web_button.dart';
 
@@ -97,8 +98,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Create account')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+        child: ResponsiveFormBody(
           child: _step == _Step.details ? _detailsForm() : _verifyForm(),
         ),
       ),
