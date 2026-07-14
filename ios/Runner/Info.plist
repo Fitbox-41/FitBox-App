@@ -68,6 +68,10 @@
 	</array>
 	<key>NSMotionUsageDescription</key>
 	<string>FitBox uses motion data to count your steps and activity.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>FitBox reads your steps, calories and distance to show your activity.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>FitBox can save your workouts to Apple Health.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

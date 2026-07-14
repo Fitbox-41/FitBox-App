@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.fitboxsports.fitbox"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = maxOf(flutter.compileSdkVersion, 36) // Health Connect requires 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -19,7 +19,7 @@ android {
 
     defaultConfig {
         applicationId = "com.fitboxsports.app"
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 26) // Health Connect requires 26+
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -5,6 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../data/mock_data.dart';
 import '../data/models/fitness_stats.dart';
+import 'health_source.dart';
 import 'secure_storage.dart';
 
 /// Reads real fitness data on mobile from the device step sensor (`pedometer`),
@@ -32,6 +33,14 @@ class FitnessService {
       return;
     }
 
+    // Prefer Health Connect / HealthKit (accurate totals + 7-day history).
+    final FitnessStats? healthStats = await fetchHealthStats();
+    if (healthStats != null) {
+      yield healthStats;
+      return;
+    }
+
+    // Fallback: live step sensor (pedometer) with derived metrics.
     if (defaultTargetPlatform == TargetPlatform.android) {
       final PermissionStatus status =
           await Permission.activityRecognition.request();
