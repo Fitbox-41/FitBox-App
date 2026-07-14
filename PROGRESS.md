@@ -4,6 +4,23 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 14 July 2026 — Health Connect + HealthKit (accurate stats + history)
+
+- **Accurate fitness data** now comes from the platform health store: **Health Connect** on Android and
+  **HealthKit** on iOS, via the `health` package. We read real steps, active calories and distance, plus a
+  **7-day history** for the weekly chart (previously sample data).
+- Graceful fallback chain: health store → device pedometer (step sensor) → sample data on web.
+- Web stays safe: the health plugin is `dart:io`-only, so it's isolated behind conditional imports
+  (`health_source.dart` + `_io`/`_stub`) and never touches the web build.
+- Native wiring done on **both** platforms in one change (per the all-platforms rule): Android health
+  read-permissions + rationale intent-filters + Health Connect package query + `FlutterFragmentActivity`
+  + compileSdk 36 / minSdk 26; iOS HealthKit entitlement + Info.plist usage strings.
+- Verified: analyze clean, test passing, web build + APK build; web redeployed.
+- **Still to do on device:** grant Health Connect permission on an Android phone and confirm the numbers;
+  iOS HealthKit capability needs enabling in the Codemagic/Xcode build (entitlement file is in place).
+
+---
+
 ## 11 July 2026 — Real fitness stats + Stitch prompt
 
 - **Real step tracking** on mobile via the device pedometer: today's steps (with a persisted daily
