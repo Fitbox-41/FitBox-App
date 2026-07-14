@@ -4,6 +4,29 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 14 July 2026 (EOD) — Wallet end-to-end, secured + verified live
+
+- **Confirmed the app backend is wired to the live shared MongoDB Atlas** and verifies the website's
+  login tokens (same `JWT_SECRET`) — the wallet **read** path is live end-to-end.
+- **Fixed a security hole**: `POST /api/wallet/credit` used to let any logged-in user credit themselves
+  unlimited points. Wallet mutations (credit + redeem) are now **server-to-server only**, gated by a
+  shared `WALLET_SERVICE_KEY` (fail-closed when unset). End users can only *read* their own wallet.
+- **Built `POST /api/wallet/redeem`** (debit) — atomic, idempotent per order, balance-checked (never goes
+  negative). This is what the website checkout will call.
+- **Verified the whole ledger live**: credit 100 → 100; redeem 30 → 70; repeat same key → "Already
+  processed" (70, no double-debit); redeem over balance → "Insufficient balance". Idempotency + atomicity
+  proven against the real DB. _(Left a sentinel test wallet `userId 000000000000000000000001` — safe to delete.)_
+- **Wrote `backend/HANDOFF_WALLET.md`** — full schema + endpoint contracts + redeem flow + tests for
+  Diwakar to build the website checkout redeem (time-critical: he leaves end July).
+- `WALLET_SERVICE_KEY` set on the app + website backends and redeployed (git auto-deploy now working).
+- App polish: wallet balance now animates a count-up (matches the dashboard step ring).
+- **Delivered for testing:** fresh release APK at `Desktop\FitBox-test.apk`; web redeployed at
+  https://fitboxsports-8d1c0.web.app. Verified: analyze clean, tests passing, web + APK build.
+- **Open (needs others):** owner to confirm point→currency conversion rate + cap; Diwakar to build the
+  website checkout redeem from the handoff doc.
+
+---
+
 ## 14 July 2026 — Health Connect + HealthKit (accurate stats + history)
 
 - **Accurate fitness data** now comes from the platform health store: **Health Connect** on Android and

@@ -56,9 +56,10 @@ proof** (needs Diwakar's website-side redeem). Those are the big remaining chunk
   user could credit themselves unlimited points).
 - **Handoff spec written** for Diwakar (`backend/HANDOFF_WALLET.md`) — schema + endpoint contracts +
   redeem flow + tests, so the website checkout redeem can be built while he's here (leaves end July).
-- **Pending:** (1) redeploy the hardened backend on the **company Vercel account** + set the shared
-  `WALLET_SERVICE_KEY`; (2) website-side **redeem at checkout** (Diwakar); (3) owner to confirm the
-  **point→currency conversion**; then the end-to-end "one balance everywhere" demo.
+- **Verified live**: against the real DB — credit → balance, redeem → balance, repeat is idempotent (no
+  double-debit), and over-balance redeem is refused. The wallet plumbing is proven.
+- **Pending:** (1) website-side **redeem at checkout** (Diwakar, from the handoff doc); (2) owner to
+  confirm the **point→currency conversion**; then the full "one balance across app + website" demo.
 
 ### Activity / runs (~30%)
 - **Activity screen: done** — reads the user's runs from the backend and lists them.
