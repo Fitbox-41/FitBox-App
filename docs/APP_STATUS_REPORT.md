@@ -46,10 +46,19 @@ proof** (needs Diwakar's website-side redeem). Those are the big remaining chunk
 
 ## 🟡 Partly done
 
-### Shared points wallet (~50%)
+### Shared points wallet (~65%)
 - **App side (frontend): done** — wallet screen reads balance + transaction history live from the app backend.
-- **App backend: built** — wallet ledger, idempotent credit, shared MongoDB (separate backend repo).
-- **Pending:** website-side **redeem at checkout** (Diwakar) + the end-to-end "one balance everywhere" proof.
+- **Live shared DB: confirmed** — the app backend is deployed and verifiably connected to the shared
+  MongoDB Atlas and verifies the website's login tokens (same `JWT_SECRET`). The wallet **read** path is
+  wired end-to-end.
+- **App backend: built + hardened** — atomic, idempotent ledger; a new **redeem (debit)** endpoint with a
+  balance check; and wallet mutations are now **server-to-server only** (fixed a hole where any logged-in
+  user could credit themselves unlimited points).
+- **Handoff spec written** for Diwakar (`backend/HANDOFF_WALLET.md`) — schema + endpoint contracts +
+  redeem flow + tests, so the website checkout redeem can be built while he's here (leaves end July).
+- **Pending:** (1) redeploy the hardened backend on the **company Vercel account** + set the shared
+  `WALLET_SERVICE_KEY`; (2) website-side **redeem at checkout** (Diwakar); (3) owner to confirm the
+  **point→currency conversion**; then the end-to-end "one balance everywhere" demo.
 
 ### Activity / runs (~30%)
 - **Activity screen: done** — reads the user's runs from the backend and lists them.
