@@ -103,11 +103,19 @@ class _BalanceCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: <Widget>[
-              Text(fmt.format(points),
+              // Count up from 0 to the balance, matching the dashboard step ring.
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: points.toDouble()),
+                duration: const Duration(milliseconds: 900),
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) => Text(
+                  fmt.format(value.round()),
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 42,
-                      fontWeight: FontWeight.bold)),
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
               const SizedBox(width: 8),
               const Text('pts',
                   style: TextStyle(color: Colors.white70, fontSize: 16)),
