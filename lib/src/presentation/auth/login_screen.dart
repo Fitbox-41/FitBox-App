@@ -92,7 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
-                              Text('Welcome\nback',
+                              Text('Welcome back',
                                   style: AppText.kinetic(context, size: 44)),
                               const SizedBox(height: 8),
                               Text('Enter your details to access your dashboard.',

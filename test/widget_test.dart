@@ -4,6 +4,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:fitbox/src/app.dart';
+import 'package:fitbox/src/presentation/widgets/glass.dart';
 
 void main() {
   setUp(() {
@@ -20,6 +21,6 @@ void main() {
     // Once the (empty) session is checked, it redirects to login.
     await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Log in'), findsOneWidget);
+    expect(find.widgetWithText(GlowButton, 'Log in'), findsOneWidget);
   });
 }
