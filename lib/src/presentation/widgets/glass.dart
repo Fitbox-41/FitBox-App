@@ -208,11 +208,11 @@ class _GlowButtonState extends State<GlowButton> {
                     ],
                     Text(
                       widget.label,
-                      style: const TextStyle(
+                      style: platformFont(
                         color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        fontStyle: FontStyle.italic,
+                        size: 16,
+                        weight: FontWeight.w700,
+                        style: FontStyle.italic,
                         letterSpacing: 0.3,
                       ),
                     ),

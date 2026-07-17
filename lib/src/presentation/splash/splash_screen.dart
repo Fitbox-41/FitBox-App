@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../widgets/glass.dart';
 
 /// Shown briefly on start while the app checks for an existing session.
@@ -14,12 +15,15 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            LogoBadge(width: 150, heroTag: 'fitbox-logo'),
-            SizedBox(height: 28),
+            LogoBadge(width: 190, heroTag: 'fitbox-logo'),
+            SizedBox(height: 32),
             SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2.5),
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                valueColor: AlwaysStoppedAnimation<Color>(FitBoxColors.red),
+              ),
             ),
           ],
         ),

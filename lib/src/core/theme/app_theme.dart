@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -29,28 +31,70 @@ class FitBoxColors {
       : Colors.white.withValues(alpha: 0.7);
 }
 
-/// Named text styles beyond the Material TextTheme — the "kinetic" italic
-/// headers and the rounded data numerals used across the app.
+/// Platform font policy (locked): **Android → Inter** (Google Fonts),
+/// **iOS/macOS → SF Pro** (the system font). Everything in the app resolves its
+/// typeface through [platformFont], so both platforms feel native automatically.
+bool get _isApplePlatform =>
+    defaultTargetPlatform == TargetPlatform.iOS ||
+    defaultTargetPlatform == TargetPlatform.macOS;
+
+/// Returns a text style in the platform's font: SF Pro on Apple, Inter elsewhere.
+TextStyle platformFont({
+  double? size,
+  FontWeight? weight,
+  FontStyle? style,
+  double? letterSpacing,
+  double? height,
+  Color? color,
+  bool display = false,
+}) {
+  if (_isApplePlatform) {
+    // Apple system font (San Francisco). If the exact name doesn't resolve, iOS
+    // still falls back to the system font, which is SF — so this is safe.
+    return TextStyle(
+      fontFamily: display ? '.SF Pro Display' : '.SF Pro Text',
+      fontFamilyFallback: const <String>['.SF Pro Display', '.SF Pro Text'],
+      fontSize: size,
+      fontWeight: weight,
+      fontStyle: style,
+      letterSpacing: letterSpacing,
+      height: height,
+      color: color,
+    );
+  }
+  return GoogleFonts.inter(
+    fontSize: size,
+    fontWeight: weight,
+    fontStyle: style,
+    letterSpacing: letterSpacing,
+    height: height,
+    color: color,
+  );
+}
+
+/// Named text styles built on the platform font — the "kinetic" italic headers
+/// and the bold data numerals used across the app.
 class AppText {
   const AppText._();
 
-  /// Forward-leaning italic header (Hanken Grotesk) — the brand voice.
+  /// Forward-leaning italic header — the brand voice (platform font, bold).
   static TextStyle kinetic(
     BuildContext context, {
     double size = 32,
     Color? color,
     FontWeight weight = FontWeight.w800,
   }) =>
-      GoogleFonts.hankenGrotesk(
-        fontSize: size,
-        fontWeight: weight,
-        fontStyle: FontStyle.italic,
+      platformFont(
+        size: size,
+        weight: weight,
+        style: FontStyle.italic,
         height: 1.05,
         letterSpacing: -0.5,
+        display: true,
         color: color ?? Theme.of(context).colorScheme.onSurface,
       );
 
-  /// Big rounded data numerals (Plus Jakarta Sans) — steps, timers, points.
+  /// Big data numerals — steps, timers, points (platform font, bold).
   static TextStyle data(
     BuildContext context, {
     double size = 42,
@@ -58,24 +102,25 @@ class AppText {
     bool italic = false,
     FontWeight weight = FontWeight.w700,
   }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: size,
-        fontWeight: weight,
-        fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+      platformFont(
+        size: size,
+        weight: weight,
+        style: italic ? FontStyle.italic : FontStyle.normal,
         height: 1.0,
         letterSpacing: -1,
+        display: true,
         color: color ?? Theme.of(context).colorScheme.onSurface,
       );
 
-  /// Uppercase technical label with wide tracking (Plus Jakarta Sans).
+  /// Uppercase technical label with wide tracking (platform font).
   static TextStyle labelCaps(
     BuildContext context, {
     double size = 12,
     Color? color,
   }) =>
-      GoogleFonts.plusJakartaSans(
-        fontSize: size,
-        fontWeight: FontWeight.w600,
+      platformFont(
+        size: size,
+        weight: FontWeight.w600,
         letterSpacing: 1.2,
         color: color ?? Theme.of(context).colorScheme.onSurfaceVariant,
       );
@@ -95,30 +140,39 @@ class AppTheme {
     );
     final Color onSurface = scheme.onSurface;
 
-    // Body = Inter; headlines = Hanken Grotesk (italic, kinetic); data = Plus
-    // Jakarta Sans. Built on the Material baseline so sizes stay sensible.
+    // Font policy: Android = Inter, iOS = SF Pro (system). Body uses the
+    // platform font; headlines are the platform font in bold kinetic italic.
     final TextTheme base = (brightness == Brightness.dark
             ? ThemeData.dark()
             : ThemeData.light())
         .textTheme;
-    final TextTheme inter = GoogleFonts.interTextTheme(base);
-    TextStyle kinetic(TextStyle? s) => GoogleFonts.hankenGrotesk(
-          textStyle: s,
-          fontWeight: FontWeight.w800,
-          fontStyle: FontStyle.italic,
+    // On Apple keep the system (SF Pro) baseline; elsewhere apply Inter.
+    final TextTheme body = _isApplePlatform
+        ? base.apply(
+            fontFamily: '.SF Pro Text',
+            fontFamilyFallback: const <String>['.SF Pro Display'],
+          )
+        : GoogleFonts.interTextTheme(base);
+    TextStyle kinetic(TextStyle? s) => platformFont(
+          size: s?.fontSize,
+          weight: FontWeight.w800,
+          style: FontStyle.italic,
           letterSpacing: -0.5,
           height: 1.05,
+          display: true,
+          color: s?.color,
         );
-    final TextTheme textTheme = inter.copyWith(
+    final TextTheme textTheme = body.copyWith(
       displayLarge: kinetic(base.displayLarge),
       displayMedium: kinetic(base.displayMedium),
       displaySmall: kinetic(base.displaySmall),
       headlineLarge: kinetic(base.headlineLarge),
       headlineMedium: kinetic(base.headlineMedium),
       headlineSmall: kinetic(base.headlineSmall),
-      titleLarge: GoogleFonts.plusJakartaSans(
-        textStyle: base.titleLarge,
-        fontWeight: FontWeight.w700,
+      titleLarge: platformFont(
+        size: base.titleLarge?.fontSize,
+        weight: FontWeight.w700,
+        color: base.titleLarge?.color,
       ),
     );
 
@@ -133,12 +187,13 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        // Kinetic italic AppBar titles.
-        titleTextStyle: GoogleFonts.hankenGrotesk(
-          fontSize: 24,
-          fontWeight: FontWeight.w800,
-          fontStyle: FontStyle.italic,
+        // Kinetic italic AppBar titles (platform font).
+        titleTextStyle: platformFont(
+          size: 24,
+          weight: FontWeight.w800,
+          style: FontStyle.italic,
           letterSpacing: -0.5,
+          display: true,
           color: onSurface,
         ),
         foregroundColor: onSurface,
@@ -170,9 +225,9 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           // Fully rounded pill.
           shape: const StadiumBorder(),
-          textStyle: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w700,
-            fontSize: 15,
+          textStyle: platformFont(
+            weight: FontWeight.w700,
+            size: 15,
             letterSpacing: 0.3,
           ),
         ),
@@ -183,9 +238,9 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           side: BorderSide(color: onSurface.withValues(alpha: 0.18)),
           shape: const StadiumBorder(),
-          textStyle: GoogleFonts.plusJakartaSans(
-            fontWeight: FontWeight.w600,
-            fontSize: 15,
+          textStyle: platformFont(
+            weight: FontWeight.w600,
+            size: 15,
           ),
         ),
       ),

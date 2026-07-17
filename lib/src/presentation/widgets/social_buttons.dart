@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../core/theme/app_theme.dart';
+
 /// "Continue with Google" — hairline pill with the real multi-colour Google "G".
 /// Used on mobile (web uses the official rendered GIS button instead).
 class GoogleButton extends StatelessWidget {
@@ -84,10 +86,10 @@ class _SocialPill extends StatelessWidget {
               const SizedBox(width: 12),
               Text(
                 label,
-                style: TextStyle(
+                style: platformFont(
                   color: foreground,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
+                  size: 15,
+                  weight: FontWeight.w600,
                 ),
               ),
             ],
