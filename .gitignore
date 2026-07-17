@@ -77,3 +77,6 @@ android/build/
 
 # Built APKs (versioned, not tracked — binaries bloat the repo)
 APKs/*.apk
+
+# Raw font downloads (we use the google_fonts package at runtime)
+font/
