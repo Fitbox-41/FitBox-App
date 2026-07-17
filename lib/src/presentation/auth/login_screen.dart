@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
+import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
 import 'google_web_button.dart';
 
@@ -47,6 +48,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _appleComingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Sign in with Apple is coming soon.'),
+      ),
+    );
   }
 
   Future<void> _google() async {
@@ -178,11 +188,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               if (kIsWeb)
                                 Center(child: googleSignInWebButton())
                               else
-                                OutlinedButton.icon(
-                                  onPressed: _loading ? null : _google,
-                                  icon: const Icon(Icons.g_mobiledata, size: 28),
-                                  label: const Text('Continue with Google'),
+                                GoogleButton(
+                                  enabled: !_loading,
+                                  onPressed: _google,
                                 ),
+                              const SizedBox(height: 12),
+                              AppleButton(
+                                enabled: !_loading,
+                                onPressed: () => _appleComingSoon(),
+                              ),
                             ],
                           ),
                         ),

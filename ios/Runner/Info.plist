@@ -82,6 +82,16 @@
 				<string>com.googleusercontent.apps.422023009692-89s47dvdo3iksg8443e5gsj54b95frht</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.fitboxsports.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fitbox</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

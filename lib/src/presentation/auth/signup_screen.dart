@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
 import '../widgets/responsive_form_body.dart';
+import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
 import 'google_web_button.dart';
 
@@ -199,13 +200,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           if (kIsWeb)
             Center(child: googleSignInWebButton())
           else
-            OutlinedButton.icon(
-              onPressed: _loading ? null : _google,
-              icon: const Icon(Icons.g_mobiledata, size: 28),
-              label: const Text('Sign up with Google'),
-              style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(50)),
+            GoogleButton(enabled: !_loading, onPressed: _google),
+          const SizedBox(height: 12),
+          AppleButton(
+            enabled: !_loading,
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Text('Sign in with Apple is coming soon.'),
+              ),
             ),
+          ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

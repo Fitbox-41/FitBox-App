@@ -120,6 +120,15 @@ class AuthController extends Notifier<AuthState> {
     return true;
   }
 
+  /// Sign in with Apple — not wired yet. When enabled this will use the
+  /// `sign_in_with_apple` package (iOS native + Android/web via the web flow)
+  /// and post the identity token to the website's Apple auth endpoint, exactly
+  /// mirroring [signInWithGoogle]. Kept as one hook so enabling it is a small,
+  /// single-place change for both platforms.
+  Future<bool> signInWithApple() async {
+    throw UnimplementedError('Sign in with Apple is coming soon.');
+  }
+
   /// Sets or changes the password. If [currentPassword] is provided it is
   /// verified first via the login endpoint (Google users setting one for the
   /// first time can leave it empty). Auth state is unchanged.
