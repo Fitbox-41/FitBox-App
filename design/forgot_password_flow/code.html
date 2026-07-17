@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FitBox - Reset Password</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#474649",
+                        "on-tertiary": "#00391e",
+                        "surface-container-highest": "#323538",
+                        "secondary-fixed-dim": "#c8c6c8",
+                        "error-container": "#93000a",
+                        "secondary": "#c8c6c8",
+                        "on-secondary": "#303032",
+                        "primary": "#ffb4ab",
+                        "outline": "#ae8883",
+                        "surface-container-lowest": "#0b0f11",
+                        "on-secondary-container": "#b6b4b7",
+                        "inverse-on-surface": "#2d3134",
+                        "on-background": "#e0e2e6",
+                        "tertiary": "#62dd96",
+                        "inverse-primary": "#c00014",
+                        "on-secondary-fixed-variant": "#474649",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#690006",
+                        "primary-container": "#e31e24",
+                        "surface-tint": "#ffb4ab",
+                        "primary-fixed": "#ffdad6",
+                        "surface-variant": "#323538",
+                        "background": "#101417",
+                        "tertiary-fixed": "#80fab0",
+                        "outline-variant": "#5d3f3c",
+                        "on-surface": "#e0e2e6",
+                        "tertiary-fixed-dim": "#62dd96",
+                        "tertiary-container": "#00854e",
+                        "surface-dim": "#101417",
+                        "surface-bright": "#363a3d",
+                        "error": "#ffb4ab",
+                        "surface": "#101417",
+                        "on-primary-container": "#fffafa",
+                        "on-tertiary-container": "#f0fff1",
+                        "surface-container": "#1d2023",
+                        "on-secondary-fixed": "#1b1b1d",
+                        "on-surface-variant": "#e7bdb8",
+                        "surface-container-high": "#272a2d",
+                        "on-primary-fixed": "#410002",
+                        "surface-container-low": "#191c1f",
+                        "inverse-surface": "#e0e2e6",
+                        "secondary-fixed": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#00522e",
+                        "on-tertiary-fixed": "#00210f",
+                        "on-primary-fixed-variant": "#93000d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "unit": "8px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "data-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "display-italic": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-lg": ["42px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "display-italic": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,700;0,800;1,700;1,800&amp;family=Inter:wght@400&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #101417; /* surface */
+            color: #e0e2e6; /* on-surface */
+        }
+        .glass-card {
+            background: rgba(46, 46, 48, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom-color: rgba(255, 255, 255, 0.05);
+            border-right-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .btn-primary {
+            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 50%), theme('colors.primary-container');
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .btn-primary:active {
+            transform: scale(0.95);
+        }
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+        .input-field:focus {
+            border-color: theme('colors.primary');
+            box-shadow: 0 0 10px rgba(227, 30, 36, 0.2);
+            outline: none;
+        }
+        .otp-input {
+            width: 48px;
+            height: 56px;
+            text-align: center;
+        }
+        
+        /* Step transition logic */
+        #step2 { display: none; }
+        .step-active { display: block !important; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex items-center justify-center p-container-padding relative overflow-hidden">
+<!-- Atmospheric Background -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden z-0">
+<div class="absolute top-[-20%] right-[-10%] w-[70vw] h-[70vw] rounded-full bg-primary-container/10 blur-[120px]"></div>
+<div class="absolute bottom-[-20%] left-[-10%] w-[60vw] h-[60vw] rounded-full bg-tertiary-container/10 blur-[100px]"></div>
+</div>
+<!-- Main Container -->
+<div class="w-full max-w-md z-10">
+<!-- Brand Header -->
+<div class="text-center mb-stack-lg">
+<h1 class="font-display-italic text-display-italic text-primary italic">FITBOX</h1>
+</div>
+<!-- Step 1: Request Reset -->
+<div class="glass-card rounded-[24px] p-container-padding step-active" id="step1">
+<div class="mb-stack-lg">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors mb-stack-sm flex items-center" onclick="window.history.back()">
+<span class="material-symbols-outlined mr-2">arrow_back</span>
+<span class="font-label-caps text-label-caps">BACK</span>
+</button>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-stack-sm md:font-headline-lg md:text-headline-lg">Reset Password</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Enter your email to receive a reset code.</p>
+</div>
+<form class="space-y-stack-md" onsubmit="event.preventDefault(); document.getElementById('step1').classList.remove('step-active'); document.getElementById('step2').classList.add('step-active');">
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-stack-sm" for="email">EMAIL ADDRESS</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">mail</span>
+<input class="input-field w-full rounded-full py-4 pl-12 pr-4 font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50" id="email" placeholder="athlete@fitbox.com" required="" type="email"/>
+</div>
+</div>
+<button class="btn-primary w-full rounded-full py-4 font-label-caps text-label-caps text-on-primary-container mt-stack-md shadow-lg shadow-primary-container/20" type="submit">
+                    SEND CODE
+                </button>
+</form>
+</div>
+<!-- Step 2: Verify & Reset -->
+<div class="glass-card rounded-[24px] p-container-padding" id="step2">
+<div class="mb-stack-lg">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors mb-stack-sm flex items-center" onclick="document.getElementById('step2').classList.remove('step-active'); document.getElementById('step1').classList.add('step-active');">
+<span class="material-symbols-outlined mr-2">arrow_back</span>
+<span class="font-label-caps text-label-caps">BACK</span>
+</button>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-stack-sm md:font-headline-lg md:text-headline-lg">Secure Account</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Enter the 6-digit code sent to your email and create a new password.</p>
+</div>
+<form class="space-y-stack-md" onsubmit="event.preventDefault(); alert('Password Reset Successful');">
+<!-- OTP Section -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-stack-sm">VERIFICATION CODE</label>
+<div class="flex justify-between gap-2">
+<input class="input-field otp-input rounded-lg font-headline-lg text-headline-lg text-on-surface" maxlength="1" onkeyup="focusNext(this, 'otp2')" type="text"/>
+<input class="input-field otp-input rounded-lg font-headline-lg text-headline-lg text-on-surface" id="otp2" maxlength="1" onkeyup="focusNext(this, 'otp3')" type="text"/>
+<input class="input-field otp-input rounded-lg font-headline-lg text-headline-lg text-on-surface" id="otp3" maxlength="1" onkeyup="focusNext(this, 'otp4')" type="text"/>
+<input class="input-field otp-input rounded-lg font-headline-lg text-headline-lg text-on-surface" id="otp4" maxlength="1" onkeyup="focusNext(this, 'otp5')" type="text"/>
+<input class="input-field otp-input rounded-lg font-headline-lg text-headline-lg text-on-surface" id="otp5" maxlength="1" onkeyup="focusNext(this, 'otp6')" type="text"/>
+<input class="input-field otp-input rounded-lg font-headline-lg text-headline-lg text-on-surface" id="otp6" maxlength="1" type="text"/>
+</div>
+</div>
+<!-- New Password -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-stack-sm mt-stack-md" for="new-password">NEW PASSWORD</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
+<input class="input-field w-full rounded-full py-4 pl-12 pr-4 font-body-md text-body-md text-on-surface" id="new-password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<!-- Confirm Password -->
+<div>
+<label class="block font-label-caps text-label-caps text-on-surface-variant mb-stack-sm" for="confirm-password">CONFIRM PASSWORD</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock_clock</span>
+<input class="input-field w-full rounded-full py-4 pl-12 pr-4 font-body-md text-body-md text-on-surface" id="confirm-password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<button class="btn-primary w-full rounded-full py-4 font-label-caps text-label-caps text-on-primary-container mt-stack-lg shadow-lg shadow-primary-container/20" type="submit">
+                    RESET PASSWORD
+                </button>
+</form>
+</div>
+</div>
+<script>
+        // Simple OTP focus progression
+        function focusNext(current, nextFieldID) {
+            if (current.value.length >= 1) {
+                document.getElementById(nextFieldID)?.focus();
+            }
+        }
+    </script>
+</body></html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FitBox - Leaderboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,700;0,800;1,700;1,800&amp;family=Inter:wght@400&amp;family=Plus+Jakarta+Sans:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#474649",
+                        "on-tertiary": "#00391e",
+                        "surface-container-highest": "#323538",
+                        "secondary-fixed-dim": "#c8c6c8",
+                        "error-container": "#93000a",
+                        "secondary": "#c8c6c8",
+                        "on-secondary": "#303032",
+                        "primary": "#ffb4ab",
+                        "outline": "#ae8883",
+                        "surface-container-lowest": "#0b0f11",
+                        "on-secondary-container": "#b6b4b7",
+                        "inverse-on-surface": "#2d3134",
+                        "on-background": "#e0e2e6",
+                        "tertiary": "#62dd96",
+                        "inverse-primary": "#c00014",
+                        "on-secondary-fixed-variant": "#474649",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#690006",
+                        "primary-container": "#e31e24",
+                        "surface-tint": "#ffb4ab",
+                        "primary-fixed": "#ffdad6",
+                        "surface-variant": "#323538",
+                        "background": "#101417",
+                        "tertiary-fixed": "#80fab0",
+                        "outline-variant": "#5d3f3c",
+                        "on-surface": "#e0e2e6",
+                        "tertiary-fixed-dim": "#62dd96",
+                        "tertiary-container": "#00854e",
+                        "surface-dim": "#101417",
+                        "surface-bright": "#363a3d",
+                        "error": "#ffb4ab",
+                        "surface": "#101417",
+                        "on-primary-container": "#fffafa",
+                        "on-tertiary-container": "#f0fff1",
+                        "surface-container": "#1d2023",
+                        "on-secondary-fixed": "#1b1b1d",
+                        "on-surface-variant": "#e7bdb8",
+                        "surface-container-high": "#272a2d",
+                        "on-primary-fixed": "#410002",
+                        "surface-container-low": "#191c1f",
+                        "inverse-surface": "#e0e2e6",
+                        "secondary-fixed": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#00522e",
+                        "on-tertiary-fixed": "#00210f",
+                        "on-primary-fixed-variant": "#93000d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "unit": "8px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "data-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "display-italic": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-lg": ["42px", {"lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600"}],
+                        "display-italic": ["48px", {"lineHeight": "52px", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "34px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background-color: rgba(46, 46, 48, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .vibrant-text {
+            mix-blend-mode: overlay;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container pb-32">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-50 px-container-padding py-stack-md flex justify-between items-end bg-surface/70 backdrop-blur-xl dark:bg-surface/70 border-b border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)]">
+<button class="hover:opacity-80 transition-opacity active:scale-95 duration-200 text-primary dark:text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile italic text-primary dark:text-primary">Dashboard</h1>
+<button class="hover:opacity-80 transition-opacity active:scale-95 duration-200 text-primary dark:text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+</button>
+</header>
+<main class="px-container-padding pt-stack-md flex flex-col gap-stack-lg">
+<!-- Leaderboard Header -->
+<div class="flex flex-col gap-stack-sm items-center mt-stack-sm">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Weekly Standings</h2>
+<p class="font-body-md text-on-surface-variant">Sector Alpha Control</p>
+</div>
+<!-- Podium Section -->
+<section class="flex justify-center items-end h-[240px] gap-gutter mt-stack-lg relative">
+<!-- 2nd Place -->
+<div class="flex flex-col items-center gap-stack-sm relative z-10 translate-y-8">
+<div class="w-16 h-16 rounded-full glass-panel relative overflow-hidden flex items-center justify-center">
+<img class="object-cover w-full h-full opacity-80" data-alt="A detailed portrait of a fit female runner in sleek dark athletic gear, neon accents, cinematic dark mode lighting, highly realistic, competitive mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxP0m6tO1yVRSEYTFJlEIdzdNiptQYKWTd4pNMCb2r1XouSOCuUkbnQFTZueElKcSNtSioQafSSIE1zPa7ijUvb8uxqZWSao_-p2K6nZbFUbRe7rJtivh9X0sK7JIhU--0FgpLLHuiuwxWcv7d25kc79CeySK64NTYzZ17-1b1VGWHMGVDzE3xp193OEqNY9Qw7A425jpqOSIw1IZwWr4c8YFwHArOO6dtkFhq6sIW4GWdhYnaSXNG"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+<span class="absolute bottom-1 font-label-caps text-label-caps text-on-surface font-bold">2</span>
+</div>
+<div class="text-center">
+<div class="font-body-md text-on-surface font-bold">Sarah T.</div>
+<div class="font-label-caps text-label-caps text-secondary">8,420 PTS</div>
+</div>
+<div class="w-12 h-24 glass-panel rounded-t-lg bg-surface-container-high/80"></div>
+</div>
+<!-- 1st Place -->
+<div class="flex flex-col items-center gap-stack-sm relative z-20">
+<div class="w-24 h-24 rounded-full glass-panel border border-tertiary relative overflow-hidden flex items-center justify-center shadow-[0_0_30px_rgba(98,221,150,0.3)]">
+<img class="object-cover w-full h-full opacity-90" data-alt="A dramatic portrait of a muscular male athlete in premium compression wear, intense expression, neon green highlights reflecting off sweat, highly realistic, dark gym background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDudDcxK4ka_shcEfIhJg30MRnkLkJmAZDryTStKAudv2eXsFLKqJhrw0aNkMxY27d0td3mGKZ3O-BAqJ4NBsl5O332bDVm-rOA3tRLpkCznIshw_EaeMmgd59dsDsisMEb90gqD84g9Of2hiE342Y7X-lQpbtsb8Kjfxf-b2ZggaEm8tfR6OVEy2ZLhopMkLFDxlUbaDrQ5MbaRSn0xj7l4WNvoZwiu4fjRFIZDl2gntmuNg01qqN2"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+<span class="absolute bottom-2 font-headline-lg-mobile text-headline-lg-mobile text-tertiary italic">1</span>
+</div>
+<div class="text-center">
+<div class="font-body-md text-tertiary font-bold">Marcus R.</div>
+<div class="font-label-caps text-label-caps text-tertiary-fixed">12,050 PTS</div>
+</div>
+<div class="w-16 h-32 glass-panel rounded-t-lg bg-surface-container-highest/90 border-t-tertiary/50"></div>
+</div>
+<!-- 3rd Place -->
+<div class="flex flex-col items-center gap-stack-sm relative z-10 translate-y-12">
+<div class="w-16 h-16 rounded-full glass-panel relative overflow-hidden flex items-center justify-center">
+<img class="object-cover w-full h-full opacity-80" data-alt="A profile portrait of a female cyclist wearing a highly aerodynamic black helmet and visor, catching a rim light from a sunset, realistic premium aesthetic, dark mode styling." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCK2XbGCS5cdiq-rfX4bVTArssN9a43VE4wdwJqeR7h41c_GkHa-fBWwRKwn5RG8NFjMqNVcKwGVY2k6Waskxpnzf9YGCy1C-mvAX4BudztAxRiM4DjGV05o47u0F6H7TKJJ0XrpKkab82p48QmyVWfRWdcHTpZcAmBXMkVI_Fw15M-bWzKU_Z7Gx_DQcNfoMl6yWz5Vur9xtimjZti4TwQB9kHUpXoXLASB03OhJN6Ue2cRe-deODm"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent"></div>
+<span class="absolute bottom-1 font-label-caps text-label-caps text-on-surface font-bold">3</span>
+</div>
+<div class="text-center">
+<div class="font-body-md text-on-surface font-bold">Elena K.</div>
+<div class="font-label-caps text-label-caps text-outline">7,100 PTS</div>
+</div>
+<div class="w-12 h-20 glass-panel rounded-t-lg bg-surface-container/80"></div>
+</div>
+</section>
+<!-- Scrollable List -->
+<section class="flex flex-col gap-stack-sm mt-stack-md">
+<!-- Rank 4 -->
+<div class="glass-panel rounded-xl p-gutter flex items-center gap-gutter hover:bg-surface-container-high transition-colors">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface-variant w-8 text-center italic">4</span>
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-lowest">
+<img class="object-cover w-full h-full opacity-70" data-alt="A close up of a stylized digital avatar depicting an urban runner wearing a glowing blue visor in a dark moody cyberpunk setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBl--370uXn2qp4xVUE2x3vvtQp_f_5IgqUFVOgic9LHJndDFJxtd7G1OHfNabJWu9Y-z2I-X1EFURhSdzbzwT8dOKbCfqDXR3x3BGYJPEH_aMNoyEYvVO8Zls5WmXSZr0NIzFP6BPr8-wejFOatrCvwhxllhqA2f7_uVGt5Vyey8wdrxwuXuhL3x-JBeARWZ4u77bvVgUy2lajb0TkDdui7RUvkY8Vnjx0J64MoIgjYF8C3IlJyMAS"/>
+</div>
+<div class="flex-1">
+<h3 class="font-body-md text-on-surface font-bold">David Chen</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Sector Beta</p>
+</div>
+<span class="font-data-lg text-[24px] text-on-surface">6,890</span>
+</div>
+<!-- Rank 5 -->
+<div class="glass-panel rounded-xl p-gutter flex items-center gap-gutter hover:bg-surface-container-high transition-colors">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface-variant w-8 text-center italic">5</span>
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-lowest">
+<img class="object-cover w-full h-full opacity-70" data-alt="A digital portrait of an athletic user avatar, sharp facial features, wearing a dark metallic breathing mask, dark sports gear, professional lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAM6oH9EcySCRl2LuVlX8qCdKAyi_IdDarDOVdbdqZNKaqRvhKlFg_k-UvGzkK6h21ATL3sEc26pwW61d4exsaEBWF1UC0qXRR1SG-X9YCH8TT_1K6zAS-wp5iQvkRMX7pA_4J8aKDlF2o8xx0C11h0rsJu2n1nxNiD_o0ElzjvoRwQbf9a66S3nV1vmRKfowNZQ03lQZ4PYwlLrqUJOGAYS-JzymX4U20QKVSH9FnzmglpiKjsADLc"/>
+</div>
+<div class="flex-1">
+<h3 class="font-body-md text-on-surface font-bold">Alex Walker</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Sector Alpha</p>
+</div>
+<span class="font-data-lg text-[24px] text-on-surface">6,400</span>
+</div>
+<!-- Rank 6 (Current User) -->
+<div class="glass-panel rounded-xl p-gutter flex items-center gap-gutter bg-primary-container/20 border-primary-container relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-r from-primary-container/0 via-primary-container/10 to-primary-container/0 opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-primary w-8 text-center italic relative z-10">6</span>
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-lowest border border-primary relative z-10">
+<img class="object-cover w-full h-full" data-alt="A portrait of the current user, an athlete in high tech athletic wear with distinct glowing red accents matching the signature brand color, dark high contrast background." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhBCL5qHR1cp_v0F3KFpf8GnOEtWXRbB_kKVsXlk_mXdlfbr6AcKHkeghEvTqWmpQBenQUq_5x5PASIcWsspaR_S-f962GjMP99vJ27upFsFZ7L0sYEllANptMJsnIuvS0i3_mILZNlZdfbXq55vCVVVfM8leceEIrLhbAgsL-ONDUAkzdNKkV9rl4A_XRG-RwzG2K8eDZDfjvA3IRR1jkDNh1G6aLGum9_6GZ6vjIF3Z15huCbJRJ"/>
+</div>
+<div class="flex-1 relative z-10">
+<h3 class="font-body-md text-primary font-bold">You</h3>
+<p class="font-label-caps text-label-caps text-primary/80">Sector Alpha</p>
+</div>
+<span class="font-data-lg text-[24px] text-primary relative z-10">5,920</span>
+</div>
+<!-- Rank 7 -->
+<div class="glass-panel rounded-xl p-gutter flex items-center gap-gutter hover:bg-surface-container-high transition-colors">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface-variant w-8 text-center italic">7</span>
+<div class="w-12 h-12 rounded-full overflow-hidden bg-surface-container-lowest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div class="flex-1">
+<h3 class="font-body-md text-on-surface font-bold">Jordan L.</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">Sector Gamma</p>
+</div>
+<span class="font-data-lg text-[24px] text-on-surface">5,100</span>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50 flex justify-around items-center h-16 px-6 bg-secondary-container/70 backdrop-blur-xl dark:bg-secondary-container/70 rounded-full border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)] font-label-caps text-label-caps">
+<button class="hover:text-primary/80 transition-colors text-primary scale-110 flex flex-col items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+</button>
+<button class="hover:text-primary/80 transition-colors text-on-surface/60 flex flex-col items-center justify-center active:scale-90 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+<span class="material-symbols-outlined">map</span>
+</button>
+<button class="hover:text-primary/80 transition-colors text-on-surface/60 flex flex-col items-center justify-center active:scale-90 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+<span class="material-symbols-outlined">directions_run</span>
+</button>
+<button class="hover:text-primary/80 transition-colors text-on-surface/60 flex flex-col items-center justify-center active:scale-90 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="hover:text-primary/80 transition-colors text-on-surface/60 flex flex-col items-center justify-center active:scale-90 duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
+<span class="material-symbols-outlined">person</span>
+</button>
+</nav>
+</body></html>

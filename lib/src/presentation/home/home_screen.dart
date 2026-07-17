@@ -23,23 +23,14 @@ class HomeScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Text('Welcome back',
-                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-            Text('Hi, $greeting',
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: cs.onSurface)),
-          ],
-        ),
+        titleSpacing: 20,
+        title: Text('Hi, $greeting', style: AppText.kinetic(context, size: 26)),
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.notifications_none, color: cs.onSurface),
             onPressed: () {},
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: stats.when(
@@ -51,10 +42,10 @@ class HomeScreen extends ConsumerWidget {
         data: (FitnessStats s) => RefreshIndicator(
           onRefresh: () async => ref.invalidate(fitnessStatsProvider),
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
             children: <Widget>[
               _StepsRing(stats: s),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -68,10 +59,10 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: StatTile(
-                      icon: Icons.straighten,
-                      value: '${s.distanceKm.toStringAsFixed(1)} km',
-                      label: 'distance',
-                      color: cs.onSurface,
+                      icon: Icons.route,
+                      value: s.distanceKm.toStringAsFixed(1),
+                      label: 'km',
+                      color: FitBoxColors.credit,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -79,21 +70,36 @@ class HomeScreen extends ConsumerWidget {
                     child: StatTile(
                       icon: Icons.timer_outlined,
                       value: '${s.activeMinutes}',
-                      label: 'active min',
+                      label: 'mins',
                       color: FitBoxColors.red,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              const SectionHeader('This week'),
-              _WeeklyBars(weeklySteps: s.weeklySteps),
+              const SizedBox(height: 28),
+              _WeeklyCard(weeklySteps: s.weeklySteps),
+              const SizedBox(height: 28),
+              GlowButton(
+                label: 'Start a run',
+                icon: Icons.play_arrow_rounded,
+                onPressed: () => _startRun(context),
+              ),
             ]
                 .animate(interval: 70.ms)
                 .fadeIn(duration: 320.ms)
                 .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
           ),
         ),
+      ),
+    );
+  }
+
+  void _startRun(BuildContext context) {
+    // Live GPS run recording ships with the Maps integration (Wave 3).
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Run tracking is coming soon — GPS + map in progress.'),
       ),
     );
   }
@@ -107,66 +113,75 @@ class _StepsRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final NumberFormat fmt = NumberFormat.decimalPattern();
-    final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
-      radius: 26,
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      child: Center(
-        child: SizedBox(
-          width: 196,
-          height: 196,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: 1),
-            duration: const Duration(milliseconds: 1100),
-            curve: Curves.easeOutCubic,
-            builder: (context, t, _) {
-              final int animatedSteps = (stats.steps * t).round();
-              final double animatedProgress = stats.stepProgress * t;
-              return Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  SizedBox(
-                    width: 196,
-                    height: 196,
-                    child: CircularProgressIndicator(
-                      value: animatedProgress,
-                      strokeWidth: 14,
-                      strokeCap: StrokeCap.round,
-                      backgroundColor: cs.onSurface.withValues(alpha: 0.10),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                          FitBoxColors.red),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+      radius: 28,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const CardLabel("Today's activity"),
+          const SizedBox(height: 8),
+          Center(
+            child: SizedBox(
+              width: 208,
+              height: 208,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: 0, end: 1),
+                duration: const Duration(milliseconds: 1100),
+                curve: Curves.easeOutCubic,
+                builder: (context, t, _) {
+                  final int animatedSteps = (stats.steps * t).round();
+                  final double animatedProgress = stats.stepProgress * t;
+                  return Stack(
+                    alignment: Alignment.center,
                     children: <Widget>[
-                      Text(fmt.format(animatedSteps),
-                          style: text.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: cs.onSurface)),
-                      Text('of ${fmt.format(stats.stepGoal)} steps',
-                          style: text.bodySmall
-                              ?.copyWith(color: cs.onSurfaceVariant)),
-                      const SizedBox(height: 4),
-                      Text('${(animatedProgress * 100).round()}%',
-                          style: text.titleMedium?.copyWith(
-                              color: FitBoxColors.red,
-                              fontWeight: FontWeight.bold)),
+                      SizedBox(
+                        width: 208,
+                        height: 208,
+                        child: CircularProgressIndicator(
+                          value: animatedProgress,
+                          strokeWidth: 16,
+                          strokeCap: StrokeCap.round,
+                          backgroundColor: cs.onSurface.withValues(alpha: 0.08),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                              FitBoxColors.red),
+                        ),
+                      ),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(fmt.format(animatedSteps),
+                              style: AppText.data(context,
+                                  size: 44, color: cs.onSurface)),
+                          const SizedBox(height: 2),
+                          Text('/ ${fmt.format(stats.stepGoal)} steps',
+                              style: TextStyle(color: cs.onSurfaceVariant)),
+                        ],
+                      ),
                     ],
-                  ),
-                ],
-              );
-            },
+                  );
+                },
+              ),
+            ),
           ),
-        ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text('${(stats.stepProgress * 100).round()}%',
+                style: AppText.data(context,
+                    size: 15,
+                    color: FitBoxColors.red,
+                    weight: FontWeight.w700)),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _WeeklyBars extends StatelessWidget {
-  const _WeeklyBars({required this.weeklySteps});
+class _WeeklyCard extends StatelessWidget {
+  const _WeeklyCard({required this.weeklySteps});
 
   final List<int> weeklySteps;
 
@@ -178,43 +193,70 @@ class _WeeklyBars extends StatelessWidget {
     final int maxSteps =
         weeklySteps.isEmpty ? 1 : weeklySteps.reduce((a, b) => a > b ? a : b);
     return GlassCard(
-      radius: 22,
-      padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
-      child: SizedBox(
-        height: 132,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: List<Widget>.generate(weeklySteps.length, (int i) {
-            final double ratio = maxSteps == 0 ? 0 : weeklySteps[i] / maxSteps;
-            final bool today = i == weeklySteps.length - 1;
-            return Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: <Widget>[
-                  Expanded(
-                    child: FractionallySizedBox(
-                      alignment: Alignment.bottomCenter,
-                      heightFactor: ratio.clamp(0.05, 1.0),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 5),
-                        decoration: BoxDecoration(
-                          color: today
-                              ? FitBoxColors.red
-                              : cs.onSurface.withValues(alpha: 0.22),
-                          borderRadius: BorderRadius.circular(6),
+      radius: 24,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const CardLabel('This week'),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 128,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List<Widget>.generate(weeklySteps.length, (int i) {
+                final double ratio =
+                    maxSteps == 0 ? 0 : weeklySteps[i] / maxSteps;
+                final bool today = i == weeklySteps.length - 1;
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      Expanded(
+                        child: FractionallySizedBox(
+                          alignment: Alignment.bottomCenter,
+                          heightFactor: ratio.clamp(0.05, 1.0),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 5),
+                            decoration: BoxDecoration(
+                              gradient: today
+                                  ? const LinearGradient(
+                                      colors: <Color>[
+                                        FitBoxColors.red,
+                                        FitBoxColors.redDark
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    )
+                                  : null,
+                              color: today
+                                  ? null
+                                  : cs.onSurface.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(7),
+                              boxShadow: today
+                                  ? <BoxShadow>[
+                                      BoxShadow(
+                                        color: FitBoxColors.red
+                                            .withValues(alpha: 0.5),
+                                        blurRadius: 14,
+                                        spreadRadius: -3,
+                                      ),
+                                    ]
+                                  : null,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 8),
+                      Text(_days[i % _days.length],
+                          style: AppText.labelCaps(context, size: 11)),
+                    ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(_days[i % _days.length],
-                      style:
-                          TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-                ],
-              ),
-            );
-          }),
-        ),
+                );
+              }),
+            ),
+          ),
+        ],
       ),
     );
   }

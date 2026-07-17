@@ -45,6 +45,7 @@ dependencies:
   pedometer: ^4.2.0
   permission_handler: ^12.0.3
   health: 13.0.0
+  google_fonts: ^8.2.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

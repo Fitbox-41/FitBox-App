@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
 import 'auth_controller.dart';
@@ -66,6 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     final bool signingIn = ref.watch(googleSigningInProvider);
     return Scaffold(
       body: Stack(
@@ -75,136 +77,138 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(24),
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
+                  constraints: const BoxConstraints(maxWidth: 440),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const LogoBadge(width: 108, heroTag: 'fitbox-logo'),
-                      const SizedBox(height: 22),
+                      const LogoBadge(width: 190, heroTag: 'fitbox-logo'),
+                      const SizedBox(height: 28),
                       GlassCard(
-                        radius: 26,
-                        padding: const EdgeInsets.all(22),
+                        radius: 28,
+                        padding: const EdgeInsets.all(24),
                         child: Form(
                           key: _formKey,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: <Widget>[
-                              Text('Welcome back',
-                                  textAlign: TextAlign.center,
-                                  style: text.headlineSmall
-                                      ?.copyWith(fontWeight: FontWeight.bold)),
-                              Text('Log in to your FitBox account',
-                                  textAlign: TextAlign.center,
-                                  style: text.bodyMedium?.copyWith(
-                                      color: Theme.of(context).hintColor)),
+                              Text('Welcome\nback',
+                                  style: AppText.kinetic(context, size: 44)),
+                              const SizedBox(height: 8),
+                              Text('Enter your details to access your dashboard.',
+                                  style: text.bodyMedium
+                                      ?.copyWith(color: cs.onSurfaceVariant)),
                               const SizedBox(height: 24),
                               TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    autofillHints: const <String>[AutofillHints.email],
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.mail_outline),
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (v) {
-                      final value = (v ?? '').trim();
-                      if (value.isEmpty) return 'Enter your email';
-                      if (!value.contains('@') || !value.contains('.')) {
-                        return 'Enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: _obscure,
-                    textInputAction: TextInputAction.done,
-                    autofillHints: const <String>[AutofillHints.password],
-                    onFieldSubmitted: (_) => _submit(),
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                            _obscure ? Icons.visibility_off : Icons.visibility),
-                        onPressed: () => setState(() => _obscure = !_obscure),
+                                controller: _email,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const <String>[
+                                  AutofillHints.email
+                                ],
+                                decoration: const InputDecoration(
+                                  labelText: 'Email',
+                                  prefixIcon: Icon(Icons.mail_outline),
+                                ),
+                                validator: (v) {
+                                  final value = (v ?? '').trim();
+                                  if (value.isEmpty) return 'Enter your email';
+                                  if (!value.contains('@') ||
+                                      !value.contains('.')) {
+                                    return 'Enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              TextFormField(
+                                controller: _password,
+                                obscureText: _obscure,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const <String>[
+                                  AutofillHints.password
+                                ],
+                                onFieldSubmitted: (_) => _submit(),
+                                decoration: InputDecoration(
+                                  labelText: 'Password',
+                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(_obscure
+                                        ? Icons.visibility_off
+                                        : Icons.visibility),
+                                    onPressed: () =>
+                                        setState(() => _obscure = !_obscure),
+                                  ),
+                                ),
+                                validator: (v) => (v == null || v.isEmpty)
+                                    ? 'Enter your password'
+                                    : null,
+                              ),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: _loading
+                                      ? null
+                                      : () => context.push('/reset'),
+                                  child: const Text('Forgot password?'),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GlowButton(
+                                label: 'Log in',
+                                icon: Icons.arrow_forward,
+                                loading: _loading,
+                                onPressed: _loading ? null : _submit,
+                              ),
+                              const SizedBox(height: 18),
+                              Row(
+                                children: <Widget>[
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12),
+                                    child: Text('OR',
+                                        style:
+                                            AppText.labelCaps(context, size: 12)),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              const SizedBox(height: 18),
+                              if (kIsWeb)
+                                Center(child: googleSignInWebButton())
+                              else
+                                OutlinedButton.icon(
+                                  onPressed: _loading ? null : _google,
+                                  icon: const Icon(Icons.g_mobiledata, size: 28),
+                                  label: const Text('Continue with Google'),
+                                ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Enter your password' : null,
-                  ),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _loading ? null : () => context.push('/reset'),
-                      child: const Text('Forgot password?'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  FilledButton(
-                    onPressed: _loading ? null : _submit,
-                    style: FilledButton.styleFrom(
-                        minimumSize: const Size.fromHeight(50)),
-                    child: _loading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Text('Log in'),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: const <Widget>[
-                      Expanded(child: Divider()),
-                      Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 10),
-                        child: Text('or'),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Flexible(
+                            child: Text("Don't have an account?",
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: cs.onSurfaceVariant)),
+                          ),
+                          TextButton(
+                            onPressed:
+                                _loading ? null : () => context.push('/signup'),
+                            child: const Text('Sign up'),
+                          ),
+                        ],
                       ),
-                      Expanded(child: Divider()),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  if (kIsWeb)
-                    Center(child: googleSignInWebButton())
-                  else
-                    OutlinedButton.icon(
-                      onPressed: _loading ? null : _google,
-                      icon: const Icon(Icons.g_mobiledata, size: 28),
-                      label: const Text('Continue with Google'),
-                      style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(50)),
-                    ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      const Flexible(
-                        child: Text("Don't have an account?",
-                            overflow: TextOverflow.ellipsis),
-                      ),
-                      TextButton(
-                        onPressed:
-                            _loading ? null : () => context.push('/signup'),
-                        child: const Text('Sign up'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              ),
-              ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
-      ),
           if (signingIn)
             const Positioned.fill(
               child: ColoredBox(

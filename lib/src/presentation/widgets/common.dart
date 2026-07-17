@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/app_theme.dart';
 import 'glass.dart';
 
-/// A compact stat tile (icon + value + label) used across the dashboard.
+/// A compact stat tile (icon + value + label) used across the dashboard —
+/// colored icon, rounded data numeral, uppercase caps label.
 class StatTile extends StatelessWidget {
   const StatTile({
     super.key,
@@ -19,26 +21,34 @@ class StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
-      radius: 18,
-      padding: const EdgeInsets.all(14),
+      radius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 18),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(icon, color: color, size: 22),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 10),
           Text(value,
-              style: text.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold, color: cs.onSurface)),
-          const SizedBox(height: 2),
-          Text(label,
-              style: text.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+              style: AppText.data(context, size: 24, color: cs.onSurface)),
+          const SizedBox(height: 4),
+          Text(label.toUpperCase(), style: AppText.labelCaps(context, size: 11)),
         ],
       ),
     );
   }
+}
+
+/// Uppercase, wide-tracked technical label — used for card sub-headers
+/// ("TODAY'S ACTIVITY", "THIS WEEK").
+class CardLabel extends StatelessWidget {
+  const CardLabel(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) =>
+      Text(text.toUpperCase(), style: AppText.labelCaps(context));
 }
 
 /// Shown when an async provider fails, with a retry action.
@@ -76,21 +86,25 @@ class AsyncRetry extends StatelessWidget {
   }
 }
 
-/// A left-aligned section header.
+/// A left-aligned kinetic (italic) section header ("Ledger", "Recent activity").
 class SectionHeader extends StatelessWidget {
-  const SectionHeader(this.title, {super.key});
+  const SectionHeader(this.title, {super.key, this.trailing});
 
   final String title;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12, top: 4),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          Expanded(
+            child: Text(title, style: AppText.kinetic(context, size: 22)),
+          ),
+          ?trailing,
+        ],
       ),
     );
   }

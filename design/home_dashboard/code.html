@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FitBox Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,400..800;1,400..800&amp;family=Inter:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#474649",
+                        "on-tertiary": "#00391e",
+                        "surface-container-highest": "#323538",
+                        "secondary-fixed-dim": "#c8c6c8",
+                        "error-container": "#93000a",
+                        "secondary": "#c8c6c8",
+                        "on-secondary": "#303032",
+                        "primary": "#ffb4ab",
+                        "outline": "#ae8883",
+                        "surface-container-lowest": "#0b0f11",
+                        "on-secondary-container": "#b6b4b7",
+                        "inverse-on-surface": "#2d3134",
+                        "on-background": "#e0e2e6",
+                        "tertiary": "#62dd96",
+                        "inverse-primary": "#c00014",
+                        "on-secondary-fixed-variant": "#474649",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#690006",
+                        "primary-container": "#e31e24",
+                        "surface-tint": "#ffb4ab",
+                        "primary-fixed": "#ffdad6",
+                        "surface-variant": "#323538",
+                        "background": "#101417",
+                        "tertiary-fixed": "#80fab0",
+                        "outline-variant": "#5d3f3c",
+                        "on-surface": "#e0e2e6",
+                        "tertiary-fixed-dim": "#62dd96",
+                        "tertiary-container": "#00854e",
+                        "surface-dim": "#101417",
+                        "surface-bright": "#363a3d",
+                        "error": "#ffb4ab",
+                        "surface": "#101417",
+                        "on-primary-container": "#fffafa",
+                        "on-tertiary-container": "#f0fff1",
+                        "surface-container": "#1d2023",
+                        "on-secondary-fixed": "#1b1b1d",
+                        "on-surface-variant": "#e7bdb8",
+                        "surface-container-high": "#272a2d",
+                        "on-primary-fixed": "#410002",
+                        "surface-container-low": "#191c1f",
+                        "inverse-surface": "#e0e2e6",
+                        "secondary-fixed": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#00522e",
+                        "on-tertiary-fixed": "#00210f",
+                        "on-primary-fixed-variant": "#93000d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "unit": "8px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "data-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "display-italic": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-lg": ["42px", { "lineHeight": "42px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.08em", "fontWeight": "600" }],
+                        "display-italic": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.04em", "fontWeight": "800" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "34px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background-color: rgba(46, 46, 48, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-bottom-color: rgba(255, 255, 255, 0.05);
+            border-right-color: rgba(255, 255, 255, 0.05);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .text-vibrant {
+            mix-blend-mode: plus-lighter;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md antialiased pb-24">
+<!-- TopAppBar -->
+<header class="sticky top-0 w-full z-50 px-container-padding py-stack-md flex justify-between items-end bg-surface/70 backdrop-blur-xl dark:bg-surface/70 border-b border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)] md:hidden">
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200">
+<span class="material-symbols-outlined text-2xl" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile italic text-primary dark:text-primary tracking-tight">Hi, Alex</h1>
+</div>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200 relative">
+<span class="material-symbols-outlined text-2xl" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary-container rounded-full animate-pulse"></span>
+</button>
+</header>
+<!-- Desktop Header equivalent (hidden on mobile) -->
+<header class="hidden md:flex sticky top-0 w-full z-50 px-8 py-6 justify-between items-end bg-surface/70 backdrop-blur-xl dark:bg-surface/70 border-b border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)]">
+<div class="flex items-center gap-6">
+<h1 class="font-display-italic text-display-italic text-primary dark:text-primary tracking-tight">Hi, Alex</h1>
+</div>
+<nav class="flex gap-8 items-center">
+<a class="font-label-caps text-label-caps text-primary hover:opacity-80 transition-opacity" href="#">DASHBOARD</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:opacity-80 transition-opacity" href="#">EXPLORE</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:opacity-80 transition-opacity" href="#">ACTIVITIES</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:opacity-80 transition-opacity" href="#">PROFILE</a>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity active:scale-95 duration-200 relative ml-4">
+<span class="material-symbols-outlined text-2xl" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-primary-container rounded-full animate-pulse"></span>
+</button>
+</nav>
+</header>
+<main class="px-container-padding py-stack-lg max-w-4xl mx-auto space-y-stack-lg">
+<!-- Main Progress Ring Card -->
+<div class="glass-panel rounded-[24px] p-6 flex flex-col items-center justify-center relative overflow-hidden group">
+<h2 class="absolute top-4 left-6 font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest z-10">Today's Activity</h2>
+<div class="relative w-64 h-64 mt-8 flex items-center justify-center">
+<!-- Background Ring -->
+<svg class="absolute inset-0 w-full h-full -rotate-90 transform" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" opacity="0.2" r="45" stroke="#2E2E30" stroke-linecap="round" stroke-width="8"></circle>
+<!-- Progress Ring -->
+<circle class="transition-all duration-1000 ease-out" cx="50" cy="50" fill="none" r="45" stroke="url(#ringGradient)" stroke-dasharray="282.7" stroke-dashoffset="73.5" stroke-linecap="round" stroke-width="8"></circle>
+<defs>
+<lineargradient id="ringGradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#93000a"></stop> <!-- error-container -->
+<stop offset="100%" stop-color="#e31e24"></stop> <!-- primary-container -->
+</lineargradient>
+</defs>
+</svg>
+<div class="text-center z-10 flex flex-col items-center justify-center">
+<span class="font-data-lg text-data-lg italic text-on-surface text-vibrant">7,432</span>
+<span class="text-on-surface-variant text-sm mt-1">/ 10,000 steps</span>
+</div>
+</div>
+<div class="absolute bottom-4 right-6 font-label-caps text-label-caps text-primary-container">
+                74%
+            </div>
+<!-- Subtle atmospheric glow -->
+<div class="absolute inset-0 bg-primary-container/5 blur-3xl rounded-full opacity-50 group-hover:opacity-70 transition-opacity duration-500 pointer-events-none"></div>
+</div>
+<!-- Stat Tiles Row -->
+<div class="grid grid-cols-3 gap-4">
+<!-- Calories -->
+<div class="glass-panel rounded-2xl p-4 flex flex-col items-center justify-center text-center group">
+<span class="material-symbols-outlined text-primary-container mb-2 group-hover:scale-110 transition-transform duration-300" data-icon="local_fire_department" data-weight="fill">local_fire_department</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile italic text-on-surface text-vibrant mb-1">420</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">KCAL</span>
+</div>
+<!-- Distance -->
+<div class="glass-panel rounded-2xl p-4 flex flex-col items-center justify-center text-center group">
+<span class="material-symbols-outlined text-tertiary mb-2 group-hover:scale-110 transition-transform duration-300" data-icon="route">route</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile italic text-on-surface text-vibrant mb-1">5.2</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">KM</span>
+</div>
+<!-- Active Minutes -->
+<div class="glass-panel rounded-2xl p-4 flex flex-col items-center justify-center text-center group">
+<span class="material-symbols-outlined text-primary mb-2 group-hover:scale-110 transition-transform duration-300" data-icon="timer">timer</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile italic text-on-surface text-vibrant mb-1">32</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant text-[10px]">MINS</span>
+</div>
+</div>
+<!-- Chart Card -->
+<div class="glass-panel rounded-[24px] p-6 relative">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-6">This Week</h2>
+<div class="h-32 flex items-end justify-between gap-2 px-2">
+<!-- Bar 1 -->
+<div class="w-full bg-surface-container-high rounded-t-sm relative group flex justify-center h-[40%]">
+<div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity font-label-caps text-[10px] text-on-surface">3K</div>
+</div>
+<!-- Bar 2 -->
+<div class="w-full bg-surface-container-high rounded-t-sm relative group flex justify-center h-[60%]">
+<div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity font-label-caps text-[10px] text-on-surface">5K</div>
+</div>
+<!-- Bar 3 -->
+<div class="w-full bg-surface-container-high rounded-t-sm relative group flex justify-center h-[50%]">
+<div class="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity font-label-caps text-[10px] text-on-surface">4K</div>
+</div>
+<!-- Bar 4 (Today) -->
+<div class="w-full bg-primary-container rounded-t-sm relative group flex justify-center h-[74%] shadow-[0_0_15px_rgba(227,30,36,0.3)]">
+<div class="absolute bottom-full mb-2 opacity-100 font-label-caps text-[10px] text-primary-fixed">7.4K</div>
+</div>
+<!-- Bar 5 -->
+<div class="w-full bg-surface-container-high/50 rounded-t-sm relative flex justify-center h-2"></div>
+<!-- Bar 6 -->
+<div class="w-full bg-surface-container-high/50 rounded-t-sm relative flex justify-center h-2"></div>
+<!-- Bar 7 -->
+<div class="w-full bg-surface-container-high/50 rounded-t-sm relative flex justify-center h-2"></div>
+</div>
+<div class="flex justify-between px-2 mt-2 font-label-caps text-[10px] text-on-surface-variant">
+<span>M</span><span>T</span><span>W</span><span class="text-primary">T</span><span>F</span><span>S</span><span>S</span>
+</div>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full bg-primary-container text-on-primary-container font-headline-lg-mobile text-headline-lg-mobile italic py-4 rounded-full shadow-[inset_0_2px_10px_rgba(255,255,255,0.3),0_10px_20px_rgba(227,30,36,0.4)] active:scale-95 transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] flex items-center justify-center gap-2 relative overflow-hidden group mt-4">
+<span class="material-symbols-outlined text-2xl" data-icon="play_arrow" data-weight="fill">play_arrow</span>
+            Start a run
+            <div class="absolute inset-0 bg-white/20 opacity-0 group-active:opacity-100 transition-opacity duration-100"></div>
+</button>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50 flex justify-around items-center h-16 px-6 bg-secondary-container/70 backdrop-blur-xl dark:bg-secondary-container/70 font-label-caps text-label-caps fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] rounded-full border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)] md:hidden">
+<a class="flex flex-col items-center gap-1 text-primary scale-110 active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:text-primary/80" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="home" data-weight="fill">home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface/60 active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:text-primary/80" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="map">map</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface/60 active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:text-primary/80" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="directions_run">directions_run</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface/60 active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:text-primary/80" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-on-surface/60 active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:text-primary/80" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="person">person</span>
+</a>
+</nav>
+</body></html>

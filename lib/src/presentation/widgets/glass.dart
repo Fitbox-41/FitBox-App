@@ -73,13 +73,13 @@ class _Glow extends StatelessWidget {
 }
 
 /// A frosted-glass card: blurred, translucent, hairline-bordered — adapts to
-/// light/dark.
+/// light/dark. iOS-style materiality (backdrop blur + top-left hairline).
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.radius = 22,
+    this.radius = 24,
     this.onTap,
   });
 
@@ -96,52 +96,177 @@ class GlassCard extends StatelessWidget {
     if (onTap != null) {
       content = InkWell(borderRadius: br, onTap: onTap, child: content);
     }
-    return ClipRRect(
-      borderRadius: br,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: FitBoxColors.glassFill(b),
-            borderRadius: br,
-            border: Border.all(color: FitBoxColors.glassStroke(b)),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: br,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 30,
+            offset: const Offset(0, 10),
           ),
-          child: content,
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: br,
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: FitBoxColors.glassFill(b),
+              borderRadius: br,
+              border: Border.all(color: FitBoxColors.glassStroke(b)),
+            ),
+            child: content,
+          ),
         ),
       ),
     );
   }
 }
 
-/// The FitBox logo on a crisp white rounded "chip" so it reads well on any
-/// theme (no per-pixel recolouring).
-class LogoBadge extends StatelessWidget {
-  const LogoBadge({super.key, this.width = 140, this.heroTag});
+/// Signature red pill button with a soft red glow underneath — the primary CTA
+/// ("Start a run", "Log in"). Springy press.
+class GlowButton extends StatefulWidget {
+  const GlowButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.height = 56,
+    this.expand = true,
+    this.loading = false,
+  });
 
-  final double width;
-  final Object? heroTag;
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final double height;
+  final bool expand;
+  final bool loading;
+
+  @override
+  State<GlowButton> createState() => _GlowButtonState();
+}
+
+class _GlowButtonState extends State<GlowButton> {
+  bool _down = false;
 
   @override
   Widget build(BuildContext context) {
-    Widget badge = Container(
-      padding: EdgeInsets.symmetric(horizontal: width * 0.12, vertical: width * 0.09),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(width * 0.18),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.18),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+    final bool enabled = widget.onPressed != null && !widget.loading;
+    return GestureDetector(
+      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+      onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: enabled ? () => setState(() => _down = false) : null,
+      onTap: enabled ? widget.onPressed : null,
+      child: AnimatedScale(
+        scale: _down ? 0.97 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Container(
+          height: widget.height,
+          width: widget.expand ? double.infinity : null,
+          padding: widget.expand
+              ? null
+              : const EdgeInsets.symmetric(horizontal: 28),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: <Color>[FitBoxColors.red, FitBoxColors.redDark],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+            borderRadius: BorderRadius.circular(widget.height / 2),
+            boxShadow: enabled
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: FitBoxColors.red.withValues(alpha: 0.45),
+                      blurRadius: 24,
+                      spreadRadius: -2,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
           ),
-        ],
+          child: widget.loading
+              ? const Center(
+                  child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.4, color: Colors.white),
+                  ),
+                )
+              : Row(
+                  mainAxisSize:
+                      widget.expand ? MainAxisSize.max : MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    if (widget.icon != null) ...<Widget>[
+                      Icon(widget.icon, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                    ],
+                    Text(
+                      widget.label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        fontStyle: FontStyle.italic,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
-      child: Image.asset('assets/images/logo_mark.png', width: width),
     );
+  }
+}
+
+/// The real FitBox logo, **blended** onto the screen (no white chip): the
+/// light-on-dark mark on dark themes, the dark-on-light mark on light themes,
+/// over a soft red glow so it sits premium on the gradient.
+class LogoBadge extends StatelessWidget {
+  const LogoBadge({super.key, this.width = 180, this.heroTag, this.glow = true});
+
+  final double width;
+  final Object? heroTag;
+  final bool glow;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
+    final String asset = dark
+        ? 'assets/images/logo_mark_dark.png' // "Fit" in white — for dark bg
+        : 'assets/images/logo_mark.png'; // "Fit" in charcoal — for light bg
+
+    Widget badge = Image.asset(asset, width: width, fit: BoxFit.contain);
+
+    if (glow) {
+      badge = Stack(
+        alignment: Alignment.center,
+        children: <Widget>[
+          IgnorePointer(
+            child: Container(
+              width: width * 0.9,
+              height: width * 0.45,
+              decoration: BoxDecoration(
+                gradient: RadialGradient(colors: <Color>[
+                  FitBoxColors.red.withValues(alpha: dark ? 0.22 : 0.12),
+                  Colors.transparent,
+                ]),
+              ),
+            ),
+          ),
+          badge,
+        ],
+      );
+    }
+
     if (heroTag != null) {
       badge = Hero(
         tag: heroTag!,
-        // Keep the material transparent so the shadow doesn't box during flight.
         flightShuttleBuilder: (_, _, _, _, toContext) =>
             (toContext.widget as Hero).child,
         child: Material(type: MaterialType.transparency, child: badge),

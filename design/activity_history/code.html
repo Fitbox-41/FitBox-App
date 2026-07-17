@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FitBox - Activity History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700&amp;family=Hanken+Grotesk:ital,wght@0,700;1,800&amp;family=Inter:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "secondary-container": "#474649",
+                        "on-tertiary": "#00391e",
+                        "surface-container-highest": "#323538",
+                        "secondary-fixed-dim": "#c8c6c8",
+                        "error-container": "#93000a",
+                        "secondary": "#c8c6c8",
+                        "on-secondary": "#303032",
+                        "primary": "#ffb4ab",
+                        "outline": "#ae8883",
+                        "surface-container-lowest": "#0b0f11",
+                        "on-secondary-container": "#b6b4b7",
+                        "inverse-on-surface": "#2d3134",
+                        "on-background": "#e0e2e6",
+                        "tertiary": "#62dd96",
+                        "inverse-primary": "#c00014",
+                        "on-secondary-fixed-variant": "#474649",
+                        "on-error-container": "#ffdad6",
+                        "on-primary": "#690006",
+                        "primary-container": "#e31e24",
+                        "surface-tint": "#ffb4ab",
+                        "primary-fixed": "#ffdad6",
+                        "surface-variant": "#323538",
+                        "background": "#101417",
+                        "tertiary-fixed": "#80fab0",
+                        "outline-variant": "#5d3f3c",
+                        "on-surface": "#e0e2e6",
+                        "tertiary-fixed-dim": "#62dd96",
+                        "tertiary-container": "#00854e",
+                        "surface-dim": "#101417",
+                        "surface-bright": "#363a3d",
+                        "error": "#ffb4ab",
+                        "surface": "#101417",
+                        "on-primary-container": "#fffafa",
+                        "on-tertiary-container": "#f0fff1",
+                        "surface-container": "#1d2023",
+                        "on-secondary-fixed": "#1b1b1d",
+                        "on-surface-variant": "#e7bdb8",
+                        "surface-container-high": "#272a2d",
+                        "on-primary-fixed": "#410002",
+                        "surface-container-low": "#191c1f",
+                        "inverse-surface": "#e0e2e6",
+                        "secondary-fixed": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#00522e",
+                        "on-tertiary-fixed": "#00210f",
+                        "on-primary-fixed-variant": "#93000d"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-lg": "32px",
+                        "stack-md": "16px",
+                        "unit": "8px",
+                        "container-padding": "24px"
+                    },
+                    fontFamily: {
+                        "data-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Hanken Grotesk"],
+                        "label-caps": ["Plus Jakarta Sans"],
+                        "display-italic": ["Hanken Grotesk"],
+                        "headline-lg-mobile": ["Hanken Grotesk"],
+                        "body-md": ["Inter"]
+                    },
+                    fontSize: {
+                        "data-lg": ["42px", { lineHeight: "42px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }],
+                        "label-caps": ["12px", { lineHeight: "16px", letterSpacing: "0.08em", fontWeight: "600" }],
+                        "display-italic": ["48px", { lineHeight: "52px", letterSpacing: "-0.04em", fontWeight: "800" }],
+                        "headline-lg-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background-color: rgba(46, 46, 48, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            border-left: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .glass-pill {
+            background-color: rgba(46, 46, 48, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        body {
+            background-color: #101417; /* bg-background */
+            color: #e0e2e6; /* text-on-background */
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen relative pb-32">
+<!-- TopAppBar (Mobile) / Web Nav -->
+<header class="sticky top-0 w-full z-50 px-container-padding py-stack-md flex justify-between items-end bg-surface/70 backdrop-blur-xl border-b border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)] md:hidden">
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-3xl">menu</span>
+</button>
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile italic text-primary">History</h1>
+<button class="text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-3xl">notifications</span>
+</button>
+</header>
+<!-- Desktop Top Nav Placeholder -->
+<header class="hidden md:flex sticky top-0 w-full z-50 px-12 py-6 justify-between items-center bg-surface/70 backdrop-blur-xl border-b border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)]">
+<h1 class="font-display-italic text-display-italic text-primary">FitBox</h1>
+<nav class="flex gap-8">
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors" href="#">DASHBOARD</a>
+<a class="font-label-caps text-label-caps text-primary border-b-2 border-primary pb-1" href="#">HISTORY</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors" href="#">PROFILE</a>
+</nav>
+<button class="glass-pill px-6 py-2 rounded-full font-label-caps text-label-caps text-on-surface hover:bg-white/10 transition-colors">LOGOUT</button>
+</header>
+<main class="max-w-3xl mx-auto px-container-padding py-stack-lg">
+<!-- Header / Totals -->
+<section class="mb-stack-lg">
+<div class="flex justify-between items-end mb-stack-sm">
+<h2 class="font-headline-lg text-headline-lg md:font-display-italic md:text-display-italic">This Month</h2>
+<div class="glass-pill px-4 py-1 rounded-full flex items-center gap-2 cursor-pointer hover:bg-white/10 transition-colors">
+<span class="font-label-caps text-label-caps text-on-surface-variant">OCTOBER</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">expand_more</span>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-gutter">
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">DISTANCE</span>
+<span class="font-data-lg text-data-lg text-on-surface">142<span class="text-sm font-body-md text-on-surface-variant">km</span></span>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">TIME</span>
+<span class="font-data-lg text-data-lg text-on-surface">12<span class="text-sm font-body-md text-on-surface-variant">h</span></span>
+</div>
+<div class="glass-card rounded-2xl p-4 flex flex-col items-center justify-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">RUNS</span>
+<span class="font-data-lg text-data-lg text-primary">18</span>
+</div>
+</div>
+</section>
+<!-- Filters -->
+<section class="mb-stack-md flex gap-gutter overflow-x-auto hide-scrollbar pb-2">
+<button class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-6 py-2 rounded-full whitespace-nowrap">ALL ACTIVITY</button>
+<button class="glass-pill text-on-surface font-label-caps text-label-caps px-6 py-2 rounded-full whitespace-nowrap hover:bg-white/10 transition-colors">RUNS</button>
+<button class="glass-pill text-on-surface font-label-caps text-label-caps px-6 py-2 rounded-full whitespace-nowrap hover:bg-white/10 transition-colors">WALKS</button>
+</section>
+<!-- List -->
+<section class="flex flex-col gap-stack-md">
+<!-- Item 1 -->
+<div class="glass-card rounded-2xl p-4 flex gap-gutter items-center hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<!-- Map thumbnail placeholder -->
+<div class="absolute inset-0 bg-gradient-to-br from-surface-container to-surface-container-high opacity-50"></div>
+<svg class="absolute inset-0 w-full h-full text-primary opacity-30 p-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<!-- Route Path -->
+<svg class="absolute inset-0 w-full h-full p-2" viewbox="0 0 100 100">
+<path d="M20,80 Q40,60 50,40 T80,20" fill="none" stroke="#e31e24" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface truncate group-hover:text-primary transition-colors">Morning Tempo</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant shrink-0 mt-2">OCT 24</span>
+</div>
+<div class="flex gap-4 items-center">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">DISTANCE</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">8.4 km</span>
+</div>
+<div class="w-px h-6 bg-white/10"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">PACE</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">4:45 /km</span>
+</div>
+<div class="w-px h-6 bg-white/10 hidden sm:block"></div>
+<div class="flex flex-col hidden sm:flex">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">TIME</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">39:54</span>
+</div>
+</div>
+</div>
+<div class="shrink-0 hidden sm:flex">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="glass-card rounded-2xl p-4 flex gap-gutter items-center hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<div class="absolute inset-0 bg-gradient-to-br from-surface-container to-surface-container-high opacity-50"></div>
+<svg class="absolute inset-0 w-full h-full text-tertiary opacity-30 p-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<svg class="absolute inset-0 w-full h-full p-2" viewbox="0 0 100 100">
+<path d="M10,90 Q30,70 50,50 T90,10" fill="none" stroke="#62dd96" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface truncate group-hover:text-tertiary transition-colors">Evening Recovery</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant shrink-0 mt-2">OCT 22</span>
+</div>
+<div class="flex gap-4 items-center">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">DISTANCE</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">5.0 km</span>
+</div>
+<div class="w-px h-6 bg-white/10"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">PACE</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">5:30 /km</span>
+</div>
+<div class="w-px h-6 bg-white/10 hidden sm:block"></div>
+<div class="flex flex-col hidden sm:flex">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">TIME</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">27:30</span>
+</div>
+</div>
+</div>
+<div class="shrink-0 hidden sm:flex">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-tertiary transition-colors">chevron_right</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="glass-card rounded-2xl p-4 flex gap-gutter items-center hover:bg-white/5 transition-colors cursor-pointer group">
+<div class="w-20 h-20 rounded-xl overflow-hidden shrink-0 relative bg-surface-container">
+<div class="absolute inset-0 bg-gradient-to-br from-surface-container to-surface-container-high opacity-50"></div>
+<svg class="absolute inset-0 w-full h-full text-primary opacity-30 p-2" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<svg class="absolute inset-0 w-full h-full p-2" viewbox="0 0 100 100">
+<path d="M10,50 Q40,10 70,50 T90,80" fill="none" stroke="#e31e24" stroke-linecap="round" stroke-width="4"></path>
+</svg>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface truncate group-hover:text-primary transition-colors">Long Run</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant shrink-0 mt-2">OCT 20</span>
+</div>
+<div class="flex gap-4 items-center">
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">DISTANCE</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">21.1 km</span>
+</div>
+<div class="w-px h-6 bg-white/10"></div>
+<div class="flex flex-col">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">PACE</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">4:55 /km</span>
+</div>
+<div class="w-px h-6 bg-white/10 hidden sm:block"></div>
+<div class="flex flex-col hidden sm:flex">
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">TIME</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">1:43:45</span>
+</div>
+</div>
+</div>
+<div class="shrink-0 hidden sm:flex">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-8 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50 flex justify-around items-center h-16 px-6 bg-secondary-container/70 backdrop-blur-xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.15)] rounded-full">
+<a class="text-on-surface/60 hover:text-primary/80 transition-colors flex flex-col items-center" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="home">home</span>
+</a>
+<a class="text-on-surface/60 hover:text-primary/80 transition-colors flex flex-col items-center" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="map">map</span>
+</a>
+<a class="text-primary scale-110 flex flex-col items-center active:scale-90 transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="directions_run" style="font-variation-settings: 'FILL' 1;">directions_run</span>
+</a>
+<a class="text-on-surface/60 hover:text-primary/80 transition-colors flex flex-col items-center" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance_wallet">account_balance_wallet</span>
+</a>
+<a class="text-on-surface/60 hover:text-primary/80 transition-colors flex flex-col items-center" href="#">
+<span class="material-symbols-outlined text-2xl" data-icon="person">person</span>
+</a>
+</nav>
+</body></html>
