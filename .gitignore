@@ -71,3 +71,6 @@ lib/firebase_options.dart
 
 # Firebase deploy cache
 .firebase/
+
+# Android build artifacts
+android/build/
