@@ -74,3 +74,6 @@ lib/firebase_options.dart
 
 # Android build artifacts
 android/build/
+
+# Built APKs (versioned, not tracked — binaries bloat the repo)
+APKs/*.apk
