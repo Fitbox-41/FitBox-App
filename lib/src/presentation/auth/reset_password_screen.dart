@@ -102,16 +102,20 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const Text(
-              'Enter your account email and we\'ll send you a 6-digit code.'),
-          const SizedBox(height: 16),
+          Text('Reset password', style: AppText.kinetic(context, size: 32)),
+          const SizedBox(height: 8),
+          Text(
+            "Enter your account email and we'll send you a 6-digit code.",
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 18),
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
               labelText: 'Email',
               prefixIcon: Icon(Icons.mail_outline),
-              border: OutlineInputBorder(),
             ),
             validator: (v) {
               final value = (v ?? '').trim();
@@ -123,16 +127,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             },
           ),
           const SizedBox(height: 22),
-          FilledButton(
+          GlowButton(
+            label: 'Send code',
+            loading: _loading,
             onPressed: _loading ? null : _sendCode,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Text('Send code'),
           ),
         ],
       ),
@@ -199,16 +197,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 v != _next.text ? 'Passwords do not match' : null,
           ),
           const SizedBox(height: 22),
-          FilledButton(
+          GlowButton(
+            label: 'Reset password',
+            loading: _loading,
             onPressed: _loading ? null : _reset,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Text('Reset password'),
           ),
           TextButton(
             onPressed: _loading ? null : _sendCode,
