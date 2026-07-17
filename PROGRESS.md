@@ -4,6 +4,27 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 18 July 2026 — Full "Aerostride" redesign complete (v1.2.0)
+
+- Redesigned the **entire app** to the Stitch-derived Aerostride design (Apple-grade glassmorphism,
+  charcoal + red, kinetic italic), from the `design/` reference folder.
+- **Fonts locked:** Android → Inter (google_fonts), iOS → SF Pro (system), via `platformFont()`.
+- **Every screen done:** splash, onboarding (new, first-run gated), login, signup, reset, home,
+  territory (new), activity/history, record run + run summary (new), wallet, leaderboard (new),
+  goals (new), notifications (new), settings (new), profile.
+- **5-tab floating glass nav** (Home / Territory / Activity / Wallet / Profile) + full routing:
+  Start-a-run + home-screen widget → record run; run cards → summary; profile → leaderboard/goals/
+  settings/notifications.
+- Real FitBox logo blended per theme (no Stitch logo, no white chip). Google button uses the real
+  multi-colour "G"; added an Apple sign-in button (coming soon).
+- **Home-screen widget** "Start a run": Android live; iOS WidgetKit scaffolded (one-time Xcode target).
+- Map-dependent screens (territory / record / summary) use a stylised map placeholder until the Google
+  Maps key arrives.
+- Verified: analyze clean, tests pass, web + APK build; web redeployed; APK installed on device.
+- Versioned APKs now live in `APKs/` as `FitBox_v<version>_<date>.apk` (gitignored).
+
+---
+
 ## 14 July 2026 (EOD) — Wallet end-to-end, secured + verified live
 
 - **Confirmed the app backend is wired to the live shared MongoDB Atlas** and verifies the website's
