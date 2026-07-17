@@ -14,6 +14,7 @@ class AppShell extends StatelessWidget {
 
   static const List<({IconData icon, IconData active, String label})> _tabs = [
     (icon: Icons.home_outlined, active: Icons.home, label: 'Home'),
+    (icon: Icons.map_outlined, active: Icons.map, label: 'Territory'),
     (
       icon: Icons.directions_run_outlined,
       active: Icons.directions_run,

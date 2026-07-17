@@ -8,8 +8,10 @@ import 'package:fitbox/src/presentation/widgets/glass.dart';
 
 void main() {
   setUp(() {
-    // No stored session → the app should land on the login screen.
-    FlutterSecureStorage.setMockInitialValues(<String, String>{});
+    // No stored session, onboarding already seen → the app lands on login.
+    FlutterSecureStorage.setMockInitialValues(<String, String>{
+      'onboarding_seen': 'true',
+    });
   });
 
   testWidgets('Signed-out start shows the login screen', (WidgetTester tester) async {

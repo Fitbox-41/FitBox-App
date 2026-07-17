@@ -45,18 +45,10 @@ class _FitBoxAppState extends ConsumerState<FitBoxApp> {
 
   void _handleWidgetUri(Uri? uri) {
     if (uri == null) return;
-    // fitbox://start-run  → jump into the run flow.
+    // fitbox://start-run  → jump straight into run recording.
     if (uri.host == 'start-run' || uri.path.contains('start-run')) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Record-run screen ships with Maps (Wave 3); for now land on Home,
-        // where "Start a run" lives. Swap to context.go('/record') then.
-        ref.read(routerProvider).go('/');
-        rootMessengerKey.currentState?.showSnackBar(
-          const SnackBar(
-            behavior: SnackBarBehavior.floating,
-            content: Text('Ready to run — tap Start a run.'),
-          ),
-        );
+        ref.read(routerProvider).go('/record-run');
       });
     }
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -89,7 +90,11 @@ class ActivityScreen extends ConsumerWidget {
                     list.length,
                     (int i) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: _RunCard(list[i])
+                      child: GestureDetector(
+                        onTap: () =>
+                            context.push('/run-summary', extra: list[i]),
+                        child: _RunCard(list[i]),
+                      )
                           .animate()
                           .fadeIn(delay: (i * 60).ms, duration: 320.ms)
                           .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),

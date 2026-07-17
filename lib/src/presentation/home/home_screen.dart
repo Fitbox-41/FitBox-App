@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
@@ -28,7 +29,7 @@ class HomeScreen extends ConsumerWidget {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.notifications_none, color: cs.onSurface),
-            onPressed: () {},
+            onPressed: () => context.push('/notifications'),
           ),
           const SizedBox(width: 8),
         ],
@@ -94,15 +95,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _startRun(BuildContext context) {
-    // Live GPS run recording ships with the Maps integration (Wave 3).
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('Run tracking is coming soon — GPS + map in progress.'),
-      ),
-    );
-  }
+  void _startRun(BuildContext context) => context.push('/record-run');
 }
 
 class _StepsRing extends StatelessWidget {

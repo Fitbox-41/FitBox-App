@@ -78,15 +78,27 @@ class ProfileScreen extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             child: Column(
               children: <Widget>[
-                const _MenuItem(
-                    icon: Icons.emoji_events_outlined, label: 'Leaderboard'),
-                const _MenuItem(icon: Icons.flag_outlined, label: 'Goals'),
+                _MenuItem(
+                    icon: Icons.emoji_events_outlined,
+                    label: 'Leaderboard',
+                    onTap: () => context.push('/leaderboard')),
+                _MenuItem(
+                    icon: Icons.flag_outlined,
+                    label: 'Goals',
+                    onTap: () => context.push('/goals')),
                 _MenuItem(
                   icon: Icons.lock_outline,
                   label: 'Set / change password',
                   onTap: () => context.push('/change-password'),
                 ),
-                const _MenuItem(icon: Icons.help_outline, label: 'Help & support'),
+                _MenuItem(
+                    icon: Icons.settings_outlined,
+                    label: 'Settings',
+                    onTap: () => context.push('/settings')),
+                _MenuItem(
+                    icon: Icons.notifications_none,
+                    label: 'Notifications',
+                    onTap: () => context.push('/notifications')),
               ],
             ),
           ),
