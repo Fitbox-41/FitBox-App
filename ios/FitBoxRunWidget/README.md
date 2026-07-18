@@ -1,7 +1,9 @@
 # iOS home-screen widget — Xcode wiring (one-time)
 
-The widget UI (`FitBoxRunWidget.swift`) and the Flutter deep-link handling are done. The only remaining
-step is adding the Widget Extension **target** in Xcode — this can't be done from Windows/CI without
+The widget UI (`FitBoxRunWidget.swift`), the Flutter deep-link handling, the `fitbox` URL scheme, the
+**App Group entitlement** (`group.com.fitboxsports.app` in `Runner.entitlements`), and the Dart
+`HomeWidget.setAppGroupId(...)` call are all done. The only remaining step is adding the Widget Extension
+**target** in Xcode and ticking the same App Group on it — this can't be done from Windows/CI without
 Xcode, so do it once on a Mac (or a Codemagic build step) and it's set for good.
 
 The Android widget is already fully wired and needs none of this.

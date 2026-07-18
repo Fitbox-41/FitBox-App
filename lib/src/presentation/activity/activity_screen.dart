@@ -6,8 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
-import '../../data/providers.dart';
-import '../widgets/common.dart';
+import '../../data/recorded_runs.dart';
 import '../widgets/glass.dart';
 
 class ActivityScreen extends ConsumerWidget {
@@ -15,25 +14,18 @@ class ActivityScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<List<RunActivity>> runs = ref.watch(runsProvider);
+    final List<RunActivity> list = ref.watch(recordedRunsProvider);
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final double totalKm =
+        list.fold(0, (double a, RunActivity r) => a + r.distanceKm);
+    final int totalMinutes =
+        list.fold(0, (int a, RunActivity r) => a + r.duration.inMinutes);
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
-      body: runs.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => AsyncRetry(
-          message: "Couldn't load your activity.",
-          onRetry: () => ref.invalidate(runsProvider),
-        ),
-        data: (List<RunActivity> list) {
-          final double totalKm =
-              list.fold(0, (double a, RunActivity r) => a + r.distanceKm);
-          final int totalMinutes = list.fold(
-              0, (int a, RunActivity r) => a + r.duration.inMinutes);
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(runsProvider),
-            child: ListView(
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(recordedRunsProvider),
+        child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
               children: <Widget>[
                 Row(
@@ -102,10 +94,8 @@ class ActivityScreen extends ConsumerWidget {
                   ),
               ],
             ),
-          );
-        },
-      ),
-    );
+          ),
+        );
   }
 }
 

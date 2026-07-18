@@ -1,17 +1,25 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/providers.dart';
+import '../../data/recorded_runs.dart';
 
 /// Persistent app scaffold. Phones get a floating frosted-glass pill nav; wider
 /// screens get a side navigation rail, with content centred and width-capped.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
   static const List<({IconData icon, IconData active, String label})> _tabs = [
     (icon: Icons.home_outlined, active: Icons.home, label: 'Home'),
     (icon: Icons.map_outlined, active: Icons.map, label: 'Territory'),
@@ -28,10 +36,20 @@ class AppShell extends StatelessWidget {
     (icon: Icons.person_outline, active: Icons.person, label: 'Profile'),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // Warm the async data so switching tabs never shows a loading spinner.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(recordedRunsProvider);
+      ref.read(walletProvider);
+    });
+  }
+
   void _onTap(int index) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       index,
-      initialLocation: index == navigationShell.currentIndex,
+      initialLocation: index == widget.navigationShell.currentIndex,
     );
   }
 
@@ -44,7 +62,7 @@ class AppShell extends StatelessWidget {
     final Widget content = Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: navigationShell,
+        child: widget.navigationShell,
       ),
     );
 
@@ -54,7 +72,7 @@ class AppShell extends StatelessWidget {
           children: <Widget>[
             NavigationRail(
               backgroundColor: FitBoxColors.glassFill(b),
-              selectedIndex: navigationShell.currentIndex,
+              selectedIndex: widget.navigationShell.currentIndex,
               onDestinationSelected: _onTap,
               labelType: NavigationRailLabelType.all,
               indicatorColor: FitBoxColors.red.withValues(alpha: 0.22),
@@ -75,14 +93,14 @@ class AppShell extends StatelessWidget {
 
     return Scaffold(
       extendBody: true,
-      body: navigationShell,
+      body: widget.navigationShell,
       bottomNavigationBar: SafeArea(
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
           child: _GlassPillNav(
             tabs: _tabs,
-            currentIndex: navigationShell.currentIndex,
+            currentIndex: widget.navigationShell.currentIndex,
             onTap: _onTap,
             brightness: b,
             onSurfaceVariant: cs.onSurfaceVariant,

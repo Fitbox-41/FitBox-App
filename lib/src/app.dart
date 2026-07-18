@@ -32,6 +32,8 @@ class _FitBoxAppState extends ConsumerState<FitBoxApp> {
     // Home-screen widget → app deep links (Android now, iOS once the WidgetKit
     // extension is added). No-op on web.
     if (!kIsWeb) {
+      // Shared container id for the iOS widget extension (harmless on Android).
+      HomeWidget.setAppGroupId('group.com.fitboxsports.app');
       HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetUri);
       _widgetClicks = HomeWidget.widgetClicked.listen(_handleWidgetUri);
     }

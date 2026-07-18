@@ -18,6 +18,11 @@ class RunsRepository {
         .map((e) => RunActivity.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
+
+  /// Persists an in-app recorded run to the backend (`POST /api/runs`).
+  Future<void> save(RunActivity run) async {
+    await _dio.post('/runs', data: run.toBackendJson());
+  }
 }
 
 final runsRepositoryProvider = Provider<RunsRepository>(

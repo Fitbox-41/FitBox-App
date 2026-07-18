@@ -1,10 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/fitness_service.dart';
 import 'models/fitness_stats.dart';
 import 'models/run_activity.dart';
 import 'models/wallet.dart';
-import 'runs_repository.dart';
+import 'recorded_runs.dart';
 import 'wallet_repository.dart';
 
 /// Wallet — LIVE from the app backend (shared MongoDB).
@@ -12,13 +11,29 @@ final walletProvider = FutureProvider<WalletData>((ref) async {
   return ref.watch(walletRepositoryProvider).fetch();
 });
 
-/// Runs / activity history — LIVE from the app backend.
-final runsProvider = FutureProvider<List<RunActivity>>((ref) async {
-  return ref.watch(runsRepositoryProvider).fetch();
-});
+/// Daily fitness stats derived **only from the user's in-app recorded runs** —
+/// never from Apple Health / Health Connect. Synchronous, so screens never flash
+/// a loading spinner.
+final fitnessStatsProvider = Provider<FitnessStats>((ref) {
+  final List<RunActivity> runs = ref.watch(recordedRunsProvider);
+  final DateTime now = DateTime.now();
 
-/// Daily fitness stats (steps/calories/distance) — LIVE from the device step
-/// sensor on mobile (sample data on web, where no sensor exists).
-final fitnessStatsProvider = StreamProvider<FitnessStats>((ref) {
-  return ref.watch(fitnessServiceProvider).watch();
+  bool sameDay(DateTime d, DateTime o) =>
+      d.year == o.year && d.month == o.month && d.day == o.day;
+  Iterable<RunActivity> onDay(DateTime day) =>
+      runs.where((RunActivity r) => sameDay(r.date, day));
+
+  final Iterable<RunActivity> today = onDay(now);
+  return FitnessStats(
+    steps: today.fold(0, (int a, RunActivity r) => a + r.steps),
+    stepGoal: 10000,
+    distanceKm: today.fold(0, (double a, RunActivity r) => a + r.distanceKm),
+    caloriesKcal: today.fold(0, (int a, RunActivity r) => a + r.caloriesKcal),
+    activeMinutes:
+        today.fold(0, (int a, RunActivity r) => a + r.duration.inMinutes),
+    weeklySteps: List<int>.generate(7, (int i) {
+      final DateTime day = now.subtract(Duration(days: 6 - i));
+      return onDay(day).fold(0, (int a, RunActivity r) => a + r.steps);
+    }),
+  );
 });

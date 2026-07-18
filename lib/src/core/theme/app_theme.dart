@@ -7,9 +7,11 @@ import 'package:google_fonts/google_fonts.dart';
 class FitBoxColors {
   const FitBoxColors._();
 
-  // Brand
-  static const Color red = Color(0xFFE31E24);
-  static const Color redDark = Color(0xFFB3141A);
+  // Brand. `logoRed` is the vivid brand red (kept for the logo); the UI accent
+  // `red` is a slightly softer, less-bright tone for a lighter glassmorphism.
+  static const Color logoRed = Color(0xFFE31E24);
+  static const Color red = Color(0xFFD8474D);
+  static const Color redDark = Color(0xFFB03A40);
   static const Color charcoal = Color(0xFF2E2E30);
 
   // Gradient backdrops — deep "engine bay" black on dark; soft light on light.

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/fitness_stats.dart';
 import '../../data/providers.dart';
+import '../../data/recorded_runs.dart';
 import '../auth/auth_controller.dart';
 import '../widgets/common.dart';
 import '../widgets/glass.dart';
@@ -16,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AsyncValue<FitnessStats> stats = ref.watch(fitnessStatsProvider);
+    final FitnessStats s = ref.watch(fitnessStatsProvider);
     final ColorScheme cs = Theme.of(context).colorScheme;
     final String? name = ref.watch(authControllerProvider).user?.name;
     final String greeting =
@@ -34,17 +35,11 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: stats.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (Object e, _) => AsyncRetry(
-          message: "Couldn't load your stats.",
-          onRetry: () => ref.invalidate(fitnessStatsProvider),
-        ),
-        data: (FitnessStats s) => RefreshIndicator(
-          onRefresh: () async => ref.invalidate(fitnessStatsProvider),
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
-            children: <Widget>[
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(recordedRunsProvider),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+          children: <Widget>[
               _StepsRing(stats: s),
               const SizedBox(height: 16),
               Row(
@@ -91,7 +86,6 @@ class HomeScreen extends ConsumerWidget {
                 .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
           ),
         ),
-      ),
     );
   }
 

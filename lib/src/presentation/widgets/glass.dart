@@ -34,7 +34,7 @@ class AppBackground extends StatelessWidget {
             right: -90,
             child: _Glow(
                 color: FitBoxColors.red
-                    .withValues(alpha: dark ? 0.22 : 0.12),
+                    .withValues(alpha: dark ? 0.14 : 0.08),
                 size: 280),
           ),
           Positioned(
@@ -42,7 +42,7 @@ class AppBackground extends StatelessWidget {
             left: -110,
             child: _Glow(
                 color: FitBoxColors.red
-                    .withValues(alpha: dark ? 0.10 : 0.06),
+                    .withValues(alpha: dark ? 0.07 : 0.05),
                 size: 320),
           ),
           child,
@@ -180,9 +180,9 @@ class _GlowButtonState extends State<GlowButton> {
             boxShadow: enabled
                 ? <BoxShadow>[
                     BoxShadow(
-                      color: FitBoxColors.red.withValues(alpha: 0.45),
-                      blurRadius: 24,
-                      spreadRadius: -2,
+                      color: FitBoxColors.red.withValues(alpha: 0.3),
+                      blurRadius: 22,
+                      spreadRadius: -3,
                       offset: const Offset(0, 8),
                     ),
                   ]

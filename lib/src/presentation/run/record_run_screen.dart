@@ -1,23 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/recorded_runs.dart';
+import '../../data/run_session.dart';
 import '../widgets/glass.dart';
 import '../widgets/map_placeholder.dart';
 
-/// Live run recording. GPS tracking + the live map land with the Maps key; this
-/// is the full glass UI (timer, metrics, controls) over the map placeholder.
-class RecordRunScreen extends StatelessWidget {
+/// Live run recording. A per-second timer + the device step sensor drive the
+/// metrics; GPS + the live map arrive with the Maps key. Everything shown here
+/// is recorded in-app by the user — never synced from a health app.
+class RecordRunScreen extends ConsumerStatefulWidget {
   const RecordRunScreen({super.key});
+
+  @override
+  ConsumerState<RecordRunScreen> createState() => _RecordRunScreenState();
+}
+
+class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(runSessionProvider.notifier).start();
+    });
+  }
+
+  String _fmt(Duration d) {
+    final int m = d.inMinutes % 60;
+    final int s = d.inSeconds % 60;
+    final String mm = m.toString().padLeft(2, '0');
+    final String ss = s.toString().padLeft(2, '0');
+    return d.inHours > 0 ? '${d.inHours}:$mm:$ss' : '$mm:$ss';
+  }
+
+  String _pace(double p) {
+    if (p <= 0) return "0'00";
+    final int m = p.floor();
+    final int s = ((p - m) * 60).round();
+    return "$m'${s.toString().padLeft(2, '0')}";
+  }
+
+  Future<void> _finish() async {
+    final run = ref.read(runSessionProvider.notifier).finish();
+    await ref.read(recordedRunsProvider.notifier).addRun(run);
+    if (mounted) context.pushReplacement('/run-summary', extra: run);
+  }
+
+  void _close() {
+    ref.read(runSessionProvider.notifier).discard();
+    context.pop();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final RunSession s = ref.watch(runSessionProvider);
+    final bool paused = s.status == RunStatus.paused;
+
     return Scaffold(
       body: Stack(
         children: <Widget>[
           const Positioned.fill(child: MapPlaceholder(showBadge: false)),
-          // GPS status + close.
           Positioned(
             top: MediaQuery.paddingOf(context).top + 10,
             left: 16,
@@ -35,23 +80,23 @@ class RecordRunScreen extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      const Icon(Icons.circle,
-                          color: FitBoxColors.credit, size: 10),
+                      Icon(Icons.circle,
+                          color: paused ? Colors.amber : FitBoxColors.credit,
+                          size: 10),
                       const SizedBox(width: 8),
-                      Text('GPS READY',
+                      Text(paused ? 'PAUSED' : 'RECORDING',
                           style: AppText.labelCaps(context,
                               size: 11, color: Colors.white)),
                     ],
                   ),
                 ),
                 IconButton.filledTonal(
-                  onPressed: () => context.pop(),
+                  onPressed: _close,
                   icon: const Icon(Icons.close),
                 ),
               ],
             ),
           ),
-          // Bottom control sheet.
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -64,25 +109,33 @@ class RecordRunScreen extends StatelessWidget {
                   children: <Widget>[
                     Text('TOTAL TIME', style: AppText.labelCaps(context)),
                     const SizedBox(height: 6),
-                    Text('00:00',
+                    Text(_fmt(s.elapsed),
                         style: AppText.data(context, size: 56, italic: true)),
                     const SizedBox(height: 18),
                     Row(
                       children: <Widget>[
-                        _metric(context, 'Distance', '0.0', 'km'),
+                        _metric(context, 'Distance',
+                            s.distanceKm.toStringAsFixed(2), 'km'),
                         _sep(cs),
-                        _metric(context, 'Avg pace', "0'00", '/km'),
+                        _metric(context, 'Avg pace', _pace(s.paceMinPerKm),
+                            '/km'),
                         _sep(cs),
-                        _metric(context, 'Calories', '0', 'kcal'),
+                        _metric(context, 'Calories', '${s.calories}', 'kcal'),
                       ],
                     ),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
-                        _circleBtn(context, Icons.pause, false, () {}),
-                        _circleBtn(context, Icons.stop, true,
-                            () => context.pop()),
+                        _circleBtn(
+                          context,
+                          paused ? Icons.play_arrow : Icons.pause,
+                          false,
+                          () => paused
+                              ? ref.read(runSessionProvider.notifier).resume()
+                              : ref.read(runSessionProvider.notifier).pause(),
+                        ),
+                        _circleBtn(context, Icons.stop, true, _finish),
                         _circleBtn(context, Icons.layers_outlined, false, () {}),
                       ],
                     ),
@@ -134,16 +187,17 @@ class RecordRunScreen extends StatelessWidget {
         height: primary ? 76 : 60,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: primary ? FitBoxColors.red : cs.onSurface.withValues(alpha: 0.08),
+          color:
+              primary ? FitBoxColors.red : cs.onSurface.withValues(alpha: 0.08),
           border: primary
               ? null
               : Border.all(color: cs.onSurface.withValues(alpha: 0.18)),
           boxShadow: primary
               ? <BoxShadow>[
                   BoxShadow(
-                    color: FitBoxColors.red.withValues(alpha: 0.5),
+                    color: FitBoxColors.red.withValues(alpha: 0.4),
                     blurRadius: 22,
-                    spreadRadius: -2,
+                    spreadRadius: -3,
                   ),
                 ]
               : null,

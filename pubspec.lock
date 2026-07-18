@@ -49,14 +49,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.2"
-  carp_serializable:
-    dependency: transitive
-    description:
-      name: carp_serializable
-      sha256: f039f8ea22e9437aef13fe7e9743c3761c76d401288dcb702eadd273c3e4dcef
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.1"
   characters:
     dependency: transitive
     description:
@@ -145,22 +137,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
-  device_info_plus:
-    dependency: transitive
-    description:
-      name: device_info_plus
-      sha256: "98f28b42168cc509abc92f88518882fd58061ea372d7999aecc424345c7bff6a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "11.5.0"
-  device_info_plus_platform_interface:
-    dependency: transitive
-    description:
-      name: device_info_plus_platform_interface
-      sha256: e1ea89119e34903dca74b883d0dd78eb762814f97fb6c76f35e9ff74d261a18f
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.0.3"
   dio:
     dependency: "direct main"
     description:
@@ -400,14 +376,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.3"
-  health:
-    dependency: "direct main"
-    description:
-      name: health
-      sha256: "037513906f41a2618c97b44d104675a639c043c8ca513b82091ae2fd29a44711"
-      url: "https://pub.dev"
-    source: hosted
-    version: "13.0.0"
   home_widget:
     dependency: "direct main"
     description:
@@ -1005,14 +973,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.15.0"
-  win32_registry:
-    dependency: transitive
-    description:
-      name: win32_registry
-      sha256: "6f1b564492d0147b330dd794fee8f512cec4977957f310f9951b5f9d83618dae"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.0"
   xdg_directories:
     dependency: transitive
     description:
