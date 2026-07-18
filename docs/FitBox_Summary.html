@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 12mm 13mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: -apple-system, "Segoe UI", Inter, Arial, sans-serif;
+    color: #1c1d21; font-size: 10.2px; line-height: 1.42;
+  }
+  .red { color: #E31E24; }
+  h1 { font-size: 21px; font-style: italic; letter-spacing: -.5px; }
+  h2 {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1.3px;
+    color: #E31E24; margin-bottom: 5px; font-weight: 700;
+  }
+  .head {
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 2px solid #E31E24; padding-bottom: 9px; margin-bottom: 11px;
+  }
+  .head img { height: 42px; }
+  .head .meta { text-align: right; font-size: 9px; color: #666; }
+  .head .meta b { color: #1c1d21; font-size: 11px; }
+  .lead { font-size: 11px; color: #35363b; margin-bottom: 11px; }
+  .lead b { color: #1c1d21; }
+  .band {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .stat {
+    flex: 1; background: #f5f6f8; border: 1px solid #e7e9ee;
+    border-radius: 9px; padding: 8px 10px;
+  }
+  .stat .n { font-size: 16px; font-weight: 800; font-style: italic; color: #E31E24; }
+  .stat .l { font-size: 8.6px; text-transform: uppercase; letter-spacing: .6px; color: #6b6d75; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; margin-bottom: 12px; }
+  .card { border: 1px solid #e7e9ee; border-radius: 9px; padding: 9px 11px; }
+  .card ul { list-style: none; }
+  .card li { padding-left: 12px; position: relative; margin-top: 2px; color: #35363b; }
+  .card li::before { content: "▸"; position: absolute; left: 0; color: #E31E24; font-size: 8px; top: 1px; }
+  .cols { display: grid; grid-template-columns: 1.15fr 1fr; gap: 12px; margin-bottom: 11px; }
+  .demo li, .next li { padding-left: 14px; position: relative; margin-top: 3px; }
+  .demo li::before { content: "✓"; position: absolute; left: 0; color: #19A463; font-weight: 800; }
+  .next li::before { content: "→"; position: absolute; left: 0; color: #E31E24; font-weight: 800; }
+  .next b { color: #1c1d21; }
+  .links {
+    background: #1c1d21; color: #fff; border-radius: 9px;
+    padding: 9px 12px; display: flex; justify-content: space-between; font-size: 9.6px;
+  }
+  .links b { color: #ff8f93; }
+  .foot { text-align: center; color: #9a9ca3; font-size: 8.4px; margin-top: 9px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <img src="file:///C:/Users/Gautam%20Lasgotra/Music/Internship/FitBox/FitBox_App/assets/images/logo.png" alt="FitBox">
+    <div class="meta">
+      <b>Project Status Summary</b><br>
+      19 July 2026 · Gautam Lasgotra<br>
+      Android + Web live · iOS in progress
+    </div>
+  </div>
+
+  <p class="lead">
+    <b>FitBox</b> is a premium mobile fitness app — a GPS run-tracking + <b>territory-capture</b> game tied to
+    the FitBox store. One shared account and one <b>points wallet</b> across the app and the website: earn by
+    staying active, spend at checkout. Built for <b>iOS + Android</b>, with a web version for easy testing.
+  </p>
+
+  <div class="band">
+    <div class="stat"><div class="n">~65%</div><div class="l">Overall complete</div></div>
+    <div class="stat"><div class="n">16</div><div class="l">Screens built</div></div>
+    <div class="stat"><div class="n">3</div><div class="l">Platforms (iOS/Android/Web)</div></div>
+    <div class="stat"><div class="n">Live</div><div class="l">Web + Android testable now</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Design</h2>
+      <ul>
+        <li>Apple-grade glassmorphism, full redesign</li>
+        <li>Light / Dark / System theme</li>
+        <li>iOS-first, native fonts per platform</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Accounts</h2>
+      <ul>
+        <li>Email + OTP, Google sign-in (live)</li>
+        <li>Password set / change / reset</li>
+        <li>Shared login with the website</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Fitness</h2>
+      <ul>
+        <li>Record a run in-app (Strava-style)</li>
+        <li>Live steps, time, distance, calories</li>
+        <li>Saved to history + dashboard</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Wallet</h2>
+      <ul>
+        <li>Shared points, one balance</li>
+        <li>Secure, verified end-to-end</li>
+        <li>Checkout redeem spec ready</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Backend</h2>
+      <ul>
+        <li>App backend on Vercel</li>
+        <li>Shared MongoDB Atlas database</li>
+        <li>Home-screen "Start a run" widget</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h2>Delivery</h2>
+      <ul>
+        <li>Android APK builds ready</li>
+        <li>Web deployed &amp; live</li>
+        <li>iOS ready to build on Codemagic</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h2>Working today (demo)</h2>
+      <ul class="demo">
+        <li>Record a <b>real run</b> — accurate steps &amp; time from phone sensors</li>
+        <li>Run auto-saves to <b>History</b> and updates the <b>dashboard</b></li>
+        <li>Wallet, profile, theming, all 16 screens navigable</li>
+      </ul>
+    </div>
+    <div>
+      <h2>Decisions needed next</h2>
+      <ul class="next">
+        <li><b>Google Maps API key</b> → GPS route, exact distance, territory game</li>
+        <li><b>iOS build</b> → finish on Codemagic once Android is store-ready</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="links">
+    <div>Test web (iPhone/PC): <b>fitboxsports-8d1c0.web.app</b></div>
+    <div>Android: <b>install the FitBox APK</b></div>
+  </div>
+
+  <p class="foot">FitBox Sports — internship project status · confidential · prepared for mentor review</p>
+</body>
+</html>
