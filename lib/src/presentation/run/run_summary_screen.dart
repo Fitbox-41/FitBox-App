@@ -20,11 +20,12 @@ class RunSummaryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
     final String title = run?.title ?? 'Central Park Loop';
     final double km = run?.distanceKm ?? 5.24;
     final double pace = run?.paceMinPerKm ?? 5.38;
     final Duration dur = run?.duration ?? const Duration(minutes: 28, seconds: 15);
+    final int steps = run?.steps ?? 0;
+    final int calories = run?.caloriesKcal ?? 310;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Run summary')),
@@ -59,32 +60,32 @@ class RunSummaryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          // Personal best banner.
+          // Run saved banner (honest — real steps).
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
               gradient: LinearGradient(colors: <Color>[
-                FitBoxColors.red.withValues(alpha: 0.28),
-                FitBoxColors.red.withValues(alpha: 0.06),
+                FitBoxColors.credit.withValues(alpha: 0.24),
+                FitBoxColors.credit.withValues(alpha: 0.05),
               ]),
-              border: Border.all(color: FitBoxColors.red.withValues(alpha: 0.4)),
+              border:
+                  Border.all(color: FitBoxColors.credit.withValues(alpha: 0.4)),
             ),
             child: Row(
               children: <Widget>[
                 const CircleAvatar(
-                  backgroundColor: FitBoxColors.red,
-                  child: Icon(Icons.local_fire_department, color: Colors.white),
+                  backgroundColor: FitBoxColors.credit,
+                  child: Icon(Icons.check, color: Colors.white),
                 ),
                 const SizedBox(width: 14),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text('NEW PERSONAL BEST',
-                        style: AppText.labelCaps(context)),
-                    Text('+150 pts earned',
+                    Text('RUN SAVED', style: AppText.labelCaps(context)),
+                    Text('$steps steps',
                         style: AppText.kinetic(context,
-                            size: 24, color: FitBoxColors.red)),
+                            size: 24, color: FitBoxColors.credit)),
                   ],
                 ),
               ],
@@ -116,60 +117,23 @@ class RunSummaryScreen extends StatelessWidget {
             unit: '',
             wide: true,
           ),
-          const SizedBox(height: 16),
-          GlassCard(
-            radius: 24,
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text('Pace splits', style: AppText.kinetic(context, size: 22)),
-                const SizedBox(height: 18),
-                SizedBox(
-                  height: 90,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: List<Widget>.generate(5, (int i) {
-                      final double h = <double>[0.6, 0.8, 0.5, 0.9, 0.7][i];
-                      return Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: <Widget>[
-                            FractionallySizedBox(
-                              heightFactor: h,
-                              child: Container(
-                                margin:
-                                    const EdgeInsets.symmetric(horizontal: 6),
-                                decoration: BoxDecoration(
-                                  color: FitBoxColors.red
-                                      .withValues(alpha: 0.3 + h * 0.5),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text('${i + 1}',
-                                style: AppText.labelCaps(context, size: 10)),
-                          ],
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Divider(color: cs.onSurface.withValues(alpha: 0.12)),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text('Fastest: 4:50',
-                        style: TextStyle(color: cs.onSurfaceVariant)),
-                    Text('Slowest: 6:10',
-                        style: TextStyle(color: cs.onSurfaceVariant)),
-                  ],
-                ),
-              ],
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              Expanded(
+                  child: _StatCard(
+                      icon: Icons.directions_walk,
+                      label: 'Steps',
+                      value: '$steps',
+                      unit: '')),
+              const SizedBox(width: 12),
+              Expanded(
+                  child: _StatCard(
+                      icon: Icons.local_fire_department,
+                      label: 'Calories',
+                      value: '$calories',
+                      unit: 'kcal')),
+            ],
           ),
           const SizedBox(height: 20),
           Row(

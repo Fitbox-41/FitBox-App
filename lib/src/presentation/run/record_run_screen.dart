@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -19,12 +22,32 @@ class RecordRunScreen extends ConsumerStatefulWidget {
 }
 
 class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
+  int? _countdown = 3; // 3-2-1 before the session starts
+  Timer? _countdownTimer;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(runSessionProvider.notifier).start();
+    HapticFeedback.mediumImpact();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      if (!mounted) return;
+      final int next = (_countdown ?? 1) - 1;
+      if (next <= 0) {
+        t.cancel();
+        setState(() => _countdown = null);
+        HapticFeedback.heavyImpact();
+        ref.read(runSessionProvider.notifier).start();
+      } else {
+        setState(() => _countdown = next);
+        HapticFeedback.selectionClick();
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    super.dispose();
   }
 
   String _fmt(Duration d) {
@@ -42,10 +65,39 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     return "$m'${s.toString().padLeft(2, '0')}";
   }
 
-  Future<void> _finish() async {
-    final run = ref.read(runSessionProvider.notifier).finish();
-    await ref.read(recordedRunsProvider.notifier).addRun(run);
-    if (mounted) context.pushReplacement('/run-summary', extra: run);
+  Future<void> _stop() async {
+    ref.read(runSessionProvider.notifier).pause();
+    HapticFeedback.mediumImpact();
+    final bool? save = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Finish run?'),
+        content: const Text('Save this run to your history, or discard it?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Discard'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    if (save == null) {
+      // Dismissed → keep recording (resume).
+      ref.read(runSessionProvider.notifier).resume();
+      return;
+    }
+    if (save) {
+      final run = ref.read(runSessionProvider.notifier).finish();
+      await ref.read(recordedRunsProvider.notifier).addRun(run);
+      if (mounted) context.pushReplacement('/run-summary', extra: run);
+    } else {
+      ref.read(runSessionProvider.notifier).discard();
+      if (mounted) context.pop();
+    }
   }
 
   void _close() {
@@ -111,6 +163,19 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                     const SizedBox(height: 6),
                     Text(_fmt(s.elapsed),
                         style: AppText.data(context, size: 56, italic: true)),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        const Icon(Icons.directions_walk,
+                            size: 16, color: FitBoxColors.credit),
+                        const SizedBox(width: 6),
+                        Text('${s.steps} steps',
+                            style: TextStyle(
+                                color: cs.onSurfaceVariant,
+                                fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                     const SizedBox(height: 18),
                     Row(
                       children: <Widget>[
@@ -135,7 +200,7 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                               ? ref.read(runSessionProvider.notifier).resume()
                               : ref.read(runSessionProvider.notifier).pause(),
                         ),
-                        _circleBtn(context, Icons.stop, true, _finish),
+                        _circleBtn(context, Icons.stop, true, _stop),
                         _circleBtn(context, Icons.layers_outlined, false, () {}),
                       ],
                     ),
@@ -144,6 +209,19 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
               ),
             ),
           ),
+          if (_countdown != null)
+            Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black.withValues(alpha: 0.75),
+                child: Center(
+                  child: Text('$_countdown',
+                      key: ValueKey<int>(_countdown!),
+                      style: AppText.data(context,
+                              size: 140, italic: true, color: Colors.white)
+                          .copyWith(fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ),
         ],
       ),
     );
