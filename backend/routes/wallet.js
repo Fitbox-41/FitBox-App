@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const auth = require('../middleware/auth');
 const serviceAuth = require('../middleware/serviceAuth');
-const Wallet = require('../models/Wallet');
+const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
 
 const router = express.Router();
@@ -10,11 +10,11 @@ const router = express.Router();
 // ---------------------------------------------------------------------------
 // Shared ledger mutation.
 //
-// Applies a single credit or debit atomically inside a MongoDB transaction so
-// the wallet balance always equals the sum of the ledger. Idempotent: a repeat
-// with the same idempotencyKey returns the original transaction and never
-// double-applies. Throws { status, message } for the caller to map to a
-// response.
+// The balance lives on the user document (`users.walletBalance`); every change
+// is also appended to the `wallet_transactions` ledger. Both happen atomically
+// inside one MongoDB transaction, so balance always equals the ledger sum.
+// Idempotent: a repeat with the same idempotencyKey returns the original
+// transaction and never double-applies. Throws { status, message }.
 // ---------------------------------------------------------------------------
 async function applyLedgerEntry({ userId, type, amount, source, sourceId, idempotencyKey, description }) {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -41,22 +41,34 @@ async function applyLedgerEntry({ userId, type, amount, source, sourceId, idempo
       return { alreadyProcessed: true, transaction: existing };
     }
 
-    let wallet = await Wallet.findOne({ userId }).session(session);
-    if (!wallet) {
-      wallet = new Wallet({ userId, balance: 0 });
+    // Atomically move the balance on the user doc. For a debit, the filter
+    // guarantees we never go negative (and covers a missing user).
+    let updatedUser;
+    if (type === 'debit') {
+      updatedUser = await User.findOneAndUpdate(
+        { _id: userId, walletBalance: { $gte: amount } },
+        { $inc: { walletBalance: -amount } },
+        { new: true, session }
+      );
+      if (!updatedUser) {
+        await session.abortTransaction();
+        session.endSession();
+        throw { status: 400, message: 'Insufficient balance' };
+      }
+    } else {
+      updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { $inc: { walletBalance: amount } },
+        { new: true, session }
+      );
+      if (!updatedUser) {
+        await session.abortTransaction();
+        session.endSession();
+        throw { status: 404, message: 'User not found' };
+      }
     }
 
-    const delta = type === 'debit' ? -amount : amount;
-    const newBalance = wallet.balance + delta;
-    if (newBalance < 0) {
-      await session.abortTransaction();
-      session.endSession();
-      throw { status: 400, message: 'Insufficient balance' };
-    }
-
-    wallet.balance = newBalance;
-    await wallet.save({ session });
-
+    const newBalance = updatedUser.walletBalance;
     const tx = new WalletTransaction({
       userId,
       type,
@@ -89,21 +101,15 @@ async function applyLedgerEntry({ userId, type, amount, source, sourceId, idempo
 
 // ---------------------------------------------------------------------------
 // GET /api/wallet  — the signed-in user reads their OWN wallet (balance +
-// transactions). This is the only wallet route an end-user client may call.
+// transactions). Balance comes from the user doc; history from the ledger.
 // ---------------------------------------------------------------------------
 router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
-
-    let wallet = await Wallet.findOne({ userId });
-    if (!wallet) {
-      wallet = new Wallet({ userId, balance: 0 });
-      await wallet.save();
-    }
-
+    const user = await User.findById(userId).select('walletBalance');
+    const balance = user && user.walletBalance ? user.walletBalance : 0;
     const transactions = await WalletTransaction.find({ userId }).sort({ createdAt: -1 });
-
-    res.json({ success: true, balance: wallet.balance, transactions });
+    res.json({ success: true, balance, transactions });
   } catch (error) {
     console.error('Wallet read error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
@@ -112,8 +118,7 @@ router.get('/', auth, async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // POST /api/wallet/credit  — SERVER-TO-SERVER ONLY (WALLET_SERVICE_KEY).
-// Credits points to a user. Called by trusted backends (admin adjust now;
-// territory/run rewards later), never by an end-user client.
+// Credits points to a user (admin adjust / territory / run rewards).
 // Body: { userId, amount, source, sourceId?, idempotencyKey, description? }
 // ---------------------------------------------------------------------------
 router.post('/credit', serviceAuth, async (req, res) => {
@@ -141,10 +146,8 @@ router.post('/credit', serviceAuth, async (req, res) => {
 
 // ---------------------------------------------------------------------------
 // POST /api/wallet/redeem  — SERVER-TO-SERVER ONLY (WALLET_SERVICE_KEY).
-// Debits points when a user redeems them (website checkout). Fails with 400
-// "Insufficient balance" rather than going negative. Idempotent per order.
-// Body: { userId, amount, source, sourceId?, idempotencyKey, description? }
-//   (source is typically 'checkout_redeem', sourceId the orderId.)
+// Debits points (website checkout). 400 "Insufficient balance" instead of
+// going negative. Idempotent per order.
 // ---------------------------------------------------------------------------
 router.post('/redeem', serviceAuth, async (req, res) => {
   try {
@@ -166,6 +169,50 @@ router.post('/redeem', serviceAuth, async (req, res) => {
     const status = error && error.status ? error.status : 500;
     if (status === 500) console.error('Redeem error:', error);
     res.status(status).json({ success: false, message: (error && error.message) || 'Server error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/wallet/reconcile  — SERVER-TO-SERVER ONLY (WALLET_SERVICE_KEY).
+// Recomputes every user's walletBalance from the ledger (source of truth) and
+// writes it to the user doc. Used to migrate from the old `wallets` collection
+// and as an integrity/repair tool. Optional body { userId } returns that user's
+// balance for verification.
+// ---------------------------------------------------------------------------
+router.post('/reconcile', serviceAuth, async (req, res) => {
+  try {
+    const sums = await WalletTransaction.aggregate([
+      {
+        $group: {
+          _id: '$userId',
+          balance: {
+            $sum: {
+              $cond: [{ $eq: ['$type', 'credit'] }, '$amount', { $multiply: ['$amount', -1] }],
+            },
+          },
+        },
+      },
+    ]);
+
+    let usersUpdated = 0;
+    for (const row of sums) {
+      await User.updateOne(
+        { _id: row._id },
+        { $set: { walletBalance: Math.max(0, row.balance) } }
+      );
+      usersUpdated += 1;
+    }
+
+    let checked;
+    if (req.body && req.body.userId && mongoose.Types.ObjectId.isValid(req.body.userId)) {
+      const u = await User.findById(req.body.userId).select('walletBalance');
+      checked = { userId: req.body.userId, balance: u ? u.walletBalance || 0 : null };
+    }
+
+    res.json({ success: true, usersUpdated, checked });
+  } catch (error) {
+    console.error('Reconcile error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
   }
 });
 
