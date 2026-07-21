@@ -3,18 +3,17 @@ import 'package:flutter/foundation.dart'
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// FitBox typography system — athletic, DIN-style, inspired by Adidas Running.
+/// FitBox typography system — athletic, condensed, inspired by Adidas Running.
 ///
 /// Two type families, one source of truth:
-/// - **Barlow** (a free, DIN-inspired grotesque — the closest legal match to
-///   adidas' AdihausDIN) for everything expressive and branded: display
-///   metrics, screen/section titles, numbers, caps labels AND buttons. Heavy,
-///   uppercase, wide-tracked = the athletic "TRACK / CREATE ACCOUNT" feel.
-///   Used on BOTH platforms (uniform brand voice).
+/// - **Oswald** (a free, condensed grotesque) for everything expressive and
+///   branded: display metrics, screen/section titles, numbers, caps labels AND
+///   buttons. Bold, uppercase, tracked = the athletic sport feel. Used on BOTH
+///   platforms (uniform brand voice). Oswald's heaviest weight is w700.
 /// - **Platform body font** for reading paragraphs: Inter on Android, San
 ///   Francisco (SF Pro) on iOS — resolved by [platformFont].
 ///
-/// This is the ONLY place `GoogleFonts.barlow(...)` is called. Never call
+/// This is the ONLY place `GoogleFonts.oswald(...)` is called. Never call
 /// GoogleFonts directly in a screen — consume `AppTypography.*` (or the theme
 /// `TextTheme`, or the `AppText` shim). Titles/labels/buttons are UPPERCASE by
 /// convention (callers `.toUpperCase()` the text).
@@ -23,7 +22,7 @@ class AppTypography {
 
   // ── Low-level builders ─────────────────────────────────────────────────────
 
-  /// The athletic brand grotesque (Barlow) — the expressive family.
+  /// The athletic brand grotesque (Oswald, condensed) — the expressive family.
   static TextStyle brand({
     double? size,
     FontWeight weight = FontWeight.w700,
@@ -31,7 +30,7 @@ class AppTypography {
     double? height,
     Color? color,
   }) =>
-      GoogleFonts.barlow(
+      GoogleFonts.oswald(
         fontSize: size,
         fontWeight: weight,
         letterSpacing: letterSpacing,
@@ -55,15 +54,15 @@ class AppTypography {
         color: color,
       );
 
-  // ── Brand (Barlow) roles — both platforms ─────────────────────────────────
+  // ── Brand (Oswald) roles — both platforms ─────────────────────────────────
 
   /// Huge numeric hero — run timer / countdown.
   static TextStyle displayXL({Color? color}) =>
-      brand(size: 64, weight: FontWeight.w800, height: 1.0, letterSpacing: 0, color: color);
+      brand(size: 64, weight: FontWeight.w700, height: 1.0, letterSpacing: 0, color: color);
 
   /// Big statistic — steps ring, points balance.
   static TextStyle displayLarge({Color? color}) =>
-      brand(size: 44, weight: FontWeight.w800, height: 1.0, letterSpacing: 0, color: color);
+      brand(size: 44, weight: FontWeight.w700, height: 1.0, letterSpacing: 0, color: color);
 
   /// Metric value inside a tile (calories/distance/pace/steps). Size-tunable.
   static TextStyle metric({double size = 30, Color? color}) =>
@@ -71,7 +70,7 @@ class AppTypography {
 
   /// Large in-screen heading (e.g. "WELCOME BACK"). Size-tunable.
   static TextStyle heading({double size = 28, Color? color}) =>
-      brand(size: size, weight: FontWeight.w800, height: 1.05, letterSpacing: 0.5, color: color);
+      brand(size: size, weight: FontWeight.w700, height: 1.05, letterSpacing: 0.5, color: color);
 
   /// Screen title (AppBar) — UPPERCASE by convention, wide tracking.
   static TextStyle screenTitle({double size = 24, Color? color}) =>
@@ -93,7 +92,7 @@ class AppTypography {
   static TextStyle overline({Color? color}) =>
       brand(size: 10, weight: FontWeight.w700, letterSpacing: 1.8, color: color);
 
-  /// Button text — Barlow bold, wide-tracked. UPPERCASE by convention.
+  /// Button text — Oswald bold, wide-tracked. UPPERCASE by convention.
   static TextStyle button({double size = 15, Color? color}) =>
       brand(size: size, weight: FontWeight.w700, letterSpacing: 1.0, color: color);
 
@@ -120,7 +119,7 @@ bool get isApplePlatform =>
     defaultTargetPlatform == TargetPlatform.macOS;
 
 /// A text style in the platform's body font: **SF Pro on Apple, Inter elsewhere**.
-/// Used for reading paragraphs; Barlow (see [AppTypography]) is used for
+/// Used for reading paragraphs; Oswald (see [AppTypography]) is used for
 /// everything expressive/branded.
 TextStyle platformFont({
   double? size,

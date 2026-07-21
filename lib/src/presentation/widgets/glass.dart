@@ -205,7 +205,8 @@ class _GlowButtonState extends State<GlowButton> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
-            borderRadius: BorderRadius.circular(widget.height / 2),
+            // Adidas-style sharp rectangle (was a pill).
+            borderRadius: BorderRadius.circular(6),
             boxShadow: enabled
                 ? <BoxShadow>[
                     BoxShadow(
