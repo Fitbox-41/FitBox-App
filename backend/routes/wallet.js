@@ -209,7 +209,19 @@ router.post('/reconcile', serviceAuth, async (req, res) => {
       checked = { userId: req.body.userId, balance: u ? u.walletBalance || 0 : null };
     }
 
-    res.json({ success: true, usersUpdated, checked });
+    // One-time cleanup: drop the now-orphaned legacy `wallets` collection.
+    // Safe here because balances were just re-derived onto the user docs above.
+    let legacyDropped;
+    if (req.body && req.body.dropLegacy === true) {
+      try {
+        await mongoose.connection.db.dropCollection('wallets');
+        legacyDropped = true;
+      } catch (e) {
+        legacyDropped = e && e.codeName === 'NamespaceNotFound' ? 'already-absent' : false;
+      }
+    }
+
+    res.json({ success: true, usersUpdated, checked, legacyDropped });
   } catch (error) {
     console.error('Reconcile error:', error);
     res.status(500).json({ success: false, message: 'Server error' });

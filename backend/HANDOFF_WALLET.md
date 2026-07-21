@@ -8,6 +8,12 @@ the shared MongoDB — no copies, no syncing.
 
 This doc is the contract. Read it top to bottom; everything you need to build the checkout redeem is here.
 
+> **STATUS (updated 20 Jul 2026): IMPLEMENTED on both sides + schema updated.** Checkout redeem/refund
+> are live on the website; credit/redeem/read are live on the app backend. **Key schema change:** the
+> balance now lives **on the user document** (`users.walletBalance`) — the separate `wallets` collection
+> was removed (so the balance is visible right in the `users` collection). The `wallet_transactions`
+> ledger is unchanged. Conversion is set to **1 point = ₹2**. Details below reflect the current design.
+
 ---
 
 ## 1. The big picture
@@ -23,30 +29,31 @@ This doc is the contract. Read it top to bottom; everything you need to build th
         └───────────────────────────┬─────────────────────────────┘
                                      ▼
                     Shared MongoDB Atlas (same cluster as the website)
-                    collections:  wallets   +   wallet_transactions
+                    balance:  users.walletBalance   |   history:  wallet_transactions
 ```
 
 **Rule we agreed:** all point changes go through the **app backend** so the ledger logic (atomic
-balance update + idempotency + never-go-negative) lives in exactly one place. You do **not** write to
-`wallets` / `wallet_transactions` directly from the website — you call the app backend endpoint. You may
-**read** the balance directly from the shared DB (it's the same cluster) to display it, or call the read
-endpoint — your choice (see §5).
+balance update + idempotency + never-go-negative) lives in one place. You call the app backend endpoint to
+mutate — don't `$inc` `users.walletBalance` or write `wallet_transactions` directly from the website. You
+may **read** `users.walletBalance` directly for display (same cluster), or call the read endpoint (see §5).
+_(Note: the website's own checkout redeem/refund do write via `$inc` inside their order transaction — that's
+the agreed exception, kept atomic with the order; everything else routes through the app backend.)_
 
 ---
 
-## 2. The shared collections (already live in the DB)
+## 2. Where wallet data lives (current schema)
 
-Please **confirm these field names are OK** — once you build against them we shouldn't rename.
+### Balance → on the **`users`** document
+The points balance is a field on the user doc, so it shows up right in the `users` collection:
 
-### `wallets` — one document per user
-| field       | type                     | notes                                   |
-|-------------|--------------------------|-----------------------------------------|
-| `userId`    | ObjectId (ref `users`)   | **unique**. The Mongo `_id` from `users`|
-| `balance`   | Number (integer points)  | never negative                          |
-| `createdAt` | Date                     | auto                                    |
-| `updatedAt` | Date                     | auto                                    |
+| field                | type                    | notes                                        |
+|----------------------|-------------------------|----------------------------------------------|
+| `users.walletBalance`| Number (integer points) | one per user, never negative, default 0      |
 
-### `wallet_transactions` — append-only ledger
+There is **no separate `wallets` collection** anymore (removed 20 Jul 2026). Balances were migrated by
+recomputing from the ledger (see §9 `reconcile`).
+
+### `wallet_transactions` — append-only ledger (the history, kept separate)
 | field            | type                    | notes                                                        |
 |------------------|-------------------------|--------------------------------------------------------------|
 | `userId`         | ObjectId (ref `users`)  |                                                              |
@@ -59,8 +66,8 @@ Please **confirm these field names are OK** — once you build against them we s
 | `description`    | String (optional)       | human-readable, e.g. "Redeemed at checkout for order #123"   |
 | `createdAt`      | Date                    | auto                                                         |
 
-> Invariant: `wallets.balance` always equals the signed sum of that user's `wallet_transactions`.
-> Because every write is one atomic transaction, this can never drift.
+> Invariant: `users.walletBalance` always equals the signed sum of that user's `wallet_transactions`.
+> Because every write is one atomic transaction, this can never drift (and `reconcile` re-derives it).
 
 ---
 
@@ -120,16 +127,13 @@ key returns the original transaction and changes nothing. So it is always safe t
 
 Two options — pick whichever fits your code:
 
-**A. Read the shared collection directly (simplest for display).** Same cluster, so from the website
-backend:
+**A. Read it straight off the user doc (simplest — this is what the website now does).**
 ```js
-const wallet = await mongoose.connection.db
-  .collection('wallets')
-  .findOne({ userId: new mongoose.Types.ObjectId(user._id) });
-const points = wallet?.balance ?? 0;
+const user = await User.findById(userId).select('walletBalance');
+const points = user?.walletBalance ?? 0;
 ```
 Reading is safe to do directly. **Writing must still go through the app backend** (§3) so the ledger
-stays correct.
+stays correct — never `$inc` the balance from two services independently.
 
 **B. Call the read endpoint** `GET /api/wallet` with the **user's** JWT (`Authorization: Bearer <token>`)
 — returns `{ success, balance, transactions }`. Handy if you want the transaction history too.
@@ -151,17 +155,14 @@ Until this is set on the app backend, `redeem`/`credit` return `503 "Wallet muta
 
 ---
 
-## 7. The redeem rule — **needs the owner's decision** ⚠️
+## 7. The redeem rule — **decided** ✅
 
-One product decision is not mine to make. Please confirm with the owner:
+- **Conversion: `1 point = ₹2`** (set in `POINT_VALUE_INR`, both the website checkout and the Cart UI).
+- **Cap:** the checkout caps points-usable at the order value; points are integers.
 
-- **Conversion:** how much is 1 point worth at checkout? (e.g. `1 point = ₹1`, or `100 points = ₹10`.)
-- **Cap:** can points cover the whole order, or a max % of it?
-- **Rounding:** points are integers.
-
-Once decided: at checkout, convert the points the user wants to spend into a discount, cap it at the
-order total (and any % cap), then call `redeem` with `amount` = points spent and `sourceId` = orderId.
-If `redeem` returns `400 Insufficient balance`, show "not enough points" and don't apply the discount.
+At checkout, convert the points the user wants to spend into a discount, cap at the order total, then the
+website's `placeOrder` debits the balance atomically inside the order transaction (idempotent per order —
+see §4). On `Insufficient balance`, show "not enough points" and don't apply the discount.
 
 ---
 
@@ -210,11 +211,14 @@ Then confirm the same balance shows in the app (Wallet tab) and on the website p
 
 ---
 
-## 10. Open items / decisions
+## 10. Status / done
 
-- [ ] **Owner:** confirm the point→currency conversion + any cap (§7).
-- [ ] **Diwakar:** confirm the `wallets` / `wallet_transactions` field names (§2) are OK before building.
-- [ ] **Both:** set the same `WALLET_SERVICE_KEY` on both backends (§6).
-- [ ] **Later:** refund/return path (compensating credit) — ping Gautam when you need it.
+- [x] **Conversion** confirmed: 1 point = ₹2 (§7).
+- [x] **Schema**: balance moved to `users.walletBalance`; `wallets` collection removed; ledger unchanged (§2).
+- [x] **`WALLET_SERVICE_KEY`** set on both backends (§6).
+- [x] **Refund/return path**: implemented on cancel + failed-payment (credits points back, idempotent).
+- [x] **Migration/integrity:** `POST /api/wallet/reconcile` (service-key) recomputes every user's
+      `walletBalance` from the ledger — used for the migration and available anytime as a repair tool.
+      Optional body `{ "userId": "<id>" }` returns that user's balance to verify.
 
-Questions → Gautam. Let's lock this while we're both here in July.
+Questions → Gautam.
