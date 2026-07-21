@@ -48,6 +48,8 @@ class HomeScreen extends ConsumerWidget {
                     child: StatTile(
                       icon: Icons.local_fire_department,
                       value: '${s.caloriesKcal}',
+                      animateTo: s.caloriesKcal.toDouble(),
+                      animatedFormat: (double v) => '${v.round()}',
                       label: 'kcal',
                       color: FitBoxColors.red,
                     ),
@@ -57,6 +59,8 @@ class HomeScreen extends ConsumerWidget {
                     child: StatTile(
                       icon: Icons.route,
                       value: s.distanceKm.toStringAsFixed(1),
+                      animateTo: s.distanceKm,
+                      animatedFormat: (double v) => v.toStringAsFixed(1),
                       label: 'km',
                       color: FitBoxColors.credit,
                     ),
@@ -66,6 +70,8 @@ class HomeScreen extends ConsumerWidget {
                     child: StatTile(
                       icon: Icons.timer_outlined,
                       value: '${s.activeMinutes}',
+                      animateTo: s.activeMinutes.toDouble(),
+                      animatedFormat: (double v) => '${v.round()}',
                       label: 'mins',
                       color: FitBoxColors.red,
                     ),

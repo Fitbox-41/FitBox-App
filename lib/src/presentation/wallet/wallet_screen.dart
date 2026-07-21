@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -8,6 +7,8 @@ import '../../data/models/wallet.dart';
 import '../../data/providers.dart';
 import '../widgets/common.dart';
 import '../widgets/glass.dart';
+import '../widgets/motion.dart';
+import '../widgets/shimmer.dart';
 
 class WalletScreen extends ConsumerWidget {
   const WalletScreen({super.key});
@@ -15,14 +16,16 @@ class WalletScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<WalletData> wallet = ref.watch(walletProvider);
-    final ColorScheme cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Wallet')),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(walletProvider.future),
         child: wallet.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const SkeletonList(
+            count: 6,
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 28),
+          ),
           error: (Object e, _) => ListView(
             children: <Widget>[
               const SizedBox(height: 160),
@@ -36,32 +39,17 @@ class WalletScreen extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: <Widget>[
               _BalanceCard(points: w.balance),
-              const SizedBox(height: 24),
+              const SizedBox(height: 26),
               const SectionHeader('Recent activity'),
               if (w.transactions.isEmpty)
-                GlassCard(
-                  padding: const EdgeInsets.all(28),
-                  child: Center(
-                    child: Text(
-                        'No transactions yet.\nGet active to earn points!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: cs.onSurfaceVariant)),
-                  ),
-                )
+                const _EmptyLedger()
               else
-                GlassCard(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-                  child: Column(
-                    children: <Widget>[
-                      for (final t in w.transactions) _TxTile(t),
-                    ],
+                for (final WalletTransaction t in w.transactions)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _TxTile(t),
                   ),
-                ),
-            ]
-                .animate(interval: 70.ms)
-                .fadeIn(duration: 320.ms)
-                .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
+            ].revealStagger(),
           ),
         ),
       ),
@@ -69,6 +57,8 @@ class WalletScreen extends ConsumerWidget {
   }
 }
 
+/// Premium fintech-style hero card: an Oswald count-up balance over the brand
+/// red gradient, a soft red glow beneath, and a credit/debit legend.
 class _BalanceCard extends StatelessWidget {
   const _BalanceCard({required this.points});
 
@@ -76,10 +66,10 @@ class _BalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat.decimalPattern();
+    final NumberFormat fmt = NumberFormat.decimalPattern();
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+      padding: const EdgeInsets.fromLTRB(26, 26, 26, 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: <Color>[FitBoxColors.red, FitBoxColors.redDark],
@@ -90,53 +80,109 @@ class _BalanceCard extends StatelessWidget {
         border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
         boxShadow: <BoxShadow>[
           BoxShadow(
-              color: FitBoxColors.red.withValues(alpha: 0.4),
-              blurRadius: 30,
-              spreadRadius: -4,
-              offset: const Offset(0, 12)),
+            color: FitBoxColors.red.withValues(alpha: 0.42),
+            blurRadius: 34,
+            spreadRadius: -6,
+            offset: const Offset(0, 16),
+          ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text('AVAILABLE BALANCE',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.4)),
-          const SizedBox(height: 10),
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Expanded(
+                child: Text('POINTS BALANCE',
+                    style: AppText.labelCaps(context,
+                        size: 12,
+                        color: Colors.white.withValues(alpha: 0.9))),
+              ),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.account_balance_wallet_outlined,
+                    color: Colors.white, size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: <Widget>[
-              // Count up from 0 to the balance, matching the dashboard ring.
-              TweenAnimationBuilder<double>(
-                tween: Tween<double>(begin: 0, end: points.toDouble()),
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeOutCubic,
-                builder: (context, value, _) => Text(
-                  fmt.format(value.round()),
-                  style: AppText.data(context,
-                      size: 46, color: Colors.white, italic: true),
+              // Count the balance up from 0 on entry, matching the dashboard ring.
+              CountUpText(
+                value: points.toDouble(),
+                builder: (BuildContext c, double v) => Text(
+                  fmt.format(v.round()),
+                  style: AppText.data(c, size: 56, color: Colors.white),
                 ),
               ),
               const SizedBox(width: 8),
-              Text('PTS',
-                  style: AppText.kinetic(context,
-                      size: 20, color: Colors.white.withValues(alpha: 0.9))),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('PTS',
+                    style: AppText.kinetic(context,
+                        size: 20,
+                        color: Colors.white.withValues(alpha: 0.9))),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text('Earn by staying active · spend at checkout',
-              style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.85), fontSize: 12)),
+          const SizedBox(height: 20),
+          Divider(color: Colors.white.withValues(alpha: 0.18), height: 1),
+          const SizedBox(height: 16),
+          Row(
+            children: <Widget>[
+              const _LegendDot(color: FitBoxColors.credit, label: 'Credit'),
+              const SizedBox(width: 18),
+              _LegendDot(
+                  color: Colors.white.withValues(alpha: 0.85), label: 'Debit'),
+              const Spacer(),
+              Text('Earn active · spend at checkout',
+                  style: AppTypography.caption(
+                      size: 12, color: Colors.white.withValues(alpha: 0.8))),
+            ],
+          ),
         ],
       ),
     );
   }
 }
 
+/// A tiny colored dot + label used in the balance card legend.
+class _LegendDot extends StatelessWidget {
+  const _LegendDot({required this.color, required this.label});
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 9,
+          height: 9,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 7),
+        Text(label,
+            style: AppTypography.label(
+                size: 12, color: Colors.white.withValues(alpha: 0.9))),
+      ],
+    );
+  }
+}
+
+/// A single ledger entry rendered as a clean frosted glass row: a colored
+/// leading chip (credit = green, debit = red), a right-aligned Oswald amount,
+/// and a caption date.
 class _TxTile extends StatelessWidget {
   const _TxTile(this.tx);
 
@@ -147,26 +193,83 @@ class _TxTile extends StatelessWidget {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final Color color = tx.isCredit ? FitBoxColors.credit : FitBoxColors.debit;
     final String sign = tx.isCredit ? '+' : '−';
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(vertical: 6),
-      leading: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.16),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(tx.isCredit ? Icons.trending_up : Icons.trending_down,
-            color: color, size: 22),
+    return GlassCard(
+      radius: 20,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+                tx.isCredit
+                    ? Icons.arrow_downward_rounded
+                    : Icons.arrow_upward_rounded,
+                color: color,
+                size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(tx.description.isEmpty ? 'Transaction' : tx.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.body(
+                        size: 15, color: cs.onSurface)),
+                const SizedBox(height: 3),
+                Text(DateFormat('d MMM, h:mm a').format(tx.date),
+                    style: AppTypography.caption(
+                        size: 12, color: cs.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text('$sign${tx.amount}',
+              style: AppText.data(context, size: 22, color: color)),
+        ],
       ),
-      title: Text(tx.description.isEmpty ? 'Transaction' : tx.description,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
-      subtitle: Text(DateFormat('d MMM, h:mm a').format(tx.date),
-          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-      trailing: Text('$sign${tx.amount}',
-          style: AppText.data(context, size: 20, color: color, italic: true)),
+    );
+  }
+}
+
+/// A tasteful empty state shown when the ledger has no entries yet.
+class _EmptyLedger extends StatelessWidget {
+  const _EmptyLedger();
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return GlassCard(
+      radius: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      child: Column(
+        children: <Widget>[
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: FitBoxColors.red.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.receipt_long_outlined,
+                color: FitBoxColors.red, size: 30),
+          ),
+          const SizedBox(height: 16),
+          Text('No transactions yet',
+              style: AppText.kinetic(context, size: 18)),
+          const SizedBox(height: 6),
+          Text('Get active to start earning points.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body(
+                  size: 14, color: cs.onSurfaceVariant)),
+        ],
+      ),
     );
   }
 }

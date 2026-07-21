@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../widgets/glass.dart';
+import '../widgets/motion.dart';
 
 class _Entry {
   const _Entry(this.rank, this.name, this.area, {this.me = false});
@@ -9,6 +11,28 @@ class _Entry {
   final String name;
   final String area;
   final bool me;
+
+  /// Numeric part of the area string ("18.4 km²" → 18.4) for CountUp.
+  double get areaValue =>
+      double.tryParse(area.split(' ').first) ?? 0;
+
+  /// Unit suffix ("18.4 km²" → "km²").
+  String get areaUnit => area.contains(' ') ? area.split(' ').last : '';
+}
+
+/// Medal accent tones for the podium (gold/silver/bronze), warmed toward the
+/// FitBox brand so the top three read premium rather than literal metal.
+Color _medal(int rank) {
+  switch (rank) {
+    case 1:
+      return const Color(0xFFE7C15A); // gold
+    case 2:
+      return const Color(0xFFB8C0CC); // silver
+    case 3:
+      return const Color(0xFFCE8E5C); // bronze
+    default:
+      return FitBoxColors.red;
+  }
 }
 
 /// Weekly leaderboard by territory captured. Sample standings until the
@@ -34,25 +58,27 @@ class LeaderboardScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: <Widget>[
           Text('This week', style: AppText.labelCaps(context)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
-              Expanded(child: _Podium(_entries[1], height: 96)),
-              Expanded(child: _Podium(_entries[0], height: 124, gold: true)),
-              Expanded(child: _Podium(_entries[2], height: 78)),
+              Expanded(child: _Podium(_entries[1], height: 92)),
+              Expanded(child: _Podium(_entries[0], height: 128, gold: true)),
+              Expanded(child: _Podium(_entries[2], height: 74)),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
+          Text('Standings', style: AppText.labelCaps(context)),
+          const SizedBox(height: 12),
           GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
             child: Column(
               children: <Widget>[
                 for (final _Entry e in rest) _Row(e),
               ],
             ),
           ),
-        ],
+        ].revealStagger(),
       ),
     );
   }
@@ -68,23 +94,55 @@ class _Podium extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color medal = _medal(entry.rank);
+    final double avatarRadius = gold ? 32 : 25;
+
     return Column(
       children: <Widget>[
-        CircleAvatar(
-          radius: gold ? 30 : 24,
-          backgroundColor: FitBoxColors.red.withValues(alpha: 0.2),
-          child: Text(entry.name.characters.first,
+        // Medal-ringed avatar; gold gets a soft brand glow for extra emphasis.
+        Container(
+          padding: const EdgeInsets.all(2.5),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: SweepGradient(
+              colors: <Color>[
+                medal,
+                medal.withValues(alpha: 0.35),
+                medal,
+              ],
+            ),
+            boxShadow: gold
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: FitBoxColors.red.withValues(alpha: 0.35),
+                      blurRadius: 20,
+                      spreadRadius: -2,
+                    ),
+                  ]
+                : null,
+          ),
+          child: CircleAvatar(
+            radius: avatarRadius,
+            backgroundColor: gold
+                ? FitBoxColors.red.withValues(alpha: 0.22)
+                : cs.surface,
+            child: Text(
+              entry.name.characters.first,
               style: AppText.kinetic(context,
-                  size: gold ? 22 : 18, color: FitBoxColors.red)),
+                  size: gold ? 24 : 19,
+                  color: gold ? FitBoxColors.red : medal),
+            ),
+          ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(entry.name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.w600)),
-        Text(entry.area,
-            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
-        const SizedBox(height: 8),
+            style: AppTypography.title(size: 14, color: cs.onSurface)),
+        const SizedBox(height: 2),
+        Text(entry.area, style: AppTypography.caption(color: cs.onSurfaceVariant)),
+        const SizedBox(height: 10),
+        // Pillar with a big rank numeral that counts up on reveal.
         Container(
           height: height,
           margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -93,22 +151,29 @@ class _Podium extends StatelessWidget {
               colors: gold
                   ? const <Color>[FitBoxColors.red, FitBoxColors.redDark]
                   : <Color>[
-                      cs.onSurface.withValues(alpha: 0.14),
-                      cs.onSurface.withValues(alpha: 0.06),
+                      medal.withValues(alpha: 0.28),
+                      medal.withValues(alpha: 0.10),
                     ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(14)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            border: Border.all(
+              color: (gold ? FitBoxColors.red : medal).withValues(alpha: 0.35),
+            ),
           ),
           alignment: Alignment.topCenter,
-          padding: const EdgeInsets.only(top: 10),
-          child: Text('${entry.rank}',
+          padding: const EdgeInsets.only(top: 12),
+          child: CountUpText(
+            value: entry.rank.toDouble(),
+            duration: const Duration(milliseconds: 700),
+            builder: (BuildContext context, double v) => Text(
+              '${v.round()}',
               style: AppText.data(context,
-                  size: 24,
-                  italic: true,
-                  color: gold ? Colors.white : cs.onSurface)),
+                  size: gold ? 30 : 24,
+                  color: gold ? Colors.white : cs.onSurface),
+            ),
+          ),
         ),
       ],
     );
@@ -123,45 +188,66 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: entry.me ? FitBoxColors.red.withValues(alpha: 0.16) : null,
-        borderRadius: BorderRadius.circular(16),
-        border: entry.me
-            ? Border.all(color: FitBoxColors.red.withValues(alpha: 0.4))
-            : null,
-      ),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            width: 28,
-            child: Text('${entry.rank}',
-                style: AppText.data(context,
-                    size: 18,
-                    color: entry.me ? FitBoxColors.red : cs.onSurfaceVariant)),
-          ),
-          const SizedBox(width: 8),
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: cs.onSurface.withValues(alpha: 0.1),
-            child: Text(entry.name.characters.first,
-                style: TextStyle(color: cs.onSurface)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(entry.name,
-                style: TextStyle(
-                    color: cs.onSurface,
-                    fontWeight:
-                        entry.me ? FontWeight.w700 : FontWeight.w500)),
-          ),
-          Text(entry.area,
-              style: TextStyle(
-                  color: entry.me ? FitBoxColors.red : cs.onSurfaceVariant,
-                  fontWeight: FontWeight.w600)),
-        ],
+    final Color rankColor =
+        entry.me ? FitBoxColors.red : cs.onSurfaceVariant;
+
+    final Widget points = entry.me
+        ? CountUpText(
+            value: entry.areaValue,
+            builder: (BuildContext context, double v) => Text(
+              '${v.toStringAsFixed(1)} ${entry.areaUnit}',
+              style: AppText.data(context, size: 17, color: FitBoxColors.red),
+            ),
+          )
+        : Text(entry.area,
+            style: AppText.data(context, size: 16, color: cs.onSurfaceVariant));
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => HapticFeedback.selectionClick(),
+      child: AnimatedContainer(
+        duration: AppMotion.fast,
+        curve: AppMotion.expoOut,
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: entry.me ? FitBoxColors.red.withValues(alpha: 0.16) : null,
+          borderRadius: BorderRadius.circular(16),
+          border: entry.me
+              ? Border.all(color: FitBoxColors.red.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: 28,
+              child: Text('${entry.rank}',
+                  style: AppText.data(context, size: 18, color: rankColor)),
+            ),
+            const SizedBox(width: 8),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: entry.me
+                  ? FitBoxColors.red.withValues(alpha: 0.25)
+                  : cs.onSurface.withValues(alpha: 0.1),
+              child: Text(
+                entry.name.characters.first,
+                style: AppText.kinetic(context,
+                    size: 15,
+                    color: entry.me ? FitBoxColors.red : cs.onSurface),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(entry.name,
+                  style: AppTypography.title(
+                    size: 15,
+                    color: entry.me ? FitBoxColors.red : cs.onSurface,
+                  )),
+            ),
+            points,
+          ],
+        ),
       ),
     );
   }

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_theme.dart';
 import 'glass.dart';
+import 'motion.dart';
 
 /// A compact stat tile (icon + value + label) used across the dashboard —
 /// colored icon, rounded data numeral, uppercase caps label.
+///
+/// Pass [value] for a static number, or [animateTo] + [animatedFormat] to have
+/// the number count up on first build (Apple-style).
 class StatTile extends StatelessWidget {
   const StatTile({
     super.key,
@@ -12,6 +16,8 @@ class StatTile extends StatelessWidget {
     required this.value,
     required this.label,
     required this.color,
+    this.animateTo,
+    this.animatedFormat,
   });
 
   final IconData icon;
@@ -19,9 +25,22 @@ class StatTile extends StatelessWidget {
   final String label;
   final Color color;
 
+  /// If set (with [animatedFormat]), the value counts up from 0 to this.
+  final double? animateTo;
+  final String Function(double value)? animatedFormat;
+
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final TextStyle valueStyle = AppText.data(context, size: 24, color: cs.onSurface);
+    final Widget valueWidget =
+        (animateTo != null && animatedFormat != null)
+            ? CountUpText(
+                value: animateTo!,
+                builder: (BuildContext context, double v) =>
+                    Text(animatedFormat!(v), style: valueStyle),
+              )
+            : Text(value, style: valueStyle);
     return GlassCard(
       radius: 22,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 18),
@@ -29,8 +48,7 @@ class StatTile extends StatelessWidget {
         children: <Widget>[
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 10),
-          Text(value,
-              style: AppText.data(context, size: 24, color: cs.onSurface)),
+          valueWidget,
           const SizedBox(height: 4),
           Text(label.toUpperCase(), style: AppText.labelCaps(context, size: 11)),
         ],

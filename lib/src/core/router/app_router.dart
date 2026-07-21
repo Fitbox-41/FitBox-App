@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,6 +24,10 @@ import '../../presentation/shell/app_shell.dart';
 import '../../presentation/splash/splash_screen.dart';
 import '../../presentation/territory/territory_screen.dart';
 import '../../presentation/wallet/wallet_screen.dart';
+
+/// Wraps a pushed screen in the native iOS page transition (right-to-left slide
+/// + interactive swipe-back gesture) for an Apple-like navigation feel.
+Page<void> _ios(Widget child) => CupertinoPage<void>(child: child);
 
 /// App navigation. Auth state drives redirects: unknown → splash, first run →
 /// onboarding, signed out → login, signed in → the bottom-nav shell.
@@ -62,25 +66,38 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (_, _) => const AuthLandingScreen()),
-      GoRoute(path: '/signin', builder: (_, _) => const LoginScreen()),
-      GoRoute(path: '/signup', builder: (_, _) => const SignupScreen()),
-      GoRoute(path: '/reset', builder: (_, _) => const ResetPasswordScreen()),
+      // Pushed routes use the native iOS slide + swipe-back transition.
+      GoRoute(
+          path: '/signin',
+          pageBuilder: (_, _) => _ios(const LoginScreen())),
+      GoRoute(
+          path: '/signup',
+          pageBuilder: (_, _) => _ios(const SignupScreen())),
+      GoRoute(
+          path: '/reset',
+          pageBuilder: (_, _) => _ios(const ResetPasswordScreen())),
       GoRoute(
           path: '/change-password',
-          builder: (_, _) => const ChangePasswordScreen()),
+          pageBuilder: (_, _) => _ios(const ChangePasswordScreen())),
       // Full-screen pushed routes.
-      GoRoute(path: '/record-run', builder: (_, _) => const RecordRunScreen()),
+      GoRoute(
+          path: '/record-run',
+          pageBuilder: (_, _) => _ios(const RecordRunScreen())),
       GoRoute(
         path: '/run-summary',
-        builder: (_, GoRouterState s) =>
-            RunSummaryScreen(run: s.extra as RunActivity?),
+        pageBuilder: (_, GoRouterState s) =>
+            _ios(RunSummaryScreen(run: s.extra as RunActivity?)),
       ),
-      GoRoute(path: '/leaderboard', builder: (_, _) => const LeaderboardScreen()),
-      GoRoute(path: '/goals', builder: (_, _) => const GoalsScreen()),
+      GoRoute(
+          path: '/leaderboard',
+          pageBuilder: (_, _) => _ios(const LeaderboardScreen())),
+      GoRoute(path: '/goals', pageBuilder: (_, _) => _ios(const GoalsScreen())),
       GoRoute(
           path: '/notifications',
-          builder: (_, _) => const NotificationsScreen()),
-      GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
+          pageBuilder: (_, _) => _ios(const NotificationsScreen())),
+      GoRoute(
+          path: '/settings',
+          pageBuilder: (_, _) => _ios(const SettingsScreen())),
       StatefulShellRoute.indexedStack(
         builder: (BuildContext context, GoRouterState state,
                 StatefulNavigationShell navigationShell) =>

@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -47,6 +48,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _onTap(int index) {
+    if (index != widget.navigationShell.currentIndex) {
+      HapticFeedback.selectionClick();
+    }
     widget.navigationShell.goBranch(
       index,
       initialLocation: index == widget.navigationShell.currentIndex,

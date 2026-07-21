@@ -4,9 +4,10 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
 import '../widgets/glass.dart';
 import '../widgets/map_placeholder.dart';
+import '../widgets/motion.dart';
 
-/// Post-run summary. Route thumbnail + headline metrics + pace splits. The real
-/// route map arrives with the Maps key.
+/// Post-run summary — the celebratory moment. Hero headline + framed route +
+/// headline metrics. The real route map arrives with the Maps key.
 class RunSummaryScreen extends StatelessWidget {
   const RunSummaryScreen({super.key, this.run});
 
@@ -16,6 +17,11 @@ class RunSummaryScreen extends StatelessWidget {
     final int m = p.floor();
     final int s = ((p - m) * 60).round();
     return "$m:${s.toString().padLeft(2, '0')}";
+  }
+
+  String _duration(double totalSeconds) {
+    final int s = totalSeconds.round();
+    return '${s ~/ 60}m ${s % 60}s';
   }
 
   @override
@@ -32,30 +38,54 @@ class RunSummaryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: <Widget>[
-          // Route map card.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: SizedBox(
-              height: 200,
-              child: Stack(
-                fit: StackFit.expand,
+          // Celebratory hero header.
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
                 children: <Widget>[
-                  const MapPlaceholder(showBadge: false),
-                  Positioned(
-                    left: 14,
-                    bottom: 14,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Text(title.toUpperCase(),
-                          style: AppText.labelCaps(context, color: Colors.white)),
-                    ),
-                  ),
+                  const Icon(Icons.emoji_events,
+                      color: FitBoxColors.red, size: 18),
+                  const SizedBox(width: 8),
+                  Text('GREAT RUN',
+                      style: AppText.labelCaps(context,
+                          size: 13, color: FitBoxColors.red)),
                 ],
+              ),
+              const SizedBox(height: 6),
+              Text(title, style: AppText.kinetic(context, size: 34)),
+            ],
+          ),
+          const SizedBox(height: 18),
+          // Route map framed in a rounded glass container.
+          GlassCard(
+            radius: 26,
+            padding: const EdgeInsets.all(6),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                height: 196,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    const MapPlaceholder(showBadge: false),
+                    Positioned(
+                      left: 14,
+                      bottom: 14,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Text(title.toUpperCase(),
+                            style:
+                                AppText.labelCaps(context, color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -83,9 +113,14 @@ class RunSummaryScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text('RUN SAVED', style: AppText.labelCaps(context)),
-                    Text('$steps steps',
+                    CountUpText(
+                      value: steps.toDouble(),
+                      builder: (BuildContext c, double v) => Text(
+                        '${v.round()} steps',
                         style: AppText.kinetic(context,
-                            size: 24, color: FitBoxColors.credit)),
+                            size: 24, color: FitBoxColors.credit),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -95,25 +130,32 @@ class RunSummaryScreen extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                  child: _StatCard(
-                      icon: Icons.straighten,
-                      label: 'Distance',
-                      value: km.toStringAsFixed(2),
-                      unit: 'kilometers')),
+                child: _StatCard(
+                  icon: Icons.straighten,
+                  label: 'Distance',
+                  value: km,
+                  format: (double v) => v.toStringAsFixed(2),
+                  unit: 'kilometers',
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
-                  child: _StatCard(
-                      icon: Icons.timer_outlined,
-                      label: 'Avg pace',
-                      value: _pace(pace),
-                      unit: '/ km')),
+                child: _StatCard(
+                  icon: Icons.timer_outlined,
+                  label: 'Avg pace',
+                  value: pace,
+                  format: _pace,
+                  unit: '/ km',
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           _StatCard(
             icon: Icons.schedule,
             label: 'Duration',
-            value: '${dur.inMinutes}m ${(dur.inSeconds % 60)}s',
+            value: dur.inSeconds.toDouble(),
+            format: _duration,
             unit: '',
             wide: true,
           ),
@@ -121,41 +163,40 @@ class RunSummaryScreen extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                  child: _StatCard(
-                      icon: Icons.directions_walk,
-                      label: 'Steps',
-                      value: '$steps',
-                      unit: '')),
-              const SizedBox(width: 12),
-              Expanded(
-                  child: _StatCard(
-                      icon: Icons.local_fire_department,
-                      label: 'Calories',
-                      value: '$calories',
-                      unit: 'kcal')),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.bookmark_border),
-                  label: const Text('Save run'),
+                child: _StatCard(
+                  icon: Icons.directions_walk,
+                  label: 'Steps',
+                  value: steps.toDouble(),
+                  format: (double v) => '${v.round()}',
+                  unit: '',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: GlowButton(
-                  label: 'Share',
-                  icon: Icons.ios_share,
-                  onPressed: () {},
+                child: _StatCard(
+                  icon: Icons.local_fire_department,
+                  label: 'Calories',
+                  value: calories.toDouble(),
+                  format: (double v) => '${v.round()}',
+                  unit: 'kcal',
                 ),
               ),
             ],
           ),
-        ],
+          const SizedBox(height: 24),
+          // Primary action, prominent.
+          GlowButton(
+            label: 'Share',
+            icon: Icons.ios_share,
+            onPressed: () {},
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.bookmark_border),
+            label: const Text('Save run'),
+          ),
+        ].revealStagger(),
       ),
     );
   }
@@ -166,13 +207,15 @@ class _StatCard extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    required this.format,
     required this.unit,
     this.wide = false,
   });
 
   final IconData icon;
   final String label;
-  final String value;
+  final double value;
+  final String Function(double) format;
   final String unit;
   final bool wide;
 
@@ -197,7 +240,19 @@ class _StatCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: <Widget>[
-              Text(value, style: AppText.data(context, size: wide ? 40 : 34)),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: CountUpText(
+                    value: value,
+                    builder: (BuildContext c, double v) => Text(
+                      format(v),
+                      style: AppText.data(context, size: wide ? 40 : 34),
+                    ),
+                  ),
+                ),
+              ),
               if (unit.isNotEmpty) ...<Widget>[
                 const SizedBox(width: 6),
                 Text(unit,

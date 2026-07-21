@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,6 +11,7 @@ import '../../data/recorded_runs.dart';
 import '../../data/run_session.dart';
 import '../widgets/glass.dart';
 import '../widgets/map_placeholder.dart';
+import '../widgets/motion.dart';
 
 /// Live run recording. A per-second timer + the device step sensor drive the
 /// metrics; GPS + the live map arrive with the Maps key. Everything shown here
@@ -132,9 +134,15 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      Icon(Icons.circle,
-                          color: paused ? Colors.amber : FitBoxColors.credit,
-                          size: 10),
+                      paused
+                          ? const Icon(Icons.circle,
+                              color: Colors.amber, size: 10)
+                          : const Icon(Icons.circle,
+                                  color: FitBoxColors.credit, size: 10)
+                              .animate(
+                                  onPlay: (AnimationController c) =>
+                                      c.repeat(reverse: true))
+                              .fade(begin: 1.0, end: 0.25, duration: 800.ms),
                       const SizedBox(width: 8),
                       Text(paused ? 'PAUSED' : 'RECORDING',
                           style: AppText.labelCaps(context,
@@ -192,16 +200,19 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: <Widget>[
-                        _circleBtn(
-                          context,
-                          paused ? Icons.play_arrow : Icons.pause,
-                          false,
-                          () => paused
+                        _CircleButton(
+                          icon: paused ? Icons.play_arrow : Icons.pause,
+                          primary: false,
+                          onTap: () => paused
                               ? ref.read(runSessionProvider.notifier).resume()
                               : ref.read(runSessionProvider.notifier).pause(),
                         ),
-                        _circleBtn(context, Icons.stop, true, _stop),
-                        _circleBtn(context, Icons.layers_outlined, false, () {}),
+                        _CircleButton(
+                            icon: Icons.stop, primary: true, onTap: _stop),
+                        const _CircleButton(
+                            icon: Icons.layers_outlined,
+                            primary: false,
+                            onTap: null),
                       ],
                     ),
                   ],
@@ -214,11 +225,23 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
               child: ColoredBox(
                 color: Colors.black.withValues(alpha: 0.75),
                 child: Center(
-                  child: Text('$_countdown',
-                      key: ValueKey<int>(_countdown!),
-                      style: AppText.data(context,
-                              size: 140, italic: true, color: Colors.white)
-                          .copyWith(fontWeight: FontWeight.w800)),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 450),
+                    transitionBuilder: (Widget child, Animation<double> anim) =>
+                        FadeTransition(
+                      opacity: anim,
+                      child: ScaleTransition(
+                        scale: Tween<double>(begin: 1.6, end: 1.0).animate(
+                            CurvedAnimation(
+                                parent: anim, curve: AppMotion.expoOut)),
+                        child: child,
+                      ),
+                    ),
+                    child: Text('$_countdown',
+                        key: ValueKey<int>(_countdown!),
+                        style: AppText.data(context, size: 140, color: Colors.white)
+                            .copyWith(fontWeight: FontWeight.w700)),
+                  ),
                 ),
               ),
             ),
@@ -255,34 +278,75 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     );
   }
 
-  Widget _circleBtn(
-      BuildContext context, IconData icon, bool primary, VoidCallback onTap) {
+}
+
+/// A run-control button with a springy press + haptic (Apple-style). The
+/// primary (stop) button is the red glowing hero; secondary buttons are glassy.
+class _CircleButton extends StatefulWidget {
+  const _CircleButton({
+    required this.icon,
+    required this.primary,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final bool primary;
+  final VoidCallback? onTap;
+
+  @override
+  State<_CircleButton> createState() => _CircleButtonState();
+}
+
+class _CircleButtonState extends State<_CircleButton> {
+  bool _down = false;
+
+  @override
+  Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool enabled = widget.onTap != null;
+    final bool primary = widget.primary;
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: primary ? 76 : 60,
-        height: primary ? 76 : 60,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color:
-              primary ? FitBoxColors.red : cs.onSurface.withValues(alpha: 0.08),
-          border: primary
-              ? null
-              : Border.all(color: cs.onSurface.withValues(alpha: 0.18)),
-          boxShadow: primary
-              ? <BoxShadow>[
-                  BoxShadow(
-                    color: FitBoxColors.red.withValues(alpha: 0.4),
-                    blurRadius: 22,
-                    spreadRadius: -3,
-                  ),
-                ]
-              : null,
+      onTapDown: enabled ? (_) => setState(() => _down = true) : null,
+      onTapUp: enabled ? (_) => setState(() => _down = false) : null,
+      onTapCancel: enabled ? () => setState(() => _down = false) : null,
+      onTap: enabled
+          ? () {
+              HapticFeedback.mediumImpact();
+              widget.onTap!();
+            }
+          : null,
+      child: AnimatedScale(
+        scale: _down ? 0.9 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Opacity(
+          opacity: enabled ? 1 : 0.4,
+          child: Container(
+            width: primary ? 76 : 60,
+            height: primary ? 76 : 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: primary
+                  ? FitBoxColors.red
+                  : cs.onSurface.withValues(alpha: 0.08),
+              border: primary
+                  ? null
+                  : Border.all(color: cs.onSurface.withValues(alpha: 0.18)),
+              boxShadow: primary
+                  ? <BoxShadow>[
+                      BoxShadow(
+                        color: FitBoxColors.red.withValues(alpha: 0.4),
+                        blurRadius: 22,
+                        spreadRadius: -3,
+                      ),
+                    ]
+                  : null,
+            ),
+            child: Icon(widget.icon,
+                color: primary ? Colors.white : cs.onSurface,
+                size: primary ? 32 : 26),
+          ),
         ),
-        child: Icon(icon,
-            color: primary ? Colors.white : cs.onSurface,
-            size: primary ? 32 : 26),
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
 import '../../data/recorded_runs.dart';
 import '../widgets/glass.dart';
+import '../widgets/motion.dart';
 
 class ActivityScreen extends ConsumerWidget {
   const ActivityScreen({super.key});
@@ -15,7 +15,6 @@ class ActivityScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final List<RunActivity> list = ref.watch(recordedRunsProvider);
-    final ColorScheme cs = Theme.of(context).colorScheme;
     final double totalKm =
         list.fold(0, (double a, RunActivity r) => a + r.distanceKm);
     final int totalMinutes =
@@ -26,76 +25,63 @@ class ActivityScreen extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(recordedRunsProvider),
         child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text('This Month', style: AppText.kinetic(context, size: 28)),
-                    _MonthChip(label: DateFormat('MMMM').format(DateTime.now())),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _MonthStat(
-                        label: 'Distance',
-                        value: totalKm.toStringAsFixed(0),
-                        unit: 'km',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _MonthStat(
-                        label: 'Time',
-                        value: (totalMinutes / 60).toStringAsFixed(0),
-                        unit: 'h',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _MonthStat(
-                        label: 'Runs',
-                        value: '${list.length}',
-                        valueColor: FitBoxColors.red,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const _FilterPills(),
-                const SizedBox(height: 20),
-                if (list.isEmpty)
-                  GlassCard(
-                    padding: const EdgeInsets.all(28),
-                    child: Center(
-                      child: Text(
-                        'No runs recorded yet.\nStart a run to see it here!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: cs.onSurfaceVariant),
-                      ),
-                    ),
-                  )
-                else
-                  ...List<Widget>.generate(
-                    list.length,
-                    (int i) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: GestureDetector(
-                        onTap: () =>
-                            context.push('/run-summary', extra: list[i]),
-                        child: _RunCard(list[i]),
-                      )
-                          .animate()
-                          .fadeIn(delay: (i * 60).ms, duration: 320.ms)
-                          .slideY(begin: 0.12, end: 0, curve: Curves.easeOut),
-                    ),
-                  ),
+                Text('This Month', style: AppText.kinetic(context, size: 28)),
+                _MonthChip(label: DateFormat('MMMM').format(DateTime.now())),
               ],
             ),
-          ),
-        );
+            const SizedBox(height: 16),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _MonthStat(
+                    label: 'Distance',
+                    value: totalKm,
+                    unit: 'km',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MonthStat(
+                    label: 'Time',
+                    value: totalMinutes / 60,
+                    unit: 'h',
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MonthStat(
+                    label: 'Runs',
+                    value: list.length.toDouble(),
+                    valueColor: FitBoxColors.red,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            const _FilterPills(),
+            const SizedBox(height: 20),
+            if (list.isEmpty)
+              const _EmptyState()
+            else
+              ...List<Widget>.generate(
+                list.length,
+                (int i) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _RunCard(
+                    list[i],
+                    onTap: () => context.push('/run-summary', extra: list[i]),
+                  ),
+                ),
+              ),
+          ].revealStagger(),
+        ),
+      ),
+    );
   }
 }
 
@@ -131,7 +117,7 @@ class _MonthStat extends StatelessWidget {
   });
 
   final String label;
-  final String value;
+  final double value;
   final String? unit;
   final Color? valueColor;
 
@@ -153,9 +139,14 @@ class _MonthStat extends StatelessWidget {
               Flexible(
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text(value,
+                  child: CountUpText(
+                    value: value,
+                    builder: (BuildContext c, double v) => Text(
+                      v.toStringAsFixed(0),
                       style: AppText.data(context,
-                          size: 30, color: valueColor ?? cs.onSurface)),
+                          size: 30, color: valueColor ?? cs.onSurface),
+                    ),
+                  ),
                 ),
               ),
               if (unit != null) ...<Widget>[
@@ -189,6 +180,16 @@ class _FilterPills extends StatelessWidget {
             border: active
                 ? null
                 : Border.all(color: cs.onSurface.withValues(alpha: 0.12)),
+            boxShadow: active
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: FitBoxColors.red.withValues(alpha: 0.35),
+                      blurRadius: 16,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             label.toUpperCase(),
@@ -210,10 +211,72 @@ class _FilterPills extends StatelessWidget {
   }
 }
 
+/// Shown when the athlete hasn't recorded any runs yet — an encouraging,
+/// on-brand nudge rather than a bare line of grey text.
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return GlassCard(
+      radius: 26,
+      padding: const EdgeInsets.fromLTRB(28, 36, 28, 34),
+      child: Column(
+        children: <Widget>[
+          Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: <Color>[
+                FitBoxColors.red.withValues(alpha: 0.28),
+                FitBoxColors.red.withValues(alpha: 0.06),
+              ]),
+              border:
+                  Border.all(color: FitBoxColors.red.withValues(alpha: 0.3)),
+            ),
+            child: const Icon(Icons.directions_run,
+                color: FitBoxColors.red, size: 40),
+          ),
+          const SizedBox(height: 20),
+          Text('No runs yet', style: AppText.kinetic(context, size: 24)),
+          const SizedBox(height: 8),
+          Text(
+            'Your recorded runs will show up here.\nLace up and log your first one.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: cs.onSurfaceVariant, height: 1.4),
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: cs.onSurface.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: cs.onSurface.withValues(alpha: 0.12)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                const Icon(Icons.play_arrow_rounded,
+                    color: FitBoxColors.red, size: 18),
+                const SizedBox(width: 6),
+                Text('Start a run from Home',
+                    style: AppText.labelCaps(context, size: 11)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RunCard extends StatelessWidget {
-  const _RunCard(this.run);
+  const _RunCard(this.run, {this.onTap});
 
   final RunActivity run;
+  final VoidCallback? onTap;
 
   String get _pace {
     final double p = run.paceMinPerKm;
@@ -228,19 +291,27 @@ class _RunCard extends StatelessWidget {
     return GlassCard(
       radius: 22,
       padding: const EdgeInsets.all(14),
+      onTap: onTap,
       child: Row(
         children: <Widget>[
-          // Route thumbnail placeholder (real map thumbnails arrive with Maps).
+          // Leading run icon in a red-tinted rounded chip.
           Container(
-            width: 92,
-            height: 92,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              color: cs.onSurface.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cs.onSurface.withValues(alpha: 0.08)),
+              gradient: LinearGradient(
+                colors: <Color>[
+                  FitBoxColors.red.withValues(alpha: 0.24),
+                  FitBoxColors.red.withValues(alpha: 0.08),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: FitBoxColors.red.withValues(alpha: 0.28)),
             ),
-            child: Icon(Icons.map_outlined,
-                color: FitBoxColors.red.withValues(alpha: 0.8), size: 30),
+            child: const Icon(Icons.directions_run,
+                color: FitBoxColors.red, size: 28),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -253,7 +324,7 @@ class _RunCard extends StatelessWidget {
                       child: Text(run.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppText.kinetic(context, size: 20)),
+                          style: AppText.kinetic(context, size: 19)),
                     ),
                     Text(DateFormat('MMM d').format(run.date).toUpperCase(),
                         style: AppText.labelCaps(context, size: 11)),
@@ -287,12 +358,9 @@ class _RunCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(label.toUpperCase(), style: AppText.labelCaps(context, size: 10)),
-        const SizedBox(height: 2),
+        const SizedBox(height: 3),
         Text(value,
-            style: TextStyle(
-                color: cs.onSurface,
-                fontSize: 15,
-                fontWeight: FontWeight.w700)),
+            style: AppText.data(context, size: 16, color: cs.onSurface)),
       ],
     );
   }
