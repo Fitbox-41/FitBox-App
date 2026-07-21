@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/models/run_activity.dart';
 import '../../presentation/activity/activity_screen.dart';
 import '../../presentation/auth/auth_controller.dart';
+import '../../presentation/auth/auth_landing_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/reset_password_screen.dart';
 import '../../presentation/auth/signup_screen.dart';
@@ -41,7 +42,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final loc = state.matchedLocation;
       final atSplash = loc == '/splash';
       final atOnboarding = loc == '/onboarding';
-      final atAuth = loc == '/login' || loc == '/signup' || loc == '/reset';
+      final atAuth = loc == '/login' ||
+          loc == '/signin' ||
+          loc == '/signup' ||
+          loc == '/reset';
 
       if (status == AuthStatus.unknown) {
         return atSplash ? null : '/splash';
@@ -57,7 +61,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: <RouteBase>[
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
-      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/login', builder: (_, _) => const AuthLandingScreen()),
+      GoRoute(path: '/signin', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, _) => const SignupScreen()),
       GoRoute(path: '/reset', builder: (_, _) => const ResetPasswordScreen()),
       GoRoute(

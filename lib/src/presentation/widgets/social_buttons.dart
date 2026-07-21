@@ -1,10 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/theme/app_theme.dart';
 
-/// "Continue with Google" — hairline pill with the real multi-colour Google "G".
-/// Used on mobile (web uses the official rendered GIS button instead).
+/// "Continue with Google" — rectangular frosted-glass button with the real
+/// multi-colour Google "G". (Web uses the official rendered GIS button instead.)
 class GoogleButton extends StatelessWidget {
   const GoogleButton({super.key, required this.onPressed, this.enabled = true});
 
@@ -13,20 +16,16 @@ class GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return _SocialPill(
+    return _GlassSocialButton(
       onPressed: enabled ? onPressed : null,
-      background: Colors.transparent,
-      borderColor: cs.onSurface.withValues(alpha: 0.18),
-      foreground: cs.onSurface,
       icon: SvgPicture.asset('assets/icons/google_g.svg', width: 22, height: 22),
       label: 'Continue with Google',
     );
   }
 }
 
-/// "Continue with Apple" — Apple's black button with the white Apple mark.
-/// (Required on iOS when third-party sign-in is offered.)
+/// "Continue with Apple" — rectangular frosted-glass button with the Apple mark
+/// (tinted to the current text colour so it works on light or dark glass).
 class AppleButton extends StatelessWidget {
   const AppleButton({super.key, required this.onPressed, this.enabled = true});
 
@@ -35,64 +34,73 @@ class AppleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SocialPill(
+    final Color fg = Theme.of(context).colorScheme.onSurface;
+    return _GlassSocialButton(
       onPressed: enabled ? onPressed : null,
-      background: Colors.black,
-      borderColor: Colors.white.withValues(alpha: 0.14),
-      foreground: Colors.white,
       icon: SvgPicture.asset(
         'assets/icons/apple_logo.svg',
         width: 20,
         height: 20,
-        colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
       ),
       label: 'Continue with Apple',
     );
   }
 }
 
-class _SocialPill extends StatelessWidget {
-  const _SocialPill({
+/// Rectangular frosted-glass button (blur + translucent fill + hairline border),
+/// Adidas-style sharp corners, with an Oswald uppercase label. Theme-aware, so
+/// it looks right on a light or dark surface.
+class _GlassSocialButton extends StatelessWidget {
+  const _GlassSocialButton({
     required this.onPressed,
-    required this.background,
-    required this.borderColor,
-    required this.foreground,
     required this.icon,
     required this.label,
   });
 
   final VoidCallback? onPressed;
-  final Color background;
-  final Color borderColor;
-  final Color foreground;
   final Widget icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 54,
-      width: double.infinity,
-      child: Material(
-        color: background,
-        shape: StadiumBorder(side: BorderSide(color: borderColor)),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onPressed,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              icon,
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: platformFont(
-                  color: foreground,
-                  size: 15,
-                  weight: FontWeight.w600,
-                ),
+    final Brightness b = Theme.of(context).brightness;
+    final Color fg = Theme.of(context).colorScheme.onSurface;
+    final BorderRadius radius = BorderRadius.circular(6);
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Material(
+          color: FitBoxColors.glassFill(b),
+          shape: RoundedRectangleBorder(
+            borderRadius: radius,
+            side: BorderSide(color: FitBoxColors.glassStroke(b)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onPressed == null
+                ? null
+                : () {
+                    HapticFeedback.selectionClick();
+                    onPressed!();
+                  },
+            child: SizedBox(
+              height: 54,
+              width: double.infinity,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  icon,
+                  const SizedBox(width: 12),
+                  Text(
+                    label.toUpperCase(),
+                    style: AppTypography.button(color: fg, size: 14),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -223,6 +223,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
+          // Back to the auth landing (this screen is pushed from it).
+          if (Navigator.of(context).canPop())
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 4,
+              left: 4,
+              child: BackButton(color: cs.onSurface),
+            ),
           if (signingIn)
             const Positioned.fill(
               child: ColoredBox(
