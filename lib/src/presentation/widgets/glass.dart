@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_theme.dart';
 
@@ -74,7 +75,7 @@ class _Glow extends StatelessWidget {
 
 /// A frosted-glass card: blurred, translucent, hairline-bordered — adapts to
 /// light/dark. iOS-style materiality (backdrop blur + top-left hairline).
-class GlassCard extends StatelessWidget {
+class GlassCard extends StatefulWidget {
   const GlassCard({
     super.key,
     required this.child,
@@ -89,14 +90,18 @@ class GlassCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<GlassCard> createState() => _GlassCardState();
+}
+
+class _GlassCardState extends State<GlassCard> {
+  bool _down = false;
+
+  @override
   Widget build(BuildContext context) {
     final Brightness b = Theme.of(context).brightness;
-    final BorderRadius br = BorderRadius.circular(radius);
-    Widget content = Padding(padding: padding, child: child);
-    if (onTap != null) {
-      content = InkWell(borderRadius: br, onTap: onTap, child: content);
-    }
-    return DecoratedBox(
+    final BorderRadius br = BorderRadius.circular(widget.radius);
+
+    final Widget card = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: br,
         boxShadow: <BoxShadow>[
@@ -117,9 +122,28 @@ class GlassCard extends StatelessWidget {
               borderRadius: br,
               border: Border.all(color: FitBoxColors.glassStroke(b)),
             ),
-            child: content,
+            child: Padding(padding: widget.padding, child: widget.child),
           ),
         ),
+      ),
+    );
+
+    if (widget.onTap == null) return card;
+
+    // Tappable cards get a springy press + haptic (Apple-style feedback).
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _down = true),
+      onTapUp: (_) => setState(() => _down = false),
+      onTapCancel: () => setState(() => _down = false),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onTap!();
+      },
+      child: AnimatedScale(
+        scale: _down ? 0.98 : 1,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: card,
       ),
     );
   }
@@ -159,7 +183,12 @@ class _GlowButtonState extends State<GlowButton> {
       onTapDown: enabled ? (_) => setState(() => _down = true) : null,
       onTapUp: enabled ? (_) => setState(() => _down = false) : null,
       onTapCancel: enabled ? () => setState(() => _down = false) : null,
-      onTap: enabled ? widget.onPressed : null,
+      onTap: enabled
+          ? () {
+              HapticFeedback.mediumImpact();
+              widget.onPressed!();
+            }
+          : null,
       child: AnimatedScale(
         scale: _down ? 0.97 : 1,
         duration: const Duration(milliseconds: 120),
@@ -208,13 +237,7 @@ class _GlowButtonState extends State<GlowButton> {
                     ],
                     Text(
                       widget.label,
-                      style: platformFont(
-                        color: Colors.white,
-                        size: 16,
-                        weight: FontWeight.w700,
-                        style: FontStyle.italic,
-                        letterSpacing: 0.3,
-                      ),
+                      style: AppTypography.button(color: Colors.white, size: 16),
                     ),
                   ],
                 ),

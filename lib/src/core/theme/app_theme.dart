@@ -1,7 +1,11 @@
-import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import 'app_typography.dart';
+
+// Re-export the typography system so the many files that already
+// `import 'app_theme.dart'` keep seeing `platformFont`, `AppTypography`, etc.
+export 'app_typography.dart';
 
 /// FitBox brand + glass palette ("Aerostride Kinetic"), working in light and dark.
 class FitBoxColors {
@@ -33,70 +37,29 @@ class FitBoxColors {
       : Colors.white.withValues(alpha: 0.7);
 }
 
-/// Platform font policy (locked): **Android → Inter** (Google Fonts),
-/// **iOS/macOS → SF Pro** (the system font). Everything in the app resolves its
-/// typeface through [platformFont], so both platforms feel native automatically.
-bool get _isApplePlatform =>
-    defaultTargetPlatform == TargetPlatform.iOS ||
-    defaultTargetPlatform == TargetPlatform.macOS;
-
-/// Returns a text style in the platform's font: SF Pro on Apple, Inter elsewhere.
-TextStyle platformFont({
-  double? size,
-  FontWeight? weight,
-  FontStyle? style,
-  double? letterSpacing,
-  double? height,
-  Color? color,
-  bool display = false,
-}) {
-  if (_isApplePlatform) {
-    // Apple system font (San Francisco). If the exact name doesn't resolve, iOS
-    // still falls back to the system font, which is SF — so this is safe.
-    return TextStyle(
-      fontFamily: display ? '.SF Pro Display' : '.SF Pro Text',
-      fontFamilyFallback: const <String>['.SF Pro Display', '.SF Pro Text'],
-      fontSize: size,
-      fontWeight: weight,
-      fontStyle: style,
-      letterSpacing: letterSpacing,
-      height: height,
-      color: color,
-    );
-  }
-  return GoogleFonts.inter(
-    fontSize: size,
-    fontWeight: weight,
-    fontStyle: style,
-    letterSpacing: letterSpacing,
-    height: height,
-    color: color,
-  );
-}
-
-/// Named text styles built on the platform font — the "kinetic" italic headers
-/// and the bold data numerals used across the app.
+/// Compatibility shim over [AppTypography]. Historically the app used an italic
+/// "kinetic" voice; it's now an upright athletic **Oswald** voice. These three
+/// helpers keep all existing call sites working while routing through the
+/// centralized system. Prefer `AppTypography.*` directly in new code.
 class AppText {
   const AppText._();
 
-  /// Forward-leaning italic header — the brand voice (platform font, bold).
+  /// Header voice → Oswald bold. (The `italic` look is retired.)
   static TextStyle kinetic(
     BuildContext context, {
     double size = 32,
     Color? color,
-    FontWeight weight = FontWeight.w800,
+    FontWeight weight = FontWeight.w700,
   }) =>
-      platformFont(
+      AppTypography.oswald(
         size: size,
         weight: weight,
-        style: FontStyle.italic,
         height: 1.05,
-        letterSpacing: -0.5,
-        display: true,
         color: color ?? Theme.of(context).colorScheme.onSurface,
       );
 
-  /// Big data numerals — steps, timers, points (platform font, bold).
+  /// Big numerals → Oswald bold. (`italic` kept for call-site compatibility but
+  /// ignored — Oswald reads athletic upright.)
   static TextStyle data(
     BuildContext context, {
     double size = 42,
@@ -104,26 +67,24 @@ class AppText {
     bool italic = false,
     FontWeight weight = FontWeight.w700,
   }) =>
-      platformFont(
+      AppTypography.oswald(
         size: size,
         weight: weight,
-        style: italic ? FontStyle.italic : FontStyle.normal,
         height: 1.0,
-        letterSpacing: -1,
-        display: true,
+        letterSpacing: -0.3,
         color: color ?? Theme.of(context).colorScheme.onSurface,
       );
 
-  /// Uppercase technical label with wide tracking (platform font).
+  /// Uppercase technical label → Oswald medium, wide tracking.
   static TextStyle labelCaps(
     BuildContext context, {
     double size = 12,
     Color? color,
   }) =>
-      platformFont(
+      AppTypography.oswald(
         size: size,
-        weight: FontWeight.w600,
-        letterSpacing: 1.2,
+        weight: FontWeight.w500,
+        letterSpacing: 1.8,
         color: color ?? Theme.of(context).colorScheme.onSurfaceVariant,
       );
 }
@@ -142,40 +103,35 @@ class AppTheme {
     );
     final Color onSurface = scheme.onSurface;
 
-    // Font policy: Android = Inter, iOS = SF Pro (system). Body uses the
-    // platform font; headlines are the platform font in bold kinetic italic.
+    // Body/label slots keep the platform body font (Inter on Android, SF Pro on
+    // iOS); display/headline/title slots become Oswald (athletic).
     final TextTheme base = (brightness == Brightness.dark
             ? ThemeData.dark()
             : ThemeData.light())
         .textTheme;
-    // On Apple keep the system (SF Pro) baseline; elsewhere apply Inter.
-    final TextTheme body = _isApplePlatform
+    final TextTheme body = isApplePlatform
         ? base.apply(
             fontFamily: '.SF Pro Text',
             fontFamilyFallback: const <String>['.SF Pro Display'],
           )
         : GoogleFonts.interTextTheme(base);
-    TextStyle kinetic(TextStyle? s) => platformFont(
+
+    TextStyle osw(TextStyle? s, FontWeight weight) => AppTypography.oswald(
           size: s?.fontSize,
-          weight: FontWeight.w800,
-          style: FontStyle.italic,
-          letterSpacing: -0.5,
+          weight: weight,
           height: 1.05,
-          display: true,
           color: s?.color,
         );
+
     final TextTheme textTheme = body.copyWith(
-      displayLarge: kinetic(base.displayLarge),
-      displayMedium: kinetic(base.displayMedium),
-      displaySmall: kinetic(base.displaySmall),
-      headlineLarge: kinetic(base.headlineLarge),
-      headlineMedium: kinetic(base.headlineMedium),
-      headlineSmall: kinetic(base.headlineSmall),
-      titleLarge: platformFont(
-        size: base.titleLarge?.fontSize,
-        weight: FontWeight.w700,
-        color: base.titleLarge?.color,
-      ),
+      displayLarge: osw(base.displayLarge, FontWeight.w700),
+      displayMedium: osw(base.displayMedium, FontWeight.w700),
+      displaySmall: osw(base.displaySmall, FontWeight.w700),
+      headlineLarge: osw(base.headlineLarge, FontWeight.w700),
+      headlineMedium: osw(base.headlineMedium, FontWeight.w700),
+      headlineSmall: osw(base.headlineSmall, FontWeight.w700),
+      titleLarge: osw(base.titleLarge, FontWeight.w600),
+      titleMedium: osw(base.titleMedium, FontWeight.w600),
     );
 
     return ThemeData(
@@ -189,15 +145,8 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        // Kinetic italic AppBar titles (platform font).
-        titleTextStyle: platformFont(
-          size: 24,
-          weight: FontWeight.w800,
-          style: FontStyle.italic,
-          letterSpacing: -0.5,
-          display: true,
-          color: onSurface,
-        ),
+        // Athletic Oswald screen titles.
+        titleTextStyle: AppTypography.screenTitle(size: 24, color: onSurface),
         foregroundColor: onSurface,
       ),
       dividerColor: onSurface.withValues(alpha: 0.12),
@@ -225,13 +174,8 @@ class AppTheme {
           backgroundColor: FitBoxColors.red,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(54),
-          // Fully rounded pill.
           shape: const StadiumBorder(),
-          textStyle: platformFont(
-            weight: FontWeight.w700,
-            size: 15,
-            letterSpacing: 0.3,
-          ),
+          textStyle: AppTypography.button(size: 15),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -240,10 +184,7 @@ class AppTheme {
           minimumSize: const Size.fromHeight(54),
           side: BorderSide(color: onSurface.withValues(alpha: 0.18)),
           shape: const StadiumBorder(),
-          textStyle: platformFont(
-            weight: FontWeight.w600,
-            size: 15,
-          ),
+          textStyle: AppTypography.button(size: 15),
         ),
       ),
     );
