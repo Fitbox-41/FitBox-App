@@ -1,28 +1,17 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../services/api_client.dart';
 import '../widgets/glass.dart';
 import '../widgets/hero_carousel.dart';
-import '../widgets/social_buttons.dart';
-import 'auth_controller.dart';
-import 'google_web_button.dart';
 
 /// The first screen users see (unauthenticated): a full-bleed hero carousel with
-/// a dark auth sheet — Continue with Apple / Google, Sign In, Create Account.
-/// Inspired by Strava / Nike Run Club / Adidas Running (see design/custom/login).
-class AuthLandingScreen extends ConsumerStatefulWidget {
+/// a clean auth sheet — Sign In / Create Account. Google & Apple sign-in live on
+/// the Sign In screen. Inspired by Strava / Nike Run Club / Adidas Running.
+class AuthLandingScreen extends StatelessWidget {
   const AuthLandingScreen({super.key});
 
-  @override
-  ConsumerState<AuthLandingScreen> createState() => _AuthLandingScreenState();
-}
-
-class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
   static const List<HeroSlide> _slides = <HeroSlide>[
     HeroSlide(
       image: 'assets/hero/login1.png',
@@ -46,39 +35,18 @@ class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
     ),
   ];
 
-  Future<void> _google() async {
-    try {
-      await ref.read(authControllerProvider.notifier).signInWithGoogle();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(messageFromError(e))));
-    }
-  }
-
-  void _apple() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        content: Text('Sign in with Apple is coming soon.'),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final bool signingIn = ref.watch(googleSigningInProvider);
     return Scaffold(
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints c) {
           final double h = c.maxHeight;
-          // Auth sheet takes ~38% of the height → the hero photo shows ~62%.
-          final double sheetH = (h * 0.38).clamp(330.0, 470.0);
+          // Auth sheet takes ~34% of the height → the hero photo shows ~66%.
+          final double sheetH = (h * 0.34).clamp(300.0, 430.0);
           const double overlap = 28; // sheet blends up over the photo
 
           return Stack(
             children: <Widget>[
-              // Hero photo fills the whole screen; content sits above the sheet.
               Positioned.fill(
                 child: HeroCarousel(
                   slides: _slides,
@@ -90,26 +58,24 @@ class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
                 right: 0,
                 bottom: 0,
                 height: sheetH,
-                child: _authSheet(context),
+                child: const _AuthSheet(),
               ),
-              if (signingIn)
-                Positioned.fill(
-                  child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    child: const Center(child: CircularProgressIndicator()),
-                  ),
-                ),
             ],
           );
         },
       ),
     );
   }
+}
 
-  /// The auth sheet. Theme-aware (follows the phone's light/dark setting like the
-  /// rest of the app). Its top edge fades in from transparent so the hero photo
-  /// blends smoothly into the sheet instead of a hard cut.
-  Widget _authSheet(BuildContext context) {
+/// The auth sheet. Theme-aware (follows the phone's light/dark setting like the
+/// rest of the app). Its top edge fades in from transparent so the hero photo
+/// blends smoothly into the sheet instead of a hard cut.
+class _AuthSheet extends StatelessWidget {
+  const _AuthSheet();
+
+  @override
+  Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color surface =
@@ -121,7 +87,6 @@ class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
-        // Transparent → solid: the top ~14% fades in over the photo (the blend).
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -131,57 +96,32 @@ class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
             surface,
             surface,
           ],
-          stops: const <double>[0.0, 0.07, 0.16, 1.0],
+          stops: const <double>[0.0, 0.08, 0.18, 1.0],
         ),
       ),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(24, 30, 24, safeBottom + 16),
+        padding: EdgeInsets.fromLTRB(24, 30, 24, safeBottom + 18),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            const LogoBadge(width: 132, glow: false),
-            const SizedBox(height: 4),
+            const Center(child: LogoBadge(width: 138, glow: false)),
+            const SizedBox(height: 6),
             Text('RUN · CAPTURE · EARN',
+                textAlign: TextAlign.center,
                 style: AppTypography.label(size: 11, color: muted)),
-            const SizedBox(height: 20),
-            AppleButton(onPressed: _apple),
-            const SizedBox(height: 10),
-            if (kIsWeb)
-              Center(child: googleSignInWebButton())
-            else
-              GoogleButton(onPressed: _google),
-            const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                const Expanded(child: Divider()),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('OR',
-                      style: AppTypography.label(size: 11, color: muted)),
-                ),
-                const Expanded(child: Divider()),
-              ],
+            const SizedBox(height: 28),
+            GlowButton(
+              label: 'Create Account',
+              icon: Icons.arrow_forward,
+              onPressed: () => context.push('/signup'),
             ),
-            const SizedBox(height: 14),
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: _OutlineButton(
-                    label: 'Sign In',
-                    onTap: () => context.push('/signin'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _OutlineButton(
-                    label: 'Create Account',
-                    emphasized: true,
-                    onTap: () => context.push('/signup'),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 12),
+            _OutlineButton(
+              label: 'Sign In',
+              onTap: () => context.push('/signin'),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
             Text.rich(
               TextSpan(
                 text: 'By continuing, you agree to our ',
@@ -207,34 +147,21 @@ class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
 
 /// Rectangular outlined button (Adidas-style) with an uppercase Oswald label.
 class _OutlineButton extends StatelessWidget {
-  const _OutlineButton({
-    required this.label,
-    required this.onTap,
-    this.emphasized = false,
-  });
+  const _OutlineButton({required this.label, required this.onTap});
 
   final String label;
   final VoidCallback onTap;
-  final bool emphasized;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final Color fg = emphasized ? FitBoxColors.red : cs.onSurface;
     return SizedBox(
-      height: 52,
+      height: 54,
       child: Material(
-        color: emphasized
-            ? FitBoxColors.red.withValues(alpha: 0.06)
-            : Colors.transparent,
+        color: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
-          side: BorderSide(
-            color: emphasized
-                ? FitBoxColors.red
-                : cs.onSurface.withValues(alpha: 0.28),
-            width: emphasized ? 1.5 : 1,
-          ),
+          side: BorderSide(color: cs.onSurface.withValues(alpha: 0.30)),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -245,7 +172,7 @@ class _OutlineButton extends StatelessWidget {
           child: Center(
             child: Text(
               label.toUpperCase(),
-              style: AppTypography.button(size: 13, color: fg),
+              style: AppTypography.button(size: 14, color: cs.onSurface),
             ),
           ),
         ),
