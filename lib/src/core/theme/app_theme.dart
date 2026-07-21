@@ -51,7 +51,7 @@ class AppText {
     Color? color,
     FontWeight weight = FontWeight.w700,
   }) =>
-      AppTypography.oswald(
+      AppTypography.brand(
         size: size,
         weight: weight,
         height: 1.05,
@@ -67,7 +67,7 @@ class AppText {
     bool italic = false,
     FontWeight weight = FontWeight.w700,
   }) =>
-      AppTypography.oswald(
+      AppTypography.brand(
         size: size,
         weight: weight,
         height: 1.0,
@@ -81,7 +81,7 @@ class AppText {
     double size = 12,
     Color? color,
   }) =>
-      AppTypography.oswald(
+      AppTypography.brand(
         size: size,
         weight: FontWeight.w500,
         letterSpacing: 1.8,
@@ -116,7 +116,7 @@ class AppTheme {
           )
         : GoogleFonts.interTextTheme(base);
 
-    TextStyle osw(TextStyle? s, FontWeight weight) => AppTypography.oswald(
+    TextStyle osw(TextStyle? s, FontWeight weight) => AppTypography.brand(
           size: s?.fontSize,
           weight: weight,
           height: 1.05,

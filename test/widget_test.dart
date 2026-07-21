@@ -23,6 +23,7 @@ void main() {
     // Once the (empty) session is checked, it redirects to login.
     await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
-    expect(find.widgetWithText(GlowButton, 'Log in'), findsOneWidget);
+    // GlowButton renders its label uppercased (athletic style).
+    expect(find.widgetWithText(GlowButton, 'LOG IN'), findsOneWidget);
   });
 }

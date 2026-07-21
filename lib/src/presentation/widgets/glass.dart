@@ -236,8 +236,8 @@ class _GlowButtonState extends State<GlowButton> {
                       const SizedBox(width: 10),
                     ],
                     Text(
-                      widget.label,
-                      style: AppTypography.button(color: Colors.white, size: 16),
+                      widget.label.toUpperCase(),
+                      style: AppTypography.button(color: Colors.white, size: 15),
                     ),
                   ],
                 ),
