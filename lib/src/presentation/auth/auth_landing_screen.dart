@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -68,122 +69,137 @@ class _AuthLandingScreenState extends ConsumerState<AuthLandingScreen> {
   Widget build(BuildContext context) {
     final bool signingIn = ref.watch(googleSigningInProvider);
     return Scaffold(
-      body: Stack(
-        children: <Widget>[
-          Column(
+      body: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints c) {
+          final double h = c.maxHeight;
+          // Auth sheet takes ~38% of the height → the hero photo shows ~62%.
+          final double sheetH = (h * 0.38).clamp(330.0, 470.0);
+          const double overlap = 28; // sheet blends up over the photo
+
+          return Stack(
             children: <Widget>[
-              const Expanded(child: HeroCarousel(slides: _slides)),
-              _authSheet(context),
-            ],
-          ),
-          if (signingIn)
-            const Positioned.fill(
-              child: ColoredBox(
-                color: Color(0x99000000),
-                child: Center(child: CircularProgressIndicator()),
+              // Hero photo fills the whole screen; content sits above the sheet.
+              Positioned.fill(
+                child: HeroCarousel(
+                  slides: _slides,
+                  bottomInset: sheetH - overlap,
+                ),
               ),
-            ),
-        ],
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: sheetH,
+                child: _authSheet(context),
+              ),
+              if (signingIn)
+                Positioned.fill(
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  /// The dark auth sheet. Wrapped in a dark theme so the logo, glass buttons and
-  /// text always read light-on-dark, regardless of the app's light/dark setting.
+  /// The auth sheet. Theme-aware (follows the phone's light/dark setting like the
+  /// rest of the app). Its top edge fades in from transparent so the hero photo
+  /// blends smoothly into the sheet instead of a hard cut.
   Widget _authSheet(BuildContext context) {
-    return Theme(
-      data: AppTheme.dark(),
-      child: Builder(
-        builder: (BuildContext ctx) {
-          final double bottomInset = MediaQuery.paddingOf(ctx).bottom;
-          return Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: FitBoxColors.bgBottomDark,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
-              border: Border(
-                top: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
-              ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  blurRadius: 24,
-                  offset: const Offset(0, -8),
-                ),
-              ],
-            ),
-            padding: EdgeInsets.fromLTRB(24, 22, 24, bottomInset + 18),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color surface =
+        isDark ? FitBoxColors.bgBottomDark : const Color(0xFFF6F7F9);
+    final Color muted = cs.onSurfaceVariant;
+    final double safeBottom = MediaQuery.paddingOf(context).bottom;
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+        // Transparent → solid: the top ~14% fades in over the photo (the blend).
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: <Color>[
+            surface.withValues(alpha: 0.0),
+            surface.withValues(alpha: 0.75),
+            surface,
+            surface,
+          ],
+          stops: const <double>[0.0, 0.07, 0.16, 1.0],
+        ),
+      ),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(24, 30, 24, safeBottom + 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            const LogoBadge(width: 132, glow: false),
+            const SizedBox(height: 4),
+            Text('RUN · CAPTURE · EARN',
+                style: AppTypography.label(size: 11, color: muted)),
+            const SizedBox(height: 20),
+            AppleButton(onPressed: _apple),
+            const SizedBox(height: 10),
+            if (kIsWeb)
+              Center(child: googleSignInWebButton())
+            else
+              GoogleButton(onPressed: _google),
+            const SizedBox(height: 14),
+            Row(
               children: <Widget>[
-                const LogoBadge(width: 150, glow: false),
-                const SizedBox(height: 6),
-                Text('RUN · CAPTURE · EARN',
-                    style: AppTypography.label(
-                        size: 12, color: Colors.white.withValues(alpha: 0.6))),
-                const SizedBox(height: 22),
-                AppleButton(onPressed: _apple),
-                const SizedBox(height: 12),
-                if (kIsWeb)
-                  Center(child: googleSignInWebButton())
-                else
-                  GoogleButton(onPressed: _google),
-                const SizedBox(height: 18),
-                Row(
-                  children: <Widget>[
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('OR',
-                          style: AppTypography.label(
-                              size: 12,
-                              color: Colors.white.withValues(alpha: 0.5))),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
+                const Expanded(child: Divider()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('OR',
+                      style: AppTypography.label(size: 11, color: muted)),
                 ),
-                const SizedBox(height: 18),
-                Row(
-                  children: <Widget>[
-                    Expanded(
-                      child: _OutlineButton(
-                        label: 'Sign In',
-                        onTap: () => context.push('/signin'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _OutlineButton(
-                        label: 'Create Account',
-                        emphasized: true,
-                        onTap: () => context.push('/signup'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text.rich(
-                  TextSpan(
-                    text: 'By continuing, you agree to our ',
-                    children: const <TextSpan>[
-                      TextSpan(
-                          text: 'Terms',
-                          style: TextStyle(decoration: TextDecoration.underline)),
-                      TextSpan(text: ' & '),
-                      TextSpan(
-                          text: 'Privacy Policy',
-                          style: TextStyle(decoration: TextDecoration.underline)),
-                    ],
+                const Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: _OutlineButton(
+                    label: 'Sign In',
+                    onTap: () => context.push('/signin'),
                   ),
-                  textAlign: TextAlign.center,
-                  style: AppTypography.caption(
-                      size: 11, color: Colors.white.withValues(alpha: 0.5)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _OutlineButton(
+                    label: 'Create Account',
+                    emphasized: true,
+                    onTap: () => context.push('/signup'),
+                  ),
                 ),
               ],
             ),
-          );
-        },
+            const SizedBox(height: 14),
+            Text.rich(
+              TextSpan(
+                text: 'By continuing, you agree to our ',
+                children: const <TextSpan>[
+                  TextSpan(
+                      text: 'Terms',
+                      style: TextStyle(decoration: TextDecoration.underline)),
+                  TextSpan(text: ' & '),
+                  TextSpan(
+                      text: 'Privacy Policy',
+                      style: TextStyle(decoration: TextDecoration.underline)),
+                ],
+              ),
+              textAlign: TextAlign.center,
+              style: AppTypography.caption(size: 11, color: muted),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -203,28 +219,33 @@ class _OutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final Color fg = emphasized ? FitBoxColors.red : cs.onSurface;
     return SizedBox(
       height: 52,
       child: Material(
-        color: Colors.transparent,
+        color: emphasized
+            ? FitBoxColors.red.withValues(alpha: 0.06)
+            : Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
           side: BorderSide(
             color: emphasized
                 ? FitBoxColors.red
-                : Colors.white.withValues(alpha: 0.3),
+                : cs.onSurface.withValues(alpha: 0.28),
             width: emphasized ? 1.5 : 1,
           ),
         ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: onTap,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
           child: Center(
             child: Text(
               label.toUpperCase(),
-              style: AppTypography.button(
-                  size: 13,
-                  color: emphasized ? FitBoxColors.red : Colors.white),
+              style: AppTypography.button(size: 13, color: fg),
             ),
           ),
         ),

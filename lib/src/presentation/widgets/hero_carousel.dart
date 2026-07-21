@@ -22,9 +22,17 @@ class HeroSlide {
 /// infinitely, animated page dots, and an overlaid heading + caption with a
 /// dark gradient scrim for readability.
 class HeroCarousel extends StatefulWidget {
-  const HeroCarousel({super.key, required this.slides});
+  const HeroCarousel({
+    super.key,
+    required this.slides,
+    this.bottomInset = 24,
+  });
 
   final List<HeroSlide> slides;
+
+  /// Space reserved at the bottom for an overlapping auth sheet — the heading,
+  /// caption and dots are laid out just above this line.
+  final double bottomInset;
 
   @override
   State<HeroCarousel> createState() => _HeroCarouselState();
@@ -90,33 +98,37 @@ class _HeroCarouselState extends State<HeroCarousel> {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: <Color>[
-                          Color(0x66000000),
+                          Color(0x55000000),
                           Color(0x00000000),
-                          Color(0x00000000),
-                          Color(0xCC000000),
+                          Color(0x22000000),
+                          Color(0x99000000),
                         ],
-                        stops: <double>[0.0, 0.25, 0.55, 1.0],
+                        stops: <double>[0.0, 0.3, 0.62, 1.0],
                       ),
                     ),
                   ),
                   Positioned(
                     left: 24,
                     right: 24,
-                    bottom: 56,
+                    bottom: widget.bottomInset + 30,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: <Widget>[
                         Text(
                           s.heading.toUpperCase(),
-                          style: AppTypography.heading(size: 40, color: Colors.white)
-                              .copyWith(height: 1.0),
+                          style: AppTypography.heading(size: 27, color: Colors.white)
+                              .copyWith(height: 1.02),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 6),
                         Text(
                           s.caption,
-                          style: AppTypography.body(size: 15, color: Colors.white)
-                              .copyWith(color: Colors.white.withValues(alpha: 0.85)),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.body(size: 13.5, color: Colors.white)
+                              .copyWith(color: Colors.white.withValues(alpha: 0.82)),
                         ),
                       ],
                     ),
@@ -125,11 +137,11 @@ class _HeroCarouselState extends State<HeroCarousel> {
               );
             },
           ),
-          // Page dots.
+          // Page dots — sit just above the auth sheet.
           Positioned(
             left: 0,
             right: 0,
-            bottom: 24,
+            bottom: widget.bottomInset + 10,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List<Widget>.generate(n, (int i) {

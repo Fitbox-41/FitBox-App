@@ -43,7 +43,7 @@ class AppleButton extends StatelessWidget {
         height: 20,
         colorFilter: ColorFilter.mode(fg, BlendMode.srcIn),
       ),
-      label: 'Continue with Apple',
+      label: 'Sign in with Apple',
     );
   }
 }
