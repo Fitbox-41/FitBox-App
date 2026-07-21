@@ -41,8 +41,9 @@ class AuthLandingScreen extends StatelessWidget {
       body: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints c) {
           final double h = c.maxHeight;
-          // Auth sheet takes ~34% of the height → the hero photo shows ~66%.
-          final double sheetH = (h * 0.34).clamp(300.0, 430.0);
+          // Sheet is tall enough to fit ALL its content (logo + tagline + both
+          // buttons + terms) with no scroll, while the hero photo stays dominant.
+          final double sheetH = (h * 0.42).clamp(384.0, 470.0);
           const double overlap = 28; // sheet blends up over the photo
 
           return Stack(
@@ -100,28 +101,30 @@ class _AuthSheet extends StatelessWidget {
         ),
       ),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(24, 30, 24, safeBottom + 18),
+        // The sheet is sized to fit this content, so it never actually scrolls;
+        // the scroll view is only a safety net on unusually short screens.
+        padding: EdgeInsets.fromLTRB(24, 36, 24, safeBottom + 14),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            const Center(child: LogoBadge(width: 138, glow: false)),
+            const Center(child: LogoBadge(width: 104, glow: false)),
             const SizedBox(height: 6),
             Text('RUN · CAPTURE · EARN',
                 textAlign: TextAlign.center,
                 style: AppTypography.label(size: 11, color: muted)),
-            const SizedBox(height: 28),
+            const SizedBox(height: 20),
             GlowButton(
               label: 'Create Account',
               icon: Icons.arrow_forward,
               onPressed: () => context.push('/signup'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _OutlineButton(
               label: 'Sign In',
               onTap: () => context.push('/signin'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             Text.rich(
               TextSpan(
                 text: 'By continuing, you agree to our ',

@@ -177,7 +177,7 @@ class _WelcomePage extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  Image.asset('assets/hero/login1.png', fit: BoxFit.cover),
+                  Image.asset('assets/hero/onboard1.png', fit: BoxFit.cover),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -230,7 +230,6 @@ class _WelcomePage extends StatelessWidget {
 class _ThemePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
     final ThemeMode mode = ref.watch(themeModeProvider);
 
     void pick(ThemeMode m) {
@@ -238,50 +237,54 @@ class _ThemePage extends ConsumerWidget {
       ref.read(themeModeProvider.notifier).set(m);
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text('THEME\nPREFERENCE',
-              style: AppTypography.heading(size: 34, color: cs.onSurface)
-                  .copyWith(height: 1.02)),
-          const SizedBox(height: 10),
-          Text('Pick how FitBox looks. You can change this anytime in Settings.',
-              style: AppTypography.body(size: 14, color: cs.onSurfaceVariant)),
-          const SizedBox(height: 32),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _ThemeCard(
-                  label: 'Dark',
-                  icon: Icons.dark_mode_rounded,
-                  selected: mode == ThemeMode.dark,
-                  onTap: () => pick(ThemeMode.dark),
+    return Column(
+      children: <Widget>[
+        const _HeroHeader(
+          image: 'assets/hero/onboard2.png',
+          headline: 'THEME\nPREFERENCE',
+          subtitle: 'Pick how FitBox looks. Change it anytime in Settings.',
+          height: 250,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: _ThemeCard(
+                        label: 'Dark',
+                        icon: Icons.dark_mode_rounded,
+                        selected: mode == ThemeMode.dark,
+                        onTap: () => pick(ThemeMode.dark),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _ThemeCard(
+                        label: 'Light',
+                        icon: Icons.light_mode_rounded,
+                        selected: mode == ThemeMode.light,
+                        onTap: () => pick(ThemeMode.light),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _ThemeCard(
-                  label: 'Light',
-                  icon: Icons.light_mode_rounded,
-                  selected: mode == ThemeMode.light,
-                  onTap: () => pick(ThemeMode.light),
+                const SizedBox(height: 12),
+                _ThemeCard(
+                  label: 'Follow System',
+                  icon: Icons.brightness_auto_rounded,
+                  selected: mode == ThemeMode.system,
+                  onTap: () => pick(ThemeMode.system),
+                  wide: true,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          _ThemeCard(
-            label: 'Follow System',
-            icon: Icons.brightness_auto_rounded,
-            selected: mode == ThemeMode.system,
-            onTap: () => pick(ThemeMode.system),
-            wide: true,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -365,40 +368,110 @@ class _ThemeCard extends StatelessWidget {
 class _PermissionsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Column(
+      children: <Widget>[
+        const _HeroHeader(
+          image: 'assets/hero/onboard3.png',
+          headline: 'STAY IN\nTHE FLOW',
+          subtitle: 'A couple of permissions keep your runs tracked. '
+              'You are always in control.',
+          height: 250,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 8),
+            child: Column(
+              children: const <Widget>[
+                _PermRow(
+                  icon: Icons.directions_run_rounded,
+                  title: 'Motion & Fitness',
+                  body: 'Count your steps, distance and pace during a run.',
+                ),
+                SizedBox(height: 16),
+                _PermRow(
+                  icon: Icons.notifications_active_rounded,
+                  title: 'Notifications',
+                  body: 'Live run updates, dares and reward alerts.',
+                ),
+                SizedBox(height: 16),
+                _PermRow(
+                  icon: Icons.place_rounded,
+                  title: 'Location',
+                  body: 'Asked later, when you start map-based territory runs.',
+                  muted: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Shared rounded hero image with a gradient blend and an overlaid Oswald
+/// headline + subtitle — the visual language used across onboarding & auth.
+class _HeroHeader extends StatelessWidget {
+  const _HeroHeader({
+    required this.image,
+    required this.headline,
+    required this.subtitle,
+    this.height = 250,
+  });
+
+  final String image;
+  final String headline;
+  final String subtitle;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text('STAY IN\nTHE FLOW',
-              style: AppTypography.heading(size: 34, color: cs.onSurface)
-                  .copyWith(height: 1.02)),
-          const SizedBox(height: 10),
-          Text('FitBox needs a couple of permissions to track your runs and '
-              'keep you posted. You are always in control.',
-              style: AppTypography.body(size: 14, color: cs.onSurfaceVariant)),
-          const SizedBox(height: 30),
-          const _PermRow(
-            icon: Icons.directions_run_rounded,
-            title: 'Motion & Fitness',
-            body: 'Count your steps, distance and pace during a run.',
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+      child: SizedBox(
+        height: height,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              Image.asset(image, fit: BoxFit.cover),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: <Color>[
+                      Color(0x11000000),
+                      Color(0x00000000),
+                      Color(0x99000000),
+                      Color(0xE0000000),
+                    ],
+                    stops: <double>[0.0, 0.35, 0.75, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(headline,
+                        style: AppTypography.heading(size: 27, color: Colors.white)
+                            .copyWith(height: 1.03)),
+                    const SizedBox(height: 6),
+                    Text(subtitle,
+                        style: AppTypography.body(size: 13, color: Colors.white)
+                            .copyWith(color: Colors.white.withValues(alpha: 0.82))),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 450.ms).slideY(begin: 0.15, end: 0),
+            ],
           ),
-          const SizedBox(height: 16),
-          const _PermRow(
-            icon: Icons.notifications_active_rounded,
-            title: 'Notifications',
-            body: 'Live run updates, dares and reward alerts.',
-          ),
-          const SizedBox(height: 16),
-          _PermRow(
-            icon: Icons.place_rounded,
-            title: 'Location',
-            body: 'Asked later, when you start map-based territory runs.',
-            muted: true,
-          ),
-        ],
+        ),
       ),
     );
   }
