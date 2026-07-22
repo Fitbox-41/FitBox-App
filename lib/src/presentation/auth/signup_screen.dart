@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
-import '../widgets/motion.dart';
 import '../widgets/responsive_form_body.dart';
 import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
@@ -98,23 +97,33 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
-      body: SafeArea(
-        child: ResponsiveFormBody(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              const SizedBox(height: 4),
-              const Center(
-                  child: LogoBadge(width: 52, heroTag: 'fitbox-logo')),
-              const SizedBox(height: 18),
-              _step == _Step.details ? _detailsForm() : _verifyForm(),
-            ].revealStagger(),
+      body: Stack(
+        children: <Widget>[
+          SafeArea(
+            child: ResponsiveFormBody(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const SizedBox(height: 8),
+                  const Center(
+                      child: LogoBadge(width: 64, heroTag: 'fitbox-logo')),
+                  const SizedBox(height: 16),
+                  _step == _Step.details ? _detailsForm() : _verifyForm(),
+                ],
+              ),
+            ),
           ),
-        ),
+          if (Navigator.of(context).canPop())
+            Positioned(
+              top: MediaQuery.paddingOf(context).top + 4,
+              left: 4,
+              child: BackButton(color: cs.onSurface),
+            ),
+        ],
       ),
     );
   }
@@ -126,6 +135,10 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Text('Create account',
+              textAlign: TextAlign.center,
+              style: AppText.kinetic(context, size: 24)),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _name,
             textCapitalization: TextCapitalization.words,

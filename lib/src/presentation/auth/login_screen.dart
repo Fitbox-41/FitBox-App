@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
-import '../widgets/motion.dart';
 import '../widgets/responsive_form_body.dart';
 import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
@@ -200,7 +199,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ],
                     ),
-                  ].revealStagger(),
+                  ],
                 ),
               ),
             ),

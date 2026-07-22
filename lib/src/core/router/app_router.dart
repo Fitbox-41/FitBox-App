@@ -29,6 +29,20 @@ import '../../presentation/wallet/wallet_screen.dart';
 /// + interactive swipe-back gesture) for an Apple-like navigation feel.
 Page<void> _ios(Widget child) => CupertinoPage<void>(child: child);
 
+/// A smooth cross-fade — used for the auth screens so moving between the
+/// landing and Sign In / Create Account blends instead of a hard slide.
+Page<void> _fade(Widget child) => CustomTransitionPage<void>(
+      child: child,
+      transitionDuration: const Duration(milliseconds: 280),
+      reverseTransitionDuration: const Duration(milliseconds: 220),
+      transitionsBuilder: (BuildContext context, Animation<double> animation,
+              Animation<double> secondary, Widget child) =>
+          FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );
+
 /// App navigation. Auth state drives redirects: unknown → splash, first run →
 /// onboarding, signed out → login, signed in → the bottom-nav shell.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -66,16 +80,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/splash', builder: (_, _) => const SplashScreen()),
       GoRoute(path: '/onboarding', builder: (_, _) => const OnboardingScreen()),
       GoRoute(path: '/login', builder: (_, _) => const AuthLandingScreen()),
-      // Pushed routes use the native iOS slide + swipe-back transition.
+      // Auth screens cross-fade with the landing (smooth blend, no hard slide).
       GoRoute(
           path: '/signin',
-          pageBuilder: (_, _) => _ios(const LoginScreen())),
+          pageBuilder: (_, _) => _fade(const LoginScreen())),
       GoRoute(
           path: '/signup',
-          pageBuilder: (_, _) => _ios(const SignupScreen())),
+          pageBuilder: (_, _) => _fade(const SignupScreen())),
       GoRoute(
           path: '/reset',
-          pageBuilder: (_, _) => _ios(const ResetPasswordScreen())),
+          pageBuilder: (_, _) => _fade(const ResetPasswordScreen())),
       GoRoute(
           path: '/change-password',
           pageBuilder: (_, _) => _ios(const ChangePasswordScreen())),
