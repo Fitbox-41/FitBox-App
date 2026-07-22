@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -135,7 +133,9 @@ class _GlassPillNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: FitBoxColors.glassFill(brightness),
         borderRadius: BorderRadius.circular(40),
+        border: Border.all(color: FitBoxColors.glassStroke(brightness)),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -144,34 +144,21 @@ class _GlassPillNav extends StatelessWidget {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(40),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: FitBoxColors.glassFill(brightness),
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: FitBoxColors.glassStroke(brightness)),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-              child: Row(
-                children: <Widget>[
-                  for (int i = 0; i < tabs.length; i++)
-                    Expanded(
-                      child: _NavIcon(
-                        selected: i == currentIndex,
-                        icon: i == currentIndex ? tabs[i].active : tabs[i].icon,
-                        label: tabs[i].label,
-                        inactiveColor: onSurfaceVariant,
-                        onTap: () => onTap(i),
-                      ),
-                    ),
-                ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        child: Row(
+          children: <Widget>[
+            for (int i = 0; i < tabs.length; i++)
+              Expanded(
+                child: _NavIcon(
+                  selected: i == currentIndex,
+                  icon: i == currentIndex ? tabs[i].active : tabs[i].icon,
+                  label: tabs[i].label,
+                  inactiveColor: onSurfaceVariant,
+                  onTap: () => onTap(i),
+                ),
               ),
-            ),
-          ),
+          ],
         ),
       ),
     );

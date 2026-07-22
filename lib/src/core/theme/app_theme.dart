@@ -30,8 +30,8 @@ class FitBoxColors {
 
   // Glass tokens per brightness — iOS-style translucent material.
   static Color glassFill(Brightness b) => b == Brightness.dark
-      ? charcoal.withValues(alpha: 0.55)
-      : Colors.white.withValues(alpha: 0.6);
+      ? charcoal.withValues(alpha: 0.72)
+      : Colors.white.withValues(alpha: 0.78);
   static Color glassStroke(Brightness b) => b == Brightness.dark
       ? Colors.white.withValues(alpha: 0.14)
       : Colors.white.withValues(alpha: 0.7);

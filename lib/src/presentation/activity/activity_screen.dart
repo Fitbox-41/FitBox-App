@@ -5,7 +5,9 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
+import '../../data/providers.dart';
 import '../../data/recorded_runs.dart';
+import '../widgets/common.dart';
 import '../widgets/glass.dart';
 import '../widgets/motion.dart';
 
@@ -19,6 +21,7 @@ class ActivityScreen extends ConsumerWidget {
         list.fold(0, (double a, RunActivity r) => a + r.distanceKm);
     final int totalMinutes =
         list.fold(0, (int a, RunActivity r) => a + r.duration.inMinutes);
+    final List<int> weeklySteps = ref.watch(fitnessStatsProvider).weeklySteps;
 
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
@@ -62,6 +65,8 @@ class ActivityScreen extends ConsumerWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 20),
+            _WeekChart(weeklySteps: weeklySteps),
             const SizedBox(height: 20),
             const _FilterPills(),
             const SizedBox(height: 20),
@@ -158,6 +163,80 @@ class _MonthStat extends StatelessWidget {
                         fontWeight: FontWeight.w600)),
               ],
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Weekly step trend (relocated here from Home) — a compact bar chart with the
+/// current day highlighted in the brand red.
+class _WeekChart extends StatelessWidget {
+  const _WeekChart({required this.weeklySteps});
+
+  final List<int> weeklySteps;
+
+  static const List<String> _days = <String>['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    if (weeklySteps.isEmpty) return const SizedBox.shrink();
+    final int maxSteps = weeklySteps.reduce((int a, int b) => a > b ? a : b);
+    return GlassCard(
+      radius: 24,
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          const CardLabel('This week'),
+          const SizedBox(height: 14),
+          SizedBox(
+            height: 96,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: List<Widget>.generate(weeklySteps.length, (int i) {
+                final double ratio =
+                    maxSteps == 0 ? 0 : weeklySteps[i] / maxSteps;
+                final bool today = i == weeklySteps.length - 1;
+                return Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: <Widget>[
+                      Expanded(
+                        child: FractionallySizedBox(
+                          alignment: Alignment.bottomCenter,
+                          heightFactor: ratio.clamp(0.05, 1.0),
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 5),
+                            decoration: BoxDecoration(
+                              gradient: today
+                                  ? const LinearGradient(
+                                      colors: <Color>[
+                                        FitBoxColors.red,
+                                        FitBoxColors.redDark
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    )
+                                  : null,
+                              color: today
+                                  ? null
+                                  : cs.onSurface.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(7),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(_days[i % _days.length],
+                          style: AppText.labelCaps(context, size: 11)),
+                    ],
+                  ),
+                );
+              }),
+            ),
           ),
         ],
       ),

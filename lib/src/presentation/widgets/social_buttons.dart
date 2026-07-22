@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -68,39 +66,33 @@ class _GlassSocialButton extends StatelessWidget {
     final Color fg = Theme.of(context).colorScheme.onSurface;
     final BorderRadius radius = BorderRadius.circular(6);
 
-    return ClipRRect(
-      borderRadius: radius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-        child: Material(
-          color: FitBoxColors.glassFill(b),
-          shape: RoundedRectangleBorder(
-            borderRadius: radius,
-            side: BorderSide(color: FitBoxColors.glassStroke(b)),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onPressed == null
-                ? null
-                : () {
-                    HapticFeedback.selectionClick();
-                    onPressed!();
-                  },
-            child: SizedBox(
-              height: 54,
-              width: double.infinity,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  icon,
-                  const SizedBox(width: 12),
-                  Text(
-                    label.toUpperCase(),
-                    style: AppTypography.button(color: fg, size: 14),
-                  ),
-                ],
+    return Material(
+      color: FitBoxColors.glassFill(b),
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(color: FitBoxColors.glassStroke(b)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onPressed == null
+            ? null
+            : () {
+                HapticFeedback.selectionClick();
+                onPressed!();
+              },
+        child: SizedBox(
+          height: 52,
+          width: double.infinity,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              icon,
+              const SizedBox(width: 12),
+              Text(
+                label.toUpperCase(),
+                style: AppTypography.button(color: fg, size: 14),
               ),
-            ),
+            ],
           ),
         ),
       ),

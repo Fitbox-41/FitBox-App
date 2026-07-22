@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,9 @@ import '../../services/api_client.dart';
 import '../widgets/glass.dart';
 import '../widgets/motion.dart';
 import '../widgets/responsive_form_body.dart';
+import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
+import 'google_web_button.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -64,6 +67,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
+  Future<void> _google() async {
+    setState(() => _loading = true);
+    try {
+      await ref.read(authControllerProvider.notifier).signInWithGoogle();
+    } catch (e) {
+      _showError(e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   Future<void> _createAccount() async {
     if (!_otpKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -112,14 +126,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text('Create account',
-              textAlign: TextAlign.center,
-              style: AppText.kinetic(context, size: 26)),
-          const SizedBox(height: 4),
-          Text('Run, capture your city, earn rewards.',
-              textAlign: TextAlign.center,
-              style: AppTypography.body(size: 13, color: cs.onSurfaceVariant)),
-          const SizedBox(height: 20),
           TextFormField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
@@ -131,7 +137,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 11),
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
@@ -149,7 +155,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 11),
           TextFormField(
             controller: _password,
             obscureText: _obscure,
@@ -166,14 +172,41 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ? 'At least 6 characters'
                 : null,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           GlowButton(
             label: 'Send verification code',
             icon: Icons.arrow_forward,
             loading: _loading,
             onPressed: _loading ? null : _sendCode,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          Row(
+            children: <Widget>[
+              const Expanded(child: Divider()),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text('OR',
+                    style: AppTypography.label(
+                        size: 11, color: cs.onSurfaceVariant)),
+              ),
+              const Expanded(child: Divider()),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (kIsWeb)
+            Center(child: googleSignInWebButton())
+          else
+            GoogleButton(enabled: !_loading, onPressed: _google),
+          const SizedBox(height: 10),
+          AppleButton(
+            enabled: !_loading,
+            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                behavior: SnackBarBehavior.floating,
+                content: Text('Sign in with Apple is coming soon.'),
+              ),
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[

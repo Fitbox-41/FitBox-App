@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -101,9 +99,15 @@ class _GlassCardState extends State<GlassCard> {
     final Brightness b = Theme.of(context).brightness;
     final BorderRadius br = BorderRadius.circular(widget.radius);
 
+    // Frosted look WITHOUT a live BackdropFilter blur: the app background is a
+    // smooth gradient, so blurring it is invisible but costs a saveLayer per
+    // card (a major source of jank when many cards are on screen). A slightly
+    // more opaque translucent fill + hairline + shadow reads the same, cheaply.
     final Widget card = DecoratedBox(
       decoration: BoxDecoration(
+        color: FitBoxColors.glassFill(b),
         borderRadius: br,
+        border: Border.all(color: FitBoxColors.glassStroke(b)),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -112,20 +116,7 @@ class _GlassCardState extends State<GlassCard> {
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: br,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: FitBoxColors.glassFill(b),
-              borderRadius: br,
-              border: Border.all(color: FitBoxColors.glassStroke(b)),
-            ),
-            child: Padding(padding: widget.padding, child: widget.child),
-          ),
-        ),
-      ),
+      child: Padding(padding: widget.padding, child: widget.child),
     );
 
     if (widget.onTap == null) return card;

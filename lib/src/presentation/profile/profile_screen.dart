@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../core/theme/theme_mode_controller.dart';
 import '../../data/models/fitness_stats.dart';
 import '../../data/providers.dart';
 import '../auth/auth_controller.dart';
@@ -19,7 +18,6 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final user = ref.watch(authControllerProvider).user;
-    final ThemeMode mode = ref.watch(themeModeProvider);
     final FitnessStats stats = ref.watch(fitnessStatsProvider);
 
     final String displayName =
@@ -62,13 +60,6 @@ class ProfileScreen extends ConsumerWidget {
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 24),
-          const CardLabel('Appearance'),
-          const SizedBox(height: 10),
-          GlassCard(
-            radius: 22,
-            child: _ThemeSelector(mode: mode),
           ),
           const SizedBox(height: 24),
           const CardLabel('Account'),
@@ -246,69 +237,6 @@ class _CountStat extends StatelessWidget {
           const SizedBox(height: 4),
           Text(label.toUpperCase(),
               style: AppText.labelCaps(context, size: 11)),
-        ],
-      ),
-    );
-  }
-}
-
-/// iOS-style equal-thirds theme selector — always fits (PC + mobile).
-class _ThemeSelector extends ConsumerWidget {
-  const _ThemeSelector({required this.mode});
-
-  final ThemeMode mode;
-
-  static const List<(ThemeMode, IconData, String)> _options = <(ThemeMode, IconData, String)>[
-    (ThemeMode.system, Icons.brightness_auto, 'System'),
-    (ThemeMode.light, Icons.light_mode, 'Light'),
-    (ThemeMode.dark, Icons.dark_mode, 'Dark'),
-  ];
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: cs.onSurface.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: <Widget>[
-          for (final (ThemeMode value, IconData icon, String label) in _options)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => ref.read(themeModeProvider.notifier).set(value),
-                child: AnimatedContainer(
-                  duration: AppMotion.fast,
-                  curve: AppMotion.expoOut,
-                  padding: const EdgeInsets.symmetric(vertical: 9),
-                  decoration: BoxDecoration(
-                    color: mode == value
-                        ? FitBoxColors.red
-                        : Colors.transparent,
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      Icon(icon,
-                          size: 18,
-                          color: mode == value
-                              ? Colors.white
-                              : cs.onSurfaceVariant),
-                      const SizedBox(height: 3),
-                      Text(label,
-                          style: TextStyle(
-                              fontSize: 11.5,
-                              color: mode == value
-                                  ? Colors.white
-                                  : cs.onSurfaceVariant)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
