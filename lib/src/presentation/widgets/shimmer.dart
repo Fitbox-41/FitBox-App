@@ -33,6 +33,13 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
     final Color highlight =
         (dark ? Colors.white : Colors.black).withValues(alpha: 0.14);
 
+    // Respect "reduce motion" — show the static skeleton without the sweep.
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      if (_c.isAnimating) _c.stop();
+      return widget.child;
+    }
+    if (!_c.isAnimating) _c.repeat();
+
     return AnimatedBuilder(
       animation: _c,
       builder: (BuildContext context, Widget? child) {

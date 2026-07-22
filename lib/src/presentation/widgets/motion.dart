@@ -58,6 +58,9 @@ class CountUpText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Respect the OS "reduce motion" setting — jump straight to the value.
+    final bool reduce = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduce) return builder(context, value);
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: value),
       duration: duration,

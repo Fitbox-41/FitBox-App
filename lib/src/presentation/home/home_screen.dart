@@ -30,6 +30,7 @@ class HomeScreen extends ConsumerWidget {
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.notifications_none, color: cs.onSurface),
+            tooltip: 'Notifications',
             onPressed: () => context.push('/notifications'),
           ),
           const SizedBox(width: 8),

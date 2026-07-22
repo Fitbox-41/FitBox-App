@@ -112,6 +112,7 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final RunSession s = ref.watch(runSessionProvider);
     final bool paused = s.status == RunStatus.paused;
+    final bool reduceMotion = MediaQuery.of(context).disableAnimations;
 
     return Scaffold(
       body: Stack(
@@ -134,15 +135,18 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      paused
-                          ? const Icon(Icons.circle,
-                              color: Colors.amber, size: 10)
-                          : const Icon(Icons.circle,
-                                  color: FitBoxColors.credit, size: 10)
-                              .animate(
-                                  onPlay: (AnimationController c) =>
-                                      c.repeat(reverse: true))
-                              .fade(begin: 1.0, end: 0.25, duration: 800.ms),
+                      if (paused)
+                        const Icon(Icons.circle, color: Colors.amber, size: 10)
+                      else if (reduceMotion)
+                        const Icon(Icons.circle,
+                            color: FitBoxColors.credit, size: 10)
+                      else
+                        const Icon(Icons.circle,
+                                color: FitBoxColors.credit, size: 10)
+                            .animate(
+                                onPlay: (AnimationController c) =>
+                                    c.repeat(reverse: true))
+                            .fade(begin: 1.0, end: 0.25, duration: 800.ms),
                       const SizedBox(width: 8),
                       Text(paused ? 'PAUSED' : 'RECORDING',
                           style: AppText.labelCaps(context,
@@ -152,6 +156,7 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                 ),
                 IconButton.filledTonal(
                   onPressed: _close,
+                  tooltip: 'Discard run',
                   icon: const Icon(Icons.close),
                 ),
               ],
@@ -202,15 +207,20 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                       children: <Widget>[
                         _CircleButton(
                           icon: paused ? Icons.play_arrow : Icons.pause,
+                          semanticLabel: paused ? 'Resume run' : 'Pause run',
                           primary: false,
                           onTap: () => paused
                               ? ref.read(runSessionProvider.notifier).resume()
                               : ref.read(runSessionProvider.notifier).pause(),
                         ),
                         _CircleButton(
-                            icon: Icons.stop, primary: true, onTap: _stop),
+                            icon: Icons.stop,
+                            semanticLabel: 'Finish run',
+                            primary: true,
+                            onTap: _stop),
                         const _CircleButton(
                             icon: Icons.layers_outlined,
+                            semanticLabel: 'Map layers',
                             primary: false,
                             onTap: null),
                       ],
@@ -287,11 +297,13 @@ class _CircleButton extends StatefulWidget {
     required this.icon,
     required this.primary,
     required this.onTap,
+    this.semanticLabel,
   });
 
   final IconData icon;
   final bool primary;
   final VoidCallback? onTap;
+  final String? semanticLabel;
 
   @override
   State<_CircleButton> createState() => _CircleButtonState();
@@ -305,7 +317,11 @@ class _CircleButtonState extends State<_CircleButton> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool enabled = widget.onTap != null;
     final bool primary = widget.primary;
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: widget.semanticLabel,
+      child: GestureDetector(
       onTapDown: enabled ? (_) => setState(() => _down = true) : null,
       onTapUp: enabled ? (_) => setState(() => _down = false) : null,
       onTapCancel: enabled ? () => setState(() => _down = false) : null,
@@ -347,6 +363,7 @@ class _CircleButtonState extends State<_CircleButton> {
                 size: primary ? 32 : 26),
           ),
         ),
+      ),
       ),
     );
   }
