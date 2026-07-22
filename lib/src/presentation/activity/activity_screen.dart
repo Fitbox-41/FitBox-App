@@ -30,7 +30,7 @@ class ActivityScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
-                Text('This Month', style: AppText.kinetic(context, size: 28)),
+                Text('This Month', style: AppText.kinetic(context, size: 24)),
                 _MonthChip(label: DateFormat('MMMM').format(DateTime.now())),
               ],
             ),

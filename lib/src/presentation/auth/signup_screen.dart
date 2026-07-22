@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,9 +7,7 @@ import '../../services/api_client.dart';
 import '../widgets/glass.dart';
 import '../widgets/motion.dart';
 import '../widgets/responsive_form_body.dart';
-import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
-import 'google_web_button.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -67,17 +64,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     }
   }
 
-  Future<void> _google() async {
-    setState(() => _loading = true);
-    try {
-      await ref.read(authControllerProvider.notifier).signInWithGoogle();
-    } catch (e) {
-      _showError(e);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   Future<void> _createAccount() async {
     if (!_otpKey.currentState!.validate()) return;
     setState(() => _loading = true);
@@ -102,16 +88,16 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       appBar: AppBar(title: const Text('Create account')),
       body: SafeArea(
         child: ResponsiveFormBody(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const LogoBadge(width: 88, heroTag: 'fitbox-logo'),
+              const SizedBox(height: 4),
+              const Center(
+                  child: LogoBadge(width: 52, heroTag: 'fitbox-logo')),
               const SizedBox(height: 18),
-              GlassCard(
-                radius: 24,
-                padding: const EdgeInsets.all(22),
-                child: _step == _Step.details ? _detailsForm() : _verifyForm(),
-              ),
+              _step == _Step.details ? _detailsForm() : _verifyForm(),
             ].revealStagger(),
           ),
         ),
@@ -126,11 +112,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text('Create account', style: AppText.kinetic(context, size: 30)),
-          const SizedBox(height: 6),
-          Text('Join FitBox — run, capture your city, earn rewards.',
-              style: AppTypography.body(size: 14, color: cs.onSurfaceVariant)),
-          const SizedBox(height: 22),
+          Text('Create account',
+              textAlign: TextAlign.center,
+              style: AppText.kinetic(context, size: 26)),
+          const SizedBox(height: 4),
+          Text('Run, capture your city, earn rewards.',
+              textAlign: TextAlign.center,
+              style: AppTypography.body(size: 13, color: cs.onSurfaceVariant)),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
@@ -142,7 +131,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
@@ -160,7 +149,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               return null;
             },
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           TextFormField(
             controller: _password,
             obscureText: _obscure,
@@ -177,40 +166,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 ? 'At least 6 characters'
                 : null,
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 20),
           GlowButton(
             label: 'Send verification code',
             icon: Icons.arrow_forward,
             loading: _loading,
             onPressed: _loading ? null : _sendCode,
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: <Widget>[
-              const Expanded(child: Divider()),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('OR',
-                    style:
-                        AppTypography.label(size: 11, color: cs.onSurfaceVariant)),
-              ),
-              const Expanded(child: Divider()),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (kIsWeb)
-            Center(child: googleSignInWebButton())
-          else
-            GoogleButton(enabled: !_loading, onPressed: _google),
-          const SizedBox(height: 12),
-          AppleButton(
-            enabled: !_loading,
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                behavior: SnackBarBehavior.floating,
-                content: Text('Sign in with Apple is coming soon.'),
-              ),
-            ),
           ),
           const SizedBox(height: 8),
           Row(
@@ -219,7 +180,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               const Text('Already have an account?'),
               TextButton(
                 onPressed: _loading ? null : () => context.pop(),
-                child: const Text('Log in'),
+                child: const Text('Sign in'),
               ),
             ],
           ),

@@ -56,6 +56,11 @@ class _HeroCarouselState extends State<HeroCarousel> {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 3), (_) {
       if (!mounted || !_controller.hasClients) return;
+      // Pause auto-scroll while another screen (Sign In / Create Account) is
+      // pushed on top — otherwise this keeps animating 4 large images behind
+      // the covered route and steals frames from the new screen.
+      final ModalRoute<Object?>? route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) return;
       _controller.nextPage(
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeInOut,

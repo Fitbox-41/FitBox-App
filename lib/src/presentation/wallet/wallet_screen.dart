@@ -120,7 +120,7 @@ class _BalanceCard extends StatelessWidget {
                 value: points.toDouble(),
                 builder: (BuildContext c, double v) => Text(
                   fmt.format(v.round()),
-                  style: AppText.data(c, size: 56, color: Colors.white),
+                  style: AppText.data(c, size: 46, color: Colors.white),
                 ),
               ),
               const SizedBox(width: 8),
@@ -128,7 +128,7 @@ class _BalanceCard extends StatelessWidget {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text('PTS',
                     style: AppText.kinetic(context,
-                        size: 20,
+                        size: 16,
                         color: Colors.white.withValues(alpha: 0.9))),
               ),
             ],

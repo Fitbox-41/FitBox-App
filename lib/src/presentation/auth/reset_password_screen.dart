@@ -87,16 +87,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       appBar: AppBar(title: const Text('Reset password')),
       body: SafeArea(
         child: ResponsiveFormBody(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const LogoBadge(width: 88, heroTag: 'fitbox-logo'),
+              const SizedBox(height: 4),
+              const Center(
+                  child: LogoBadge(width: 56, heroTag: 'fitbox-logo')),
               const SizedBox(height: 18),
-              GlassCard(
-                radius: 24,
-                padding: const EdgeInsets.all(22),
-                child: _step == _Step.email ? _emailForm() : _resetForm(),
-              ),
+              _step == _Step.email ? _emailForm() : _resetForm(),
             ].revealStagger(),
           ),
         ),
@@ -110,12 +110,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text('Reset password', style: AppText.kinetic(context, size: 30)),
-          const SizedBox(height: 6),
+          Text('Reset password',
+              textAlign: TextAlign.center,
+              style: AppText.kinetic(context, size: 24)),
+          const SizedBox(height: 4),
           Text(
             "Enter your account email and we'll send you a 6-digit code.",
+            textAlign: TextAlign.center,
             style: AppTypography.body(
-                size: 14,
+                size: 13,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 20),

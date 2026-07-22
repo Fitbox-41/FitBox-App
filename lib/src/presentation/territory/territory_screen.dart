@@ -43,7 +43,7 @@ class _Header extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
         Expanded(
-          child: Text('Territory', style: AppText.kinetic(context, size: 30)),
+          child: Text('Territory', style: AppText.kinetic(context, size: 24)),
         ),
         const _GlassPill(
           icon: Icons.timelapse,
@@ -261,7 +261,7 @@ class _TerritoryStatCard extends StatelessWidget {
                 value: _percent,
                 builder: (BuildContext context, double v) => Text(
                   '${v.round()}%',
-                  style: AppText.data(context, size: 56, color: FitBoxColors.red),
+                  style: AppText.data(context, size: 46, color: FitBoxColors.red),
                 ),
               ),
               const SizedBox(width: 10),

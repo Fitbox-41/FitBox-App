@@ -53,7 +53,7 @@ class RunSummaryScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 6),
-              Text(title, style: AppText.kinetic(context, size: 34)),
+              Text(title, style: AppText.kinetic(context, size: 26)),
             ],
           ),
           const SizedBox(height: 18),

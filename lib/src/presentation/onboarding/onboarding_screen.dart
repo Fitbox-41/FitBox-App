@@ -204,7 +204,7 @@ class _WelcomePage extends StatelessWidget {
                       children: <Widget>[
                         Text(
                           'WELCOME TO\nFITBOX SPORTS',
-                          style: AppTypography.heading(size: 30, color: Colors.white)
+                          style: AppTypography.heading(size: 27, color: Colors.white)
                               .copyWith(height: 1.05),
                         ),
                         const SizedBox(height: 10),
