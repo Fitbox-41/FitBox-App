@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../widgets/glass.dart';
 import '../widgets/hero_carousel.dart';
+import 'auth_controller.dart';
 
 /// The first screen users see (unauthenticated): a full-bleed hero carousel with
 /// a clean auth sheet — Sign In / Create Account. Google & Apple sign-in live on
@@ -43,7 +45,7 @@ class AuthLandingScreen extends StatelessWidget {
           final double h = c.maxHeight;
           // Sheet is tall enough to fit ALL its content (logo + tagline + both
           // buttons + terms) with no scroll, while the hero photo stays dominant.
-          final double sheetH = (h * 0.42).clamp(384.0, 470.0);
+          final double sheetH = (h * 0.45).clamp(424.0, 500.0);
           const double overlap = 28; // sheet blends up over the photo
 
           return Stack(
@@ -72,11 +74,11 @@ class AuthLandingScreen extends StatelessWidget {
 /// The auth sheet. Theme-aware (follows the phone's light/dark setting like the
 /// rest of the app). Its top edge fades in from transparent so the hero photo
 /// blends smoothly into the sheet instead of a hard cut.
-class _AuthSheet extends StatelessWidget {
+class _AuthSheet extends ConsumerWidget {
   const _AuthSheet();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color surface =
@@ -124,7 +126,17 @@ class _AuthSheet extends StatelessWidget {
               label: 'Sign In',
               onTap: () => context.push('/signin'),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () {
+                HapticFeedback.selectionClick();
+                ref.read(guestModeProvider.notifier).enter();
+                context.go('/home');
+              },
+              child: Text('Continue as guest',
+                  style: AppTypography.button(size: 13, color: muted)),
+            ),
+            const SizedBox(height: 6),
             Text.rich(
               TextSpan(
                 text: 'By continuing, you agree to our ',

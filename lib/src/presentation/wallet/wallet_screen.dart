@@ -5,8 +5,10 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/wallet.dart';
 import '../../data/providers.dart';
+import '../auth/auth_controller.dart';
 import '../widgets/common.dart';
 import '../widgets/glass.dart';
+import '../widgets/guest_gate.dart';
 import '../widgets/motion.dart';
 import '../widgets/shimmer.dart';
 
@@ -15,6 +17,19 @@ class WalletScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final bool guest = ref.watch(guestModeProvider);
+    if (guest) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Wallet')),
+        body: const GuestGate(
+          icon: Icons.account_balance_wallet_outlined,
+          title: 'Your wallet',
+          message: 'Sign in to view your points balance, earn rewards for '
+              'staying active, and spend them at checkout.',
+        ),
+      );
+    }
+
     final AsyncValue<WalletData> wallet = ref.watch(walletProvider);
 
     return Scaffold(
@@ -145,9 +160,10 @@ class _BalanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text('Earn points when you’re active · spend them at checkout.',
+          Text('Earn points when you’re active.\nSpend them at checkout.',
               style: AppTypography.caption(
-                  size: 12, color: Colors.white.withValues(alpha: 0.8))),
+                      size: 12, color: Colors.white.withValues(alpha: 0.8))
+                  .copyWith(height: 1.35)),
         ],
       ),
     );

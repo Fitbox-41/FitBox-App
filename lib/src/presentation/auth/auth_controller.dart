@@ -178,6 +178,19 @@ class AuthController extends Notifier<AuthState> {
 final authControllerProvider =
     NotifierProvider<AuthController, AuthState>(AuthController.new);
 
+/// Whether the user is exploring as a **guest** (no account). Guests can browse
+/// the app, but account actions (wallet, syncing, profile) prompt a sign-in.
+/// Cleared automatically once the user authenticates (see the router).
+class GuestMode extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void enter() => state = true;
+  void exit() => state = false;
+}
+
+final guestModeProvider = NotifierProvider<GuestMode, bool>(GuestMode.new);
+
 /// True while a web Google sign-in is being completed (network round-trip),
 /// so the UI can show a brief loading overlay.
 class GoogleSigningIn extends Notifier<bool> {

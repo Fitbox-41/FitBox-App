@@ -47,8 +47,15 @@ Page<void> _fade(Widget child) => CustomTransitionPage<void>(
 /// onboarding, signed out → login, signed in → the bottom-nav shell.
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
-  ref.listen(authControllerProvider, (_, _) => refresh.value++);
+  ref.listen(authControllerProvider, (_, AuthState next) {
+    // Signing in ends a guest session.
+    if (next.status == AuthStatus.authenticated) {
+      ref.read(guestModeProvider.notifier).exit();
+    }
+    refresh.value++;
+  });
   ref.listen(onboardingSeenProvider, (_, _) => refresh.value++);
+  ref.listen(guestModeProvider, (_, _) => refresh.value++);
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
@@ -57,6 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final status = ref.read(authControllerProvider).status;
       final bool seen = ref.read(onboardingSeenProvider);
+      final bool guest = ref.read(guestModeProvider);
       final loc = state.matchedLocation;
       final atSplash = loc == '/splash';
       final atOnboarding = loc == '/onboarding';
@@ -70,6 +78,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (status == AuthStatus.unauthenticated) {
         if (!seen) return atOnboarding ? null : '/onboarding';
+        // Guests browse the app; they may still open the auth screens to sign
+        // in. Only keep them out of splash/onboarding.
+        if (guest) return (atSplash || atOnboarding) ? '/home' : null;
         return atAuth ? null : '/login';
       }
       // Authenticated: keep them out of splash/onboarding/auth screens.

@@ -18,6 +18,7 @@ class ProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final user = ref.watch(authControllerProvider).user;
+    final bool guest = ref.watch(guestModeProvider);
     final FitnessStats stats = ref.watch(fitnessStatsProvider);
 
     final String displayName =
@@ -79,11 +80,13 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Goals',
                     onTap: () => context.push('/goals')),
                 _RowDivider(cs: cs),
-                _ActionRow(
-                    icon: Icons.lock_outline,
-                    label: 'Set / change password',
-                    onTap: () => context.push('/change-password')),
-                _RowDivider(cs: cs),
+                if (!guest) ...<Widget>[
+                  _ActionRow(
+                      icon: Icons.lock_outline,
+                      label: 'Set / change password',
+                      onTap: () => context.push('/change-password')),
+                  _RowDivider(cs: cs),
+                ],
                 _ActionRow(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
@@ -97,18 +100,48 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          GlassCard(
-            radius: 22,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            onTap: () => _confirmLogout(context, ref),
-            child: _ActionRow(
-              icon: Icons.logout,
-              label: 'Log out',
-              destructive: true,
-              // Tap handled by the enclosing GlassCard.onTap.
-              onTap: null,
+          if (guest)
+            GlassCard(
+              radius: 22,
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Text('You’re browsing as a guest',
+                      style: AppText.kinetic(context, size: 18)),
+                  const SizedBox(height: 4),
+                  Text(
+                      'Sign in to save your runs, earn points and sync across '
+                      'your devices.',
+                      style: AppTypography.body(
+                          size: 13, color: cs.onSurfaceVariant)),
+                  const SizedBox(height: 14),
+                  GlowButton(
+                    label: 'Sign In',
+                    icon: Icons.arrow_forward,
+                    onPressed: () => context.push('/signin'),
+                  ),
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () => context.push('/signup'),
+                    child: const Text('Create an account'),
+                  ),
+                ],
+              ),
+            )
+          else
+            GlassCard(
+              radius: 22,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              onTap: () => _confirmLogout(context, ref),
+              child: _ActionRow(
+                icon: Icons.logout,
+                label: 'Log out',
+                destructive: true,
+                // Tap handled by the enclosing GlassCard.onTap.
+                onTap: null,
+              ),
             ),
-          ),
         ].revealStagger(),
       ),
     );
