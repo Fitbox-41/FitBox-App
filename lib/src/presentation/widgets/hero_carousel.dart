@@ -80,13 +80,17 @@ class _HeroCarouselState extends State<HeroCarousel> {
   @override
   Widget build(BuildContext context) {
     final int n = widget.slides.length;
-    return Listener(
-      // Pause auto-scroll while the user is dragging; resume after.
-      onPointerDown: (_) => _stop(),
-      onPointerUp: (_) => _start(),
-      child: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
+    // Cache the whole carousel as its own compositor layer so page transitions
+    // (e.g. fading into Sign In) blend a cached texture instead of re-painting
+    // four full-screen images every frame.
+    return RepaintBoundary(
+      child: Listener(
+        // Pause auto-scroll while the user is dragging; resume after.
+        onPointerDown: (_) => _stop(),
+        onPointerUp: (_) => _start(),
+        child: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
           PageView.builder(
             controller: _controller,
             onPageChanged: (int i) => setState(() => _page = i % n),
@@ -167,6 +171,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

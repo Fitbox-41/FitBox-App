@@ -84,7 +84,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Reset password')),
-      body: SafeArea(
+      body: AppBackground(
+        child: SafeArea(
         child: ResponsiveFormBody(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           child: Column(
@@ -98,6 +99,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               _step == _Step.email ? _emailForm() : _resetForm(),
             ],
           ),
+        ),
         ),
       ),
     );

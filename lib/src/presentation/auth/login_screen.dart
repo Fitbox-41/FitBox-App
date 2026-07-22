@@ -80,7 +80,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final bool signingIn = ref.watch(googleSigningInProvider);
     return Scaffold(
-      body: Stack(
+      body: AppBackground(
+        child: Stack(
         children: <Widget>[
           SafeArea(
             child: ResponsiveFormBody(
@@ -219,6 +220,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
         ],
+        ),
       ),
     );
   }

@@ -99,7 +99,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     return Scaffold(
-      body: Stack(
+      body: AppBackground(
+        child: Stack(
         children: <Widget>[
           SafeArea(
             child: ResponsiveFormBody(
@@ -124,6 +125,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
               child: BackButton(color: cs.onSurface),
             ),
         ],
+        ),
       ),
     );
   }

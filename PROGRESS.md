@@ -4,6 +4,48 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 23 July 2026 — Weekly report: interactive redesign + design system + perf (v1.3.0 → v1.9.1)
+
+**Design system.** Installed the **ui-ux-pro-max** skill (global, all projects) and generated a
+persisted system at `design-system/fitbox/MASTER.md` with a locked brand override (FitBox = logo-red
++ Oswald; the engine's generic orange/Barlow is ignored). This drives the redesign.
+
+**Auth + onboarding (Phase 2).**
+- New **auth landing** (`/login`): full-bleed hero photo carousel (~62–66%) that cross-fades into a
+  theme-aware sheet — **Sign In / Create Account** (Google/Apple live on the Sign In & Create Account
+  forms). Matches the mockup the mentor/user signed off as the quality bar.
+- New **3-step onboarding**: Welcome → Choose Theme (applies live) → Permissions (motion +
+  notifications), each with a generated hero image (`assets/hero/onboard1–3.png`).
+- **Sign In / Sign Up / Reset** rebuilt to fit without scrolling; forms use GlowButton + themed inputs.
+
+**Full in-app redesign to the login bar.** Every screen upgraded with a shared motion language:
+Home (count-up stat ring + tiles), Record Run (animated 3-2-1 countdown, live pulse, haptic controls),
+Wallet (hero balance count-up + glass ledger + skeleton loader), Activity (glass run cards + "This week"
+chart, relocated from Home) + Run Summary, Leaderboard (medal podium) + Goals (progress rings),
+Profile + Settings (grouped glass rows; theme control now only in Settings), Territory + Notifications.
+Added **iOS-style route transitions** and **reduced-motion** support + accessibility labels
+(ui-ux-pro-max pre-delivery checklist).
+
+**Performance.** Diagnosed app-wide "loading lag" as excessive **`BackdropFilter` blur** (one saveLayer
+per glass card/nav/social button) — invisible over the smooth-gradient background but very costly.
+Removed all live blurs (kept the frosted look via more-opaque fills); capped hero-image decode
+(`cacheWidth`); `RepaintBoundary` on the carousel; and gave auth screens opaque backgrounds so the
+landing→auth **cross-fade blends cleanly** with no snap/jerk.
+
+**Backend.** Re-verified both Vercel backends are **live**: website auth (`…website-efns…`) and app
+(`fit-box-app`) — protected endpoints return 401, i.e. up and enforcing auth. Earlier this window the
+**wallet data model moved onto `users.walletBalance`** across both backends (legacy `wallets`
+collection dropped; balances reconciled), pushed directly to `main`.
+
+**Status:** analyze clean, widget test passing, web + APK built every step; web redeployed to
+`fitboxsports-8d1c0.web.app`, APKs installed on device. Shipped versions 1.3.0 → **1.9.1+22**.
+
+**Pending / next:** guest mode ("Continue as guest" + gated account actions) to close Phase 2 → Google
+Maps **India cost report (PDF)** → Maps integration → live run activity (Android notif + iOS Dynamic
+Island) → Dare feature.
+
+---
+
 ## 18 July 2026 — Full "Aerostride" redesign complete (v1.2.0)
 
 - Redesigned the **entire app** to the Stitch-derived Aerostride design (Apple-grade glassmorphism,
