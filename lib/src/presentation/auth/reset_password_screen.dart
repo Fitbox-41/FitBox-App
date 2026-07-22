@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
+import '../widgets/motion.dart';
 import '../widgets/responsive_form_body.dart';
 import 'auth_controller.dart';
 
@@ -86,10 +87,17 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       appBar: AppBar(title: const Text('Reset password')),
       body: SafeArea(
         child: ResponsiveFormBody(
-          child: GlassCard(
-            radius: 24,
-            padding: const EdgeInsets.all(20),
-            child: _step == _Step.email ? _emailForm() : _resetForm(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const LogoBadge(width: 88, heroTag: 'fitbox-logo'),
+              const SizedBox(height: 18),
+              GlassCard(
+                radius: 24,
+                padding: const EdgeInsets.all(22),
+                child: _step == _Step.email ? _emailForm() : _resetForm(),
+              ),
+            ].revealStagger(),
           ),
         ),
       ),
@@ -102,14 +110,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text('Reset password', style: AppText.kinetic(context, size: 32)),
-          const SizedBox(height: 8),
+          Text('Reset password', style: AppText.kinetic(context, size: 30)),
+          const SizedBox(height: 6),
           Text(
             "Enter your account email and we'll send you a 6-digit code.",
-            style: TextStyle(
+            style: AppTypography.body(
+                size: 14,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
           TextFormField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
@@ -138,31 +147,42 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   }
 
   Widget _resetForm() {
-    final text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Form(
       key: _resetKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const Icon(Icons.lock_reset, color: FitBoxColors.red, size: 44),
-          const SizedBox(height: 8),
+          Center(
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: FitBoxColors.red.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.lock_reset,
+                  color: FitBoxColors.red, size: 32),
+            ),
+          ),
+          const SizedBox(height: 14),
           Text('Enter code + new password',
               textAlign: TextAlign.center,
-              style: text.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+              style: AppTypography.heading(size: 22, color: cs.onSurface)),
+          const SizedBox(height: 4),
           Text('Sent to ${_email.text.trim()}',
               textAlign: TextAlign.center,
-              style: text.bodySmall?.copyWith(color: Theme.of(context).hintColor)),
-          const SizedBox(height: 18),
+              style: AppTypography.body(size: 13, color: cs.onSurfaceVariant)),
+          const SizedBox(height: 22),
           TextFormField(
             controller: _otp,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             maxLength: 6,
-            style: const TextStyle(fontSize: 20, letterSpacing: 6),
+            style: AppText.data(context, size: 24).copyWith(letterSpacing: 6),
             decoration: const InputDecoration(
               counterText: '',
               labelText: '6-digit code',
-              border: OutlineInputBorder(),
             ),
             validator: (v) =>
                 (v ?? '').trim().length != 6 ? 'Enter the 6-digit code' : null,
@@ -174,7 +194,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             decoration: InputDecoration(
               labelText: 'New password',
               prefixIcon: const Icon(Icons.lock_outline),
-              border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon:
                     Icon(_obscure ? Icons.visibility_off : Icons.visibility),
@@ -191,7 +210,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             decoration: const InputDecoration(
               labelText: 'Confirm new password',
               prefixIcon: Icon(Icons.lock_outline),
-              border: OutlineInputBorder(),
             ),
             validator: (v) =>
                 v != _next.text ? 'Passwords do not match' : null,

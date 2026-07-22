@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
 import '../widgets/glass.dart';
+import '../widgets/motion.dart';
 import '../widgets/responsive_form_body.dart';
 import '../widgets/social_buttons.dart';
 import 'auth_controller.dart';
@@ -104,14 +105,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              const LogoBadge(width: 92, heroTag: 'fitbox-logo'),
+              const LogoBadge(width: 88, heroTag: 'fitbox-logo'),
               const SizedBox(height: 18),
               GlassCard(
                 radius: 24,
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(22),
                 child: _step == _Step.details ? _detailsForm() : _verifyForm(),
               ),
-            ],
+            ].revealStagger(),
           ),
         ),
       ),
@@ -119,11 +120,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _detailsForm() {
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Form(
       key: _detailsKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Text('Create account', style: AppText.kinetic(context, size: 30)),
+          const SizedBox(height: 6),
+          Text('Join FitBox — run, capture your city, earn rewards.',
+              style: AppTypography.body(size: 14, color: cs.onSurfaceVariant)),
+          const SizedBox(height: 22),
           TextFormField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
@@ -131,7 +138,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             decoration: const InputDecoration(
               labelText: 'Full name',
               prefixIcon: Icon(Icons.person_outline),
-              border: OutlineInputBorder(),
             ),
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? 'Enter your name' : null,
@@ -144,7 +150,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             decoration: const InputDecoration(
               labelText: 'Email',
               prefixIcon: Icon(Icons.mail_outline),
-              border: OutlineInputBorder(),
             ),
             validator: (v) {
               final value = (v ?? '').trim();
@@ -162,7 +167,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             decoration: InputDecoration(
               labelText: 'Password',
               prefixIcon: const Icon(Icons.lock_outline),
-              border: const OutlineInputBorder(),
               suffixIcon: IconButton(
                 icon:
                     Icon(_obscure ? Icons.visibility_off : Icons.visibility),
@@ -174,26 +178,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 : null,
           ),
           const SizedBox(height: 22),
-          FilledButton(
+          GlowButton(
+            label: 'Send verification code',
+            icon: Icons.arrow_forward,
+            loading: _loading,
             onPressed: _loading ? null : _sendCode,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Text('Send verification code'),
           ),
           const SizedBox(height: 16),
           Row(
-            children: const <Widget>[
-              Expanded(child: Divider()),
+            children: <Widget>[
+              const Expanded(child: Divider()),
               Padding(
-                padding: EdgeInsets.symmetric(horizontal: 10),
-                child: Text('or'),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text('OR',
+                    style:
+                        AppTypography.label(size: 11, color: cs.onSurfaceVariant)),
               ),
-              Expanded(child: Divider()),
+              const Expanded(child: Divider()),
             ],
           ),
           const SizedBox(height: 16),
@@ -228,33 +229,42 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _verifyForm() {
-    final text = Theme.of(context).textTheme;
+    final ColorScheme cs = Theme.of(context).colorScheme;
     return Form(
       key: _otpKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          const Icon(Icons.mark_email_read_outlined,
-              color: FitBoxColors.red, size: 48),
-          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: FitBoxColors.red.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.mark_email_read_outlined,
+                  color: FitBoxColors.red, size: 32),
+            ),
+          ),
+          const SizedBox(height: 14),
           Text('Enter the code',
               textAlign: TextAlign.center,
-              style: text.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              style: AppTypography.heading(size: 24, color: cs.onSurface)),
+          const SizedBox(height: 4),
           Text('Sent to ${_email.text.trim()}',
               textAlign: TextAlign.center,
-              style:
-                  text.bodySmall?.copyWith(color: Theme.of(context).hintColor)),
-          const SizedBox(height: 20),
+              style: AppTypography.body(size: 13, color: cs.onSurfaceVariant)),
+          const SizedBox(height: 22),
           TextFormField(
             controller: _otp,
             keyboardType: TextInputType.number,
             textAlign: TextAlign.center,
             maxLength: 6,
-            style: const TextStyle(fontSize: 22, letterSpacing: 8),
+            style: AppText.data(context, size: 26).copyWith(letterSpacing: 8),
             decoration: const InputDecoration(
               counterText: '',
               hintText: '••••••',
-              border: OutlineInputBorder(),
             ),
             validator: (v) {
               final value = (v ?? '').trim();
@@ -263,17 +273,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             },
           ),
           const SizedBox(height: 20),
-          FilledButton(
+          GlowButton(
+            label: 'Create account',
+            icon: Icons.check_rounded,
+            loading: _loading,
             onPressed: _loading ? null : _createAccount,
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
-            child: _loading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white))
-                : const Text('Create account'),
           ),
+          const SizedBox(height: 4),
           TextButton(
             onPressed: _loading ? null : _sendCode,
             child: const Text('Resend code'),
