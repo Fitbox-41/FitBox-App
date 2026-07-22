@@ -42,7 +42,13 @@ class HomeScreen extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
           children: <Widget>[
               _StepsRing(stats: s),
-              const SizedBox(height: 16),
+              const SizedBox(height: 18),
+              GlowButton(
+                label: 'Start a run',
+                icon: Icons.play_arrow_rounded,
+                onPressed: () => _startRun(context),
+              ),
+              const SizedBox(height: 22),
               Row(
                 children: <Widget>[
                   Expanded(
@@ -79,14 +85,8 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
               _WeeklyCard(weeklySteps: s.weeklySteps),
-              const SizedBox(height: 28),
-              GlowButton(
-                label: 'Start a run',
-                icon: Icons.play_arrow_rounded,
-                onPressed: () => _startRun(context),
-              ),
             ]
                 .animate(interval: 70.ms)
                 .fadeIn(duration: 320.ms)
@@ -118,8 +118,8 @@ class _StepsRing extends StatelessWidget {
           const SizedBox(height: 8),
           Center(
             child: SizedBox(
-              width: 208,
-              height: 208,
+              width: 176,
+              height: 176,
               child: TweenAnimationBuilder<double>(
                 tween: Tween<double>(begin: 0, end: 1),
                 duration: const Duration(milliseconds: 1100),
@@ -131,11 +131,11 @@ class _StepsRing extends StatelessWidget {
                     alignment: Alignment.center,
                     children: <Widget>[
                       SizedBox(
-                        width: 208,
-                        height: 208,
+                        width: 176,
+                        height: 176,
                         child: CircularProgressIndicator(
                           value: animatedProgress,
-                          strokeWidth: 16,
+                          strokeWidth: 13,
                           strokeCap: StrokeCap.round,
                           backgroundColor: cs.onSurface.withValues(alpha: 0.08),
                           valueColor: const AlwaysStoppedAnimation<Color>(
@@ -147,10 +147,11 @@ class _StepsRing extends StatelessWidget {
                         children: <Widget>[
                           Text(fmt.format(animatedSteps),
                               style: AppText.data(context,
-                                  size: 44, color: cs.onSurface)),
+                                  size: 36, color: cs.onSurface)),
                           const SizedBox(height: 2),
                           Text('/ ${fmt.format(stats.stepGoal)} steps',
-                              style: TextStyle(color: cs.onSurfaceVariant)),
+                              style: TextStyle(
+                                  color: cs.onSurfaceVariant, fontSize: 13)),
                         ],
                       ),
                     ],
@@ -193,9 +194,9 @@ class _WeeklyCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           const CardLabel('This week'),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           SizedBox(
-            height: 128,
+            height: 96,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List<Widget>.generate(weeklySteps.length, (int i) {

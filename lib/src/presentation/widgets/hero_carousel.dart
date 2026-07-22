@@ -90,7 +90,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
               return Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  Image.asset(s.image, fit: BoxFit.cover),
+                  Image.asset(s.image, fit: BoxFit.cover, cacheWidth: 1080),
                   // Dark scrim: top (status bar) + strong at the bottom for text.
                   const DecoratedBox(
                     decoration: BoxDecoration(

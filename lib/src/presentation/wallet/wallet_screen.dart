@@ -36,7 +36,7 @@ class WalletScreen extends ConsumerWidget {
             ],
           ),
           data: (WalletData w) => ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 120),
             children: <Widget>[
               _BalanceCard(points: w.balance),
               const SizedBox(height: 26),
@@ -139,15 +139,15 @@ class _BalanceCard extends StatelessWidget {
           Row(
             children: <Widget>[
               const _LegendDot(color: FitBoxColors.credit, label: 'Credit'),
-              const SizedBox(width: 18),
+              const SizedBox(width: 22),
               _LegendDot(
                   color: Colors.white.withValues(alpha: 0.85), label: 'Debit'),
-              const Spacer(),
-              Text('Earn active · spend at checkout',
-                  style: AppTypography.caption(
-                      size: 12, color: Colors.white.withValues(alpha: 0.8))),
             ],
           ),
+          const SizedBox(height: 12),
+          Text('Earn points when you’re active · spend them at checkout.',
+              style: AppTypography.caption(
+                  size: 12, color: Colors.white.withValues(alpha: 0.8))),
         ],
       ),
     );

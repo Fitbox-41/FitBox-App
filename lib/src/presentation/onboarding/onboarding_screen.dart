@@ -177,7 +177,8 @@ class _WelcomePage extends StatelessWidget {
               child: Stack(
                 fit: StackFit.expand,
                 children: <Widget>[
-                  Image.asset('assets/hero/onboard1.png', fit: BoxFit.cover),
+                  Image.asset('assets/hero/onboard1.png',
+                      fit: BoxFit.cover, cacheWidth: 1080),
                   const DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -435,7 +436,7 @@ class _HeroHeader extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Image.asset(image, fit: BoxFit.cover),
+              Image.asset(image, fit: BoxFit.cover, cacheWidth: 1080),
               const DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(

@@ -28,7 +28,7 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Profile')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
         children: <Widget>[
           _ProfileHeader(name: displayName, email: user?.email),
           const SizedBox(height: 16),
