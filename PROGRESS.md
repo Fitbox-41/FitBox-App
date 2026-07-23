@@ -4,6 +4,30 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 23 July 2026 (later) — Guest mode, Maps cost report, login 500 fix (v1.9.2 → v1.10.x)
+
+- **Guest mode (Phase 2 done):** "Continue as guest" on the landing → browse the app
+  without an account. `guestModeProvider` gates account actions (auto-cleared on sign-in via the
+  router). Wallet shows a sign-in `GuestGate`; Profile shows a "browsing as a guest" card instead of
+  change-password / log out. Browsable tabs (Leaderboard/Goals/Settings/Notifications) stay open.
+- **Auth transition polish:** landing ↔ Sign In / Create Account now **cross-fade** (opaque
+  backgrounds so the whole screen blends, no snap); removed live `BackdropFilter` blurs app-wide
+  (invisible over the gradient, expensive) — fixed the "loading lag"; `RepaintBoundary` on the carousel.
+  Sign In / Create Account / Reset compacted to fit without scrolling; app-wide font trim.
+- **Google Maps India cost report:** `docs/FitBox_Google_Maps_Cost_Report_India.pdf` (gitignored).
+  **Headline: displaying maps in the mobile apps = ₹0, unlimited** (Maps SDK Android/iOS "Mobile Native
+  Dynamic Maps" is free). Cost only from billed server APIs (Directions/Geocoding/Places) which FitBox
+  avoids (GPS in-app). Mentor's gate before Maps build.
+- **Login "Server Error" fixed (backend):** `loginUser` in the **website** `authController.js` called
+  `bcrypt.compare(pw, user.password)` without checking `user.password` — for Google (passwordless)
+  accounts that threw → **500** on manual sign-in (broke `glasgotra578@gmail.com` on app + web). Now
+  returns a clear **401** ("This account uses Google sign-in…"). Pushed to `main` (Vercel redeployed),
+  verified live. No app change needed (the app shows the server message). Both backends confirmed live.
+- **Next (new chat):** Google Maps integration — wire keys into Android + iOS, replace `MapPlaceholder`
+  with a real map + live GPS route on Territory / Record Run / Run Summary.
+
+---
+
 ## 23 July 2026 — Weekly report: interactive redesign + design system + perf (v1.3.0 → v1.9.1)
 
 **Design system.** Installed the **ui-ux-pro-max** skill (global, all projects) and generated a
