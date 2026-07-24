@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/recorded_runs.dart';
 import '../../data/run_session.dart';
+import '../../data/territory_repository.dart';
 import '../widgets/glass.dart';
 import '../widgets/live_run_map.dart';
 import '../widgets/motion.dart';
@@ -95,6 +96,14 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     if (save) {
       final run = ref.read(runSessionProvider.notifier).finish();
       await ref.read(recordedRunsProvider.notifier).addRun(run);
+      // Claim the territory enclosed by the loop (signed-in users only; guests
+      // and non-loops fail quietly — the run is still saved locally).
+      if (run.route.length >= 4) {
+        try {
+          await ref.read(territoryRepositoryProvider).capture(run.route);
+          ref.invalidate(territoriesProvider);
+        } catch (_) {/* no loop / guest / offline */}
+      }
       if (mounted) context.pushReplacement('/run-summary', extra: run);
     } else {
       ref.read(runSessionProvider.notifier).discard();

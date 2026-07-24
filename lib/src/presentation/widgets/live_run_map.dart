@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/geo_point.dart';
+import '../../data/models/territory.dart';
 
 /// The app's Google Map surface — matches the app theme (light map in light
 /// mode, dark in dark), draws the run route in red, shows the user's location,
@@ -18,12 +19,18 @@ class LiveRunMap extends StatefulWidget {
     this.follow = false,
     this.interactive = true,
     this.showMyLocation = true,
+    this.territories = const <TerritoryArea>[],
+    this.currentUserId,
   });
 
   final List<GeoPoint> route;
   final bool follow;
   final bool interactive;
   final bool showMyLocation;
+
+  /// Shared territories to draw as filled polygons (yours red, others blue).
+  final List<TerritoryArea> territories;
+  final String? currentUserId;
 
   @override
   State<LiveRunMap> createState() => _LiveRunMapState();
@@ -38,6 +45,32 @@ class _LiveRunMapState extends State<LiveRunMap> {
 
   List<LatLng> get _points =>
       widget.route.map((GeoPoint g) => LatLng(g.lat, g.lng)).toList();
+
+  static const Color _otherColor = Color(0xFF4C8DFF); // rivals' territory
+
+  List<LatLng> _toLatLng(List<GeoPoint> r) =>
+      r.map((GeoPoint g) => LatLng(g.lat, g.lng)).toList();
+
+  Set<Polygon> _buildTerritories() {
+    final Set<Polygon> out = <Polygon>{};
+    for (final TerritoryArea t in widget.territories) {
+      final bool mine = t.userId == widget.currentUserId;
+      final Color base = mine ? FitBoxColors.red : _otherColor;
+      for (int i = 0; i < t.polygons.length; i++) {
+        final TerritoryPolygon p = t.polygons[i];
+        if (p.outer.length < 3) continue;
+        out.add(Polygon(
+          polygonId: PolygonId('${t.userId}_$i'),
+          points: _toLatLng(p.outer),
+          holes: p.holes.map(_toLatLng).toList(),
+          fillColor: base.withValues(alpha: mine ? 0.30 : 0.16),
+          strokeColor: base,
+          strokeWidth: 2,
+        ));
+      }
+    }
+    return out;
+  }
 
   @override
   void initState() {
@@ -159,6 +192,7 @@ class _LiveRunMapState extends State<LiveRunMap> {
       zoomGesturesEnabled: widget.interactive,
       rotateGesturesEnabled: widget.interactive,
       onMapCreated: _onCreated,
+      polygons: _buildTerritories(),
       polylines: pts.length >= 2
           ? <Polyline>{
               Polyline(

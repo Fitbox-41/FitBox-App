@@ -1,402 +1,201 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/models/territory.dart';
+import '../../data/territory_repository.dart';
+import '../auth/auth_controller.dart';
 import '../widgets/glass.dart';
-import '../widgets/map_placeholder.dart';
-import '../widgets/motion.dart';
+import '../widgets/live_run_map.dart';
 
-/// Territory-capture map hub. The live map + capture logic arrive with the
-/// Google Maps key; this is the full glass UI shell framing a stylised map with
-/// a hero territory stat card, legend, and reset countdown.
-class TerritoryScreen extends StatelessWidget {
+/// The shared Territory map — a full-screen live map showing EVERY user's
+/// captured territory (yours red, rivals blue) plus your location. Run a loop to
+/// claim the area you enclose; overlaps are taken from whoever held them.
+class TerritoryScreen extends ConsumerWidget {
   const TerritoryScreen({super.key});
 
+  String _fmtArea(double sqm) {
+    if (sqm <= 0) return '0 m²';
+    if (sqm < 100000) return '${sqm.round()} m²';
+    return '${(sqm / 1000000).toStringAsFixed(2)} km²';
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final String? myId = ref.watch(authControllerProvider).user?.id;
+    final AsyncValue<List<TerritoryArea>> async = ref.watch(territoriesProvider);
+    final List<TerritoryArea> list =
+        async.asData?.value ?? const <TerritoryArea>[];
+
+    final double myArea = list
+        .where((TerritoryArea t) => t.userId == myId)
+        .fold(0.0, (double a, TerritoryArea t) => a + t.area);
+    final List<TerritoryArea> ranked = <TerritoryArea>[...list]
+      ..sort((TerritoryArea a, TerritoryArea b) => b.area.compareTo(a.area));
+    final int myRank =
+        myId == null ? 0 : ranked.indexWhere((t) => t.userId == myId) + 1;
+
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
-          children: <Widget>[
-            const _Header(),
-            const SizedBox(height: 16),
-            const _MapFrame(),
-            const SizedBox(height: 16),
-            const _TerritoryStatCard(),
-            const SizedBox(height: 16),
-            const _DeployCard(),
-          ].revealStagger(),
-        ),
+      body: Stack(
+        children: <Widget>[
+          Positioned.fill(
+            child: LiveRunMap(
+              territories: list,
+              currentUserId: myId,
+              showMyLocation: true,
+              interactive: true,
+            ),
+          ),
+
+          // Top: title + legend + refresh.
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              child: Row(
+                children: <Widget>[
+                  _MapPill(
+                    child: Text('TERRITORY',
+                        style: AppText.labelCaps(context, size: 12)),
+                  ),
+                  const SizedBox(width: 8),
+                  const _MapPill(child: _Legend()),
+                  const Spacer(),
+                  _MapPill(
+                    onTap: () => ref.invalidate(territoriesProvider),
+                    child: Icon(Icons.refresh,
+                        size: 18, color: cs.onSurface),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (async.isLoading)
+            const Align(
+              alignment: Alignment.topCenter,
+              child: Padding(
+                padding: EdgeInsets.only(top: 92),
+                child: SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.4)),
+              ),
+            ),
+
+          // Bottom: your holdings + a run CTA (clears the floating nav).
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+              child: GlassCard(
+                radius: 24,
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: _Stat(
+                            label: 'YOUR TERRITORY',
+                            value: _fmtArea(myArea),
+                            color: FitBoxColors.red,
+                          ),
+                        ),
+                        Container(
+                            width: 1,
+                            height: 38,
+                            color: cs.onSurface.withValues(alpha: 0.12)),
+                        Expanded(
+                          child: _Stat(
+                            label: 'RANK',
+                            value: myRank > 0 ? '#$myRank' : '—',
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    GlowButton(
+                      label: 'Run to claim territory',
+                      icon: Icons.directions_run_rounded,
+                      onPressed: () => context.push('/record-run'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Screen title + reset-countdown pill.
-class _Header extends StatelessWidget {
-  const _Header();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: <Widget>[
-        Expanded(
-          child: Text('Territory', style: AppText.kinetic(context, size: 24)),
-        ),
-        const _GlassPill(
-          icon: Icons.timelapse,
-          label: 'RESET 2D 14H',
-          iconColor: FitBoxColors.red,
-        ),
-      ],
-    );
-  }
-}
-
-/// A small frosted pill (icon + caps label) used for status chips.
-class _GlassPill extends StatelessWidget {
-  const _GlassPill({
-    required this.icon,
-    required this.label,
-    this.iconColor,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color? iconColor;
+/// A frosted control/label pill floated over the map.
+class _MapPill extends StatelessWidget {
+  const _MapPill({required this.child, this.onTap});
+  final Widget child;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final Brightness b = Theme.of(context).brightness;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+    final Widget pill = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color: FitBoxColors.glassFill(b),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: FitBoxColors.glassStroke(b)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, color: iconColor ?? FitBoxColors.red, size: 15),
-          const SizedBox(width: 7),
-          Text(label, style: AppText.labelCaps(context, size: 11)),
-        ],
-      ),
+      child: child,
     );
+    if (onTap == null) return pill;
+    return GestureDetector(onTap: onTap, child: pill);
   }
 }
 
-/// The map placeholder framed in a large rounded glass container, with an
-/// overlaid legend and a "coming with GPS" note over the stylised map.
-class _MapFrame extends StatelessWidget {
-  const _MapFrame();
-
+class _Legend extends StatelessWidget {
+  const _Legend();
   @override
   Widget build(BuildContext context) {
-    final BorderRadius br = BorderRadius.circular(28);
-    return SizedBox(
-      height: 360,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: br,
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 30,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: br,
-          child: Stack(
-            fit: StackFit.expand,
-            children: <Widget>[
-              const MapPlaceholder(showBadge: false),
-              // Legend across the top of the map.
-              const Positioned(
-                top: 14,
-                left: 14,
-                right: 14,
-                child: Row(
-                  children: <Widget>[
-                    _LegendChip(color: FitBoxColors.red, label: 'YOURS'),
-                    SizedBox(width: 8),
-                    _LegendChip(color: FitBoxColors.debit, label: 'CONTESTED'),
-                    SizedBox(width: 8),
-                    _LegendChip(color: Colors.white54, label: 'OPEN'),
-                  ],
-                ),
-              ),
-              // "Map arrives with GPS" note pinned to the bottom of the frame.
-              Positioned(
-                left: 14,
-                right: 14,
-                bottom: 14,
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(16),
-                    border:
-                        Border.all(color: Colors.white.withValues(alpha: 0.12)),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      const Icon(Icons.satellite_alt,
-                          color: FitBoxColors.red, size: 18),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          'Live territory map arrives with GPS + maps',
-                          style: AppTypography.caption(
-                              size: 12, color: Colors.white70),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              // Hairline inner border to seat the map in the frame.
-              IgnorePointer(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: br,
-                    border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.12)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        _dot(FitBoxColors.red),
+        const SizedBox(width: 5),
+        Text('YOU', style: AppText.labelCaps(context, size: 10)),
+        const SizedBox(width: 12),
+        _dot(const Color(0xFF4C8DFF)),
+        const SizedBox(width: 5),
+        Text('RIVALS', style: AppText.labelCaps(context, size: 10)),
+      ],
     );
   }
+
+  Widget _dot(Color c) => Container(
+      width: 9,
+      height: 9,
+      decoration: BoxDecoration(color: c, shape: BoxShape.circle));
 }
 
-/// A tinted-dot + caps-label chip for the map legend (over a dark map).
-class _LegendChip extends StatelessWidget {
-  const _LegendChip({required this.color, required this.label});
-
+class _Stat extends StatelessWidget {
+  const _Stat({required this.label, required this.value, required this.color});
+  final String label;
+  final String value;
   final Color color;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 7),
-          Text(label,
-              style: AppText.labelCaps(context, size: 9, color: Colors.white)),
-        ],
-      ),
-    );
-  }
-}
-
-/// Hero territory stat card — percentage captured (count-up), zones held, rank.
-class _TerritoryStatCard extends StatelessWidget {
-  const _TerritoryStatCard();
-
-  static const double _percent = 62;
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return GlassCard(
-      radius: 26,
-      padding: const EdgeInsets.all(22),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: <Widget>[
-              Text('TERRITORY CAPTURED', style: AppText.labelCaps(context)),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: FitBoxColors.red.withValues(alpha: 0.6)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    const Icon(Icons.circle, color: FitBoxColors.red, size: 8),
-                    const SizedBox(width: 6),
-                    Text('ACTIVE ZONE',
-                        style: AppText.labelCaps(context,
-                            size: 10, color: FitBoxColors.red)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: <Widget>[
-              CountUpText(
-                value: _percent,
-                builder: (BuildContext context, double v) => Text(
-                  '${v.round()}%',
-                  style: AppText.data(context, size: 46, color: FitBoxColors.red),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text('of your area',
-                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 14)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Progress track for the captured share.
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: Container(
-              height: 8,
-              color: cs.onSurface.withValues(alpha: 0.1),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: _percent / 100,
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: <Color>[FitBoxColors.red, FitBoxColors.redDark],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          Divider(color: cs.onSurface.withValues(alpha: 0.12)),
-          const SizedBox(height: 14),
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _MiniStat(
-                  label: 'ZONES HELD',
-                  child: CountUpText(
-                    value: 7,
-                    builder: (BuildContext context, double v) => Text(
-                      '${v.round()}',
-                      style:
-                          AppText.data(context, size: 26, color: cs.onSurface),
-                    ),
-                  ),
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: cs.onSurface.withValues(alpha: 0.12),
-              ),
-              Expanded(
-                child: _MiniStat(
-                  label: 'YOUR RANK',
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: <Widget>[
-                      Text('#4',
-                          style: AppText.data(context,
-                              size: 26, color: FitBoxColors.red)),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text('Dominator',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.kinetic(context, size: 18)),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// A caps label stacked over a value, used inside the hero stat card.
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(label, style: AppText.labelCaps(context, size: 10)),
-        const SizedBox(height: 8),
-        child,
+        const SizedBox(height: 6),
+        Text(value, style: AppText.data(context, size: 22, color: color)),
       ],
-    );
-  }
-}
-
-/// Call-to-action row prompting the user to run to claim more territory.
-class _DeployCard extends StatelessWidget {
-  const _DeployCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final ColorScheme cs = Theme.of(context).colorScheme;
-    return GlassCard(
-      radius: 22,
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: <Widget>[
-          Icon(Icons.directions_run, color: cs.onSurfaceVariant, size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text('Claim more territory by running',
-                style: TextStyle(color: cs.onSurfaceVariant)),
-          ),
-          const SizedBox(width: 10),
-          GlowButton(
-            label: 'Deploy',
-            icon: Icons.chevron_right,
-            expand: false,
-            height: 46,
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                behavior: SnackBarBehavior.floating,
-                content: Text('Territory capture arrives with GPS + maps.'),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
