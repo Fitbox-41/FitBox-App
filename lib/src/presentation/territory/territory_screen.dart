@@ -90,7 +90,7 @@ class TerritoryScreen extends ConsumerWidget {
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                  16, 0, 16, 108 + MediaQuery.paddingOf(context).bottom),
+                  16, 0, 16, 78 + MediaQuery.paddingOf(context).bottom),
               child: GlassCard(
                 radius: 24,
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),

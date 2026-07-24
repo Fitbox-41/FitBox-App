@@ -59,6 +59,13 @@ class RecordedRuns extends Notifier<List<RunActivity>> {
     } catch (_) {/* keep it locally; a later sync can retry */}
   }
 
+  /// Removes a run (local history). Backend has no delete endpoint yet, so this
+  /// clears it locally; a re-sync won't resurrect a locally-recorded run.
+  Future<void> removeRun(String id) async {
+    state = state.where((RunActivity r) => r.id != id).toList();
+    await _persist();
+  }
+
   Future<void> _persist() async {
     await ref.read(secureStorageProvider).write(
           _key,

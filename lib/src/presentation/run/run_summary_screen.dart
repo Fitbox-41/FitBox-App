@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
+import '../../data/recorded_runs.dart';
 import '../widgets/glass.dart';
 import '../widgets/live_run_map.dart';
 import '../widgets/map_placeholder.dart';
 import '../widgets/motion.dart';
+import 'share_run_sheet.dart';
 
 /// Post-run summary — the celebratory moment. Hero headline + framed route +
-/// headline metrics. The real route map arrives with the Maps key.
-class RunSummaryScreen extends StatelessWidget {
+/// headline metrics, with share + delete actions.
+class RunSummaryScreen extends ConsumerWidget {
   const RunSummaryScreen({super.key, this.run});
 
   final RunActivity? run;
@@ -25,8 +29,33 @@ class RunSummaryScreen extends StatelessWidget {
     return '${s ~/ 60}m ${s % 60}s';
   }
 
+  Future<void> _confirmDelete(
+      BuildContext context, WidgetRef ref, RunActivity r) async {
+    final bool? ok = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Delete run?'),
+        content: const Text('This removes the run from your history.'),
+        actions: <Widget>[
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: FitBoxColors.debit),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await ref.read(recordedRunsProvider.notifier).removeRun(r.id);
+      if (context.mounted) context.go('/home');
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final String title = run?.title ?? 'Central Park Loop';
     final double km = run?.distanceKm ?? 5.24;
     final double pace = run?.paceMinPerKm ?? 5.38;
@@ -199,13 +228,22 @@ class RunSummaryScreen extends StatelessWidget {
           GlowButton(
             label: 'Share',
             icon: Icons.ios_share,
-            onPressed: () {},
+            onPressed: run == null
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ShareRunSheet(run: run!),
+                      ),
+                    ),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.bookmark_border),
-            label: const Text('Save run'),
+            onPressed: run == null
+                ? null
+                : () => _confirmDelete(context, ref, run!),
+            style: OutlinedButton.styleFrom(foregroundColor: FitBoxColors.debit),
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Delete run'),
           ),
         ].revealStagger(),
       ),
