@@ -7,9 +7,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/geo_point.dart';
 
-/// The app's Google Map surface — dark-styled to match the brand, draws the run
-/// route in red, and either follows the runner live or fits the whole route.
-/// Kept as the single map widget so a later swap (e.g. Mapbox) is one file.
+/// The app's Google Map surface — matches the app theme (light map in light
+/// mode, dark in dark), draws the run route in red, shows the user's location,
+/// and either follows the runner live or fits the whole route. Single map
+/// widget so a later swap (e.g. Mapbox) is one file.
 class LiveRunMap extends StatefulWidget {
   const LiveRunMap({
     super.key,
@@ -19,16 +20,9 @@ class LiveRunMap extends StatefulWidget {
     this.showMyLocation = true,
   });
 
-  /// Route points recorded so far (grows live during a run).
   final List<GeoPoint> route;
-
-  /// Camera tracks the latest point (live run). When false, fits the route.
   final bool follow;
-
-  /// Whether map gestures are enabled.
   final bool interactive;
-
-  /// Show the blue "my location" dot.
   final bool showMyLocation;
 
   @override
@@ -37,11 +31,58 @@ class LiveRunMap extends StatefulWidget {
 
 class _LiveRunMapState extends State<LiveRunMap> {
   GoogleMapController? _controller;
-  // Fallback camera (India) until we have a fix or a route.
-  static const LatLng _fallback = LatLng(20.5937, 78.9629);
+  bool _myLocation = false; // true once location permission is granted
+  static const LatLng _fallback = LatLng(20.5937, 78.9629); // India
 
   List<LatLng> get _points =>
       widget.route.map((GeoPoint g) => LatLng(g.lat, g.lng)).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showMyLocation) _ensureLocation();
+  }
+
+  /// Requests location permission (if the onboarding screen hasn't already) so
+  /// the blue dot + GPS route work, then centers the camera on the user.
+  Future<void> _ensureLocation() async {
+    try {
+      LocationPermission p = await Geolocator.checkPermission();
+      if (p == LocationPermission.denied) {
+        p = await Geolocator.requestPermission();
+      }
+      final bool granted = p == LocationPermission.always ||
+          p == LocationPermission.whileInUse;
+      if (!granted || !mounted) return;
+      setState(() => _myLocation = true);
+      await _centerOnUser();
+    } catch (_) {/* location unavailable */}
+  }
+
+  Future<void> _centerOnUser() async {
+    if (_controller == null || widget.route.isNotEmpty) return;
+    try {
+      final Position? pos =
+          await Geolocator.getLastKnownPosition() ?? await _currentPosition();
+      if (pos != null && mounted && widget.route.isEmpty) {
+        await _controller!.animateCamera(
+            CameraUpdate.newLatLngZoom(LatLng(pos.latitude, pos.longitude), 16));
+      }
+    } catch (_) {}
+  }
+
+  Future<Position?> _currentPosition() async {
+    try {
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 6),
+        ),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
 
   @override
   void didUpdateWidget(covariant LiveRunMap oldWidget) {
@@ -57,14 +98,7 @@ class _LiveRunMapState extends State<LiveRunMap> {
     _controller = controller;
     final List<LatLng> pts = _points;
     if (pts.isEmpty) {
-      // Center on the user's last-known location for a useful first view.
-      try {
-        final Position? pos = await Geolocator.getLastKnownPosition();
-        if (pos != null && mounted) {
-          await _controller?.animateCamera(CameraUpdate.newLatLngZoom(
-              LatLng(pos.latitude, pos.longitude), 16));
-        }
-      } catch (_) {/* no fix yet — my-location dot appears once available */}
+      await _centerOnUser();
     } else if (!widget.follow && pts.length >= 2) {
       await Future<void>.delayed(const Duration(milliseconds: 300));
       await _controller?.animateCamera(
@@ -95,6 +129,7 @@ class _LiveRunMapState extends State<LiveRunMap> {
 
   @override
   Widget build(BuildContext context) {
+    final bool dark = Theme.of(context).brightness == Brightness.dark;
     final List<LatLng> pts = _points;
     final CameraPosition initial = CameraPosition(
       target: pts.isNotEmpty ? pts.last : _fallback,
@@ -102,8 +137,9 @@ class _LiveRunMapState extends State<LiveRunMap> {
     );
     return GoogleMap(
       initialCameraPosition: initial,
-      style: _darkMapStyle,
-      myLocationEnabled: widget.showMyLocation,
+      // Dark style in dark mode; default (light) map in light mode.
+      style: dark ? _darkMapStyle : _lightMapStyle,
+      myLocationEnabled: widget.showMyLocation && _myLocation,
       myLocationButtonEnabled: false,
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
@@ -130,8 +166,7 @@ class _LiveRunMapState extends State<LiveRunMap> {
   }
 }
 
-/// A restrained dark map style (roads visible, low chrome) matching the app's
-/// "engine bay" look so the red route pops.
+/// Dark map ("engine bay" look) so the red route pops.
 const String _darkMapStyle = '''
 [
   {"elementType":"geometry","stylers":[{"color":"#12151a"}]},
@@ -145,5 +180,22 @@ const String _darkMapStyle = '''
   {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#2b3038"}]},
   {"featureType":"transit","stylers":[{"visibility":"off"}]},
   {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0a0c0f"}]}
+]
+''';
+
+/// Clean light map (soft, low-chrome) for light theme.
+const String _lightMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#f5f6f8"}]},
+  {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#8a8f98"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#ffffff"}]},
+  {"featureType":"administrative","elementType":"geometry","stylers":[{"visibility":"off"}]},
+  {"featureType":"poi","stylers":[{"visibility":"off"}]},
+  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#ffffff"}]},
+  {"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},
+  {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#e9ebef"}]},
+  {"featureType":"transit","stylers":[{"visibility":"off"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#d6e2ef"}]}
 ]
 ''';

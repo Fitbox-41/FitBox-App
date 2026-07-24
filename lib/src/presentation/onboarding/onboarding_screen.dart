@@ -58,6 +58,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       await <Permission>[
         Permission.activityRecognition,
+        Permission.locationWhenInUse,
         Permission.notification,
       ].request();
     } catch (_) {
@@ -398,8 +399,7 @@ class _PermissionsPage extends StatelessWidget {
                 _PermRow(
                   icon: Icons.place_rounded,
                   title: 'Location',
-                  body: 'Asked later, when you start map-based territory runs.',
-                  muted: true,
+                  body: 'Map your run route and capture territory as you move.',
                 ),
               ],
             ),
@@ -483,18 +483,16 @@ class _PermRow extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
-    this.muted = false,
   });
 
   final IconData icon;
   final String title;
   final String body;
-  final bool muted;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final Color accent = muted ? cs.onSurfaceVariant : FitBoxColors.red;
+    const Color accent = FitBoxColors.red;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
