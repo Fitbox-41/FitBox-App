@@ -32,6 +32,8 @@ class LiveRunMap extends StatefulWidget {
 class _LiveRunMapState extends State<LiveRunMap> {
   GoogleMapController? _controller;
   bool _myLocation = false; // true once location permission is granted
+  bool _followZoomed = false; // zoomed to street level on the first fix
+  static const double _runZoom = 17; // street-level zoom for an active run
   static const LatLng _fallback = LatLng(20.5937, 78.9629); // India
 
   List<LatLng> get _points =>
@@ -90,7 +92,15 @@ class _LiveRunMapState extends State<LiveRunMap> {
     final List<LatLng> pts = _points;
     if (pts.isEmpty || _controller == null) return;
     if (widget.follow) {
-      _controller!.animateCamera(CameraUpdate.newLatLng(pts.last));
+      // First fix: zoom in to street level; after that just pan (so the user
+      // can pinch-zoom without us fighting them).
+      if (!_followZoomed) {
+        _followZoomed = true;
+        _controller!.animateCamera(
+            CameraUpdate.newLatLngZoom(pts.last, _runZoom));
+      } else {
+        _controller!.animateCamera(CameraUpdate.newLatLng(pts.last));
+      }
     }
   }
 
@@ -176,7 +186,6 @@ const String _darkMapStyle = '''
   {"featureType":"administrative","elementType":"geometry","stylers":[{"visibility":"off"}]},
   {"featureType":"poi","stylers":[{"visibility":"off"}]},
   {"featureType":"road","elementType":"geometry","stylers":[{"color":"#22262d"}]},
-  {"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},
   {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#2b3038"}]},
   {"featureType":"transit","stylers":[{"visibility":"off"}]},
   {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0a0c0f"}]}
@@ -193,7 +202,6 @@ const String _lightMapStyle = '''
   {"featureType":"administrative","elementType":"geometry","stylers":[{"visibility":"off"}]},
   {"featureType":"poi","stylers":[{"visibility":"off"}]},
   {"featureType":"road","elementType":"geometry","stylers":[{"color":"#ffffff"}]},
-  {"featureType":"road","elementType":"labels","stylers":[{"visibility":"off"}]},
   {"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#e9ebef"}]},
   {"featureType":"transit","stylers":[{"visibility":"off"}]},
   {"featureType":"water","elementType":"geometry","stylers":[{"color":"#d6e2ef"}]}

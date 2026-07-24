@@ -154,16 +154,19 @@ class AuthController extends Notifier<AuthState> {
   Future<void> requestPasswordReset(String email) =>
       _repo.requestPasswordResetOtp(email);
 
-  /// Verifies the reset code, signs the user in, and sets the new password.
+  /// Verifies the reset code and sets the new password, then signs the user
+  /// back OUT so they return to the login screen and sign in with the new
+  /// password (the token is used only to authorize the password update).
   Future<void> confirmPasswordReset({
     required String email,
     required String otp,
     required String newPassword,
   }) async {
     final result = await _repo.verifyResetOtp(email: email, otp: otp);
-    await _storage.saveToken(result.token);
+    await _storage.saveToken(result.token); // needed to call updatePassword
     await _repo.updatePassword(newPassword);
-    state = AuthState(AuthStatus.authenticated, result.user);
+    await _storage.clear(); // don't keep them signed in
+    state = const AuthState(AuthStatus.unauthenticated);
   }
 
   Future<void> logout() async {

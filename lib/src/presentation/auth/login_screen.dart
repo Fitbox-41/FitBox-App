@@ -40,7 +40,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             email: _email.text.trim(),
             password: _password.text,
           );
-      // Navigation is handled by the router's auth redirect.
+      // Go straight home — this screen was pushed, so the redirect alone can
+      // leave the pushed route on top until a manual back.
+      if (mounted) context.go('/home');
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -63,8 +65,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _google() async {
     setState(() => _loading = true);
     try {
-      await ref.read(authControllerProvider.notifier).signInWithGoogle();
-      // Success → router redirect; cancel → stay here.
+      final bool ok =
+          await ref.read(authControllerProvider.notifier).signInWithGoogle();
+      if (ok && mounted) context.go('/home'); // cancel → stay here
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

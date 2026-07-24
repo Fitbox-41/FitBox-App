@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../services/api_client.dart';
@@ -15,7 +16,7 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
       _ResetPasswordScreenState();
 }
 
-enum _Step { email, reset }
+enum _Step { email, reset, done }
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   final _emailKey = GlobalKey<FormState>();
@@ -72,12 +73,48 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             otp: _otp.text.trim(),
             newPassword: _next.text,
           );
-      // Success: signed in with the new password → router redirects to home.
+      if (mounted) setState(() => _step = _Step.done); // show success + CTA
     } catch (e) {
       _error(e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// Shown after a successful reset — confirmation + a clear way back to login.
+  Widget _doneView() {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Center(
+          child: Container(
+            width: 68,
+            height: 68,
+            decoration: BoxDecoration(
+              color: FitBoxColors.credit.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle_rounded,
+                color: FitBoxColors.credit, size: 36),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text('Password reset',
+            textAlign: TextAlign.center,
+            style: AppText.kinetic(context, size: 24)),
+        const SizedBox(height: 6),
+        Text('Your password has been updated. Sign in with your new password.',
+            textAlign: TextAlign.center,
+            style: AppTypography.body(size: 14, color: cs.onSurfaceVariant)),
+        const SizedBox(height: 24),
+        GlowButton(
+          label: 'Back to Login',
+          icon: Icons.arrow_forward,
+          onPressed: () => context.go('/login'),
+        ),
+      ],
+    );
   }
 
   @override
@@ -96,7 +133,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               const Center(
                   child: LogoBadge(width: 56, heroTag: 'fitbox-logo')),
               const SizedBox(height: 18),
-              _step == _Step.email ? _emailForm() : _resetForm(),
+              switch (_step) {
+                _Step.email => _emailForm(),
+                _Step.reset => _resetForm(),
+                _Step.done => _doneView(),
+              },
             ],
           ),
         ),

@@ -69,7 +69,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _google() async {
     setState(() => _loading = true);
     try {
-      await ref.read(authControllerProvider.notifier).signInWithGoogle();
+      final bool ok =
+          await ref.read(authControllerProvider.notifier).signInWithGoogle();
+      if (ok && mounted) context.go('/home');
     } catch (e) {
       _showError(e);
     } finally {
@@ -87,7 +89,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             password: _password.text,
             otp: _otp.text.trim(),
           );
-      // Router redirect takes over on success.
+      if (mounted) context.go('/home'); // pushed route — navigate explicitly
     } catch (e) {
       _showError(e);
     } finally {

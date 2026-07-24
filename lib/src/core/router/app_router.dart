@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/run_activity.dart';
+import '../../presentation/widgets/glass.dart';
 import '../../presentation/activity/activity_screen.dart';
 import '../../presentation/auth/auth_controller.dart';
 import '../../presentation/auth/auth_landing_screen.dart';
@@ -26,8 +27,10 @@ import '../../presentation/territory/territory_screen.dart';
 import '../../presentation/wallet/wallet_screen.dart';
 
 /// Wraps a pushed screen in the native iOS page transition (right-to-left slide
-/// + interactive swipe-back gesture) for an Apple-like navigation feel.
-Page<void> _ios(Widget child) => CupertinoPage<void>(child: child);
+/// + interactive swipe-back gesture). The child gets an opaque AppBackground so
+/// the slide reads as a solid screen (no see-through jank during the push).
+Page<void> _ios(Widget child) =>
+    CupertinoPage<void>(child: AppBackground(child: child));
 
 /// A smooth cross-fade — used for the auth screens so moving between the
 /// landing and Sign In / Create Account blends instead of a hard slide.
