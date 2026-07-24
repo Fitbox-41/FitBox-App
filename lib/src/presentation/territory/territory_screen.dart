@@ -85,11 +85,12 @@ class TerritoryScreen extends ConsumerWidget {
               ),
             ),
 
-          // Bottom: your holdings + a run CTA (clears the floating nav).
+          // Bottom: your holdings + a run CTA (clears the floating nav pill).
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+              padding: EdgeInsets.fromLTRB(
+                  16, 0, 16, 108 + MediaQuery.paddingOf(context).bottom),
               child: GlassCard(
                 radius: 24,
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),

@@ -38,7 +38,8 @@ class RunSummaryScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Run summary')),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+        padding: EdgeInsets.fromLTRB(
+            20, 8, 20, 24 + MediaQuery.paddingOf(context).bottom),
         children: <Widget>[
           // Celebratory hero header.
           Column(
