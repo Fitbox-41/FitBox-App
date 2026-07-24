@@ -85,12 +85,14 @@ class TerritoryScreen extends ConsumerWidget {
               ),
             ),
 
-          // Bottom: your holdings + a run CTA (clears the floating nav pill).
+          // Bottom: your holdings + a run CTA. The Scaffold already reports the
+          // floating nav's height as the body's bottom inset, so we only add a
+          // small gap on top of it (otherwise the card floats too high).
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                  16, 0, 16, 78 + MediaQuery.paddingOf(context).bottom),
+                  16, 0, 16, 12 + MediaQuery.paddingOf(context).bottom),
               child: GlassCard(
                 radius: 24,
                 padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),

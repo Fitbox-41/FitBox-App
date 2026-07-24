@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -14,8 +15,9 @@ import '../../data/models/run_activity.dart';
 
 enum _CardStyle { map, story, transparent }
 
-/// Strava-style "Share Activity" screen: swipe between share-card styles, then
-/// share the selected one as an image to any app (Instagram, WhatsApp, …).
+/// Strava-style "Share Activity" screen. First snapshots the run's route on a
+/// real Google map (a live map can't be captured by RepaintBoundary), then lets
+/// you swipe between share-card styles and share the selected one as an image.
 class ShareRunSheet extends StatefulWidget {
   const ShareRunSheet({super.key, required this.run});
 
@@ -37,6 +39,17 @@ class _ShareRunSheetState extends State<ShareRunSheet> {
   int _index = 0;
   bool _busy = false;
 
+  Uint8List? _mapBytes;
+  late bool _preparing;
+
+  bool get _hasRoute => widget.run.route.length >= 2;
+
+  @override
+  void initState() {
+    super.initState();
+    _preparing = _hasRoute; // snapshot the map first when there's a route
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -54,11 +67,10 @@ class _ShareRunSheetState extends State<ShareRunSheet> {
       final ByteData? data =
           await image.toByteData(format: ui.ImageByteFormat.png);
       if (data == null) return;
-      final Uint8List bytes = data.buffer.asUint8List();
       final Directory dir = await getTemporaryDirectory();
       final File file = File(
           '${dir.path}/fitbox_run_${DateTime.now().millisecondsSinceEpoch}.png');
-      await file.writeAsBytes(bytes);
+      await file.writeAsBytes(data.buffer.asUint8List());
       await Share.shareXFiles(
         <XFile>[XFile(file.path)],
         text: 'My FitBox run — run, capture, earn. 🏃',
@@ -82,80 +94,221 @@ class _ShareRunSheetState extends State<ShareRunSheet> {
         title: const Text('Share Activity'),
         leading: const CloseButton(),
       ),
-      body: Column(
-        children: <Widget>[
-          const SizedBox(height: 8),
-          Expanded(
-            child: PageView.builder(
-              controller: _controller,
-              onPageChanged: (int i) => setState(() => _index = i),
-              itemCount: _styles.length,
-              itemBuilder: (BuildContext context, int i) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: AspectRatio(
-                      aspectRatio: 9 / 16,
-                      child: RepaintBoundary(
-                        key: _keys[i],
-                        child: _ShareCard(run: widget.run, style: _styles[i]),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
+      body: _preparing ? _preparingView() : _carouselView(cs),
+    );
+  }
+
+  // Renders a real map of the route off-to-the-side and snapshots it once ready.
+  Widget _preparingView() {
+    return Stack(
+      children: <Widget>[
+        // The map must be laid out + visible to load tiles; keep it faint under
+        // the overlay while it snapshots.
+        Opacity(
+          opacity: 0.25,
+          child: _SnapshotMap(
+            route: widget.run.route,
+            onSnapshot: (Uint8List? bytes) {
+              if (!mounted) return;
+              setState(() {
+                _mapBytes = bytes;
+                _preparing = false;
+              });
+            },
           ),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List<Widget>.generate(_styles.length, (int i) {
-              final bool active = i == _index;
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                width: active ? 22 : 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  color: active
-                      ? FitBoxColors.red
-                      : cs.onSurface.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(4),
+        ),
+        const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              SizedBox(
+                  width: 26,
+                  height: 26,
+                  child: CircularProgressIndicator(strokeWidth: 2.6)),
+              SizedBox(height: 14),
+              Text('Preparing your cards…'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _carouselView(ColorScheme cs) {
+    return Column(
+      children: <Widget>[
+        const SizedBox(height: 8),
+        Expanded(
+          child: PageView.builder(
+            controller: _controller,
+            onPageChanged: (int i) => setState(() => _index = i),
+            itemCount: _styles.length,
+            itemBuilder: (BuildContext context, int i) {
+              final _CardStyle style = _styles[i];
+              final Widget card = RepaintBoundary(
+                key: _keys[i],
+                child: _ShareCard(
+                    run: widget.run, style: style, mapBytes: _mapBytes),
+              );
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: AspectRatio(
+                    aspectRatio: 9 / 16,
+                    // Transparent style: show a checkerboard BEHIND (not captured)
+                    // so it's clear the exported PNG is see-through.
+                    child: style == _CardStyle.transparent
+                        ? DecoratedBox(
+                            decoration: const BoxDecoration(),
+                            child: CustomPaint(
+                              painter: _CheckerPainter(),
+                              child: card,
+                            ),
+                          )
+                        : card,
+                  ),
                 ),
               );
-            }),
+            },
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-                20, 16, 20, 20 + MediaQuery.paddingOf(context).bottom),
-            child: SizedBox(
-              width: double.infinity,
-              height: 54,
-              child: FilledButton.icon(
-                onPressed: _busy ? null : _share,
-                icon: _busy
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.ios_share),
-                label: Text(_busy ? 'Preparing…' : 'Share'),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List<Widget>.generate(_styles.length, (int i) {
+            final bool active = i == _index;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 220),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: active ? 22 : 7,
+              height: 7,
+              decoration: BoxDecoration(
+                color: active
+                    ? FitBoxColors.red
+                    : cs.onSurface.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
               ),
+            );
+          }),
+        ),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+              20, 16, 20, 20 + MediaQuery.paddingOf(context).bottom),
+          child: SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: FilledButton.icon(
+              onPressed: _busy ? null : _share,
+              icon: _busy
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.ios_share),
+              label: Text(_busy ? 'Preparing…' : 'Share'),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    );
+  }
+}
+
+/// A live map used only to produce a snapshot image of the route.
+class _SnapshotMap extends StatefulWidget {
+  const _SnapshotMap({required this.route, required this.onSnapshot});
+
+  final List<GeoPoint> route;
+  final ValueChanged<Uint8List?> onSnapshot;
+
+  @override
+  State<_SnapshotMap> createState() => _SnapshotMapState();
+}
+
+class _SnapshotMapState extends State<_SnapshotMap> {
+  GoogleMapController? _controller;
+  bool _done = false;
+
+  List<LatLng> get _pts =>
+      widget.route.map((GeoPoint g) => LatLng(g.lat, g.lng)).toList();
+
+  LatLngBounds _bounds(List<LatLng> pts) {
+    double minLat = pts.first.latitude, maxLat = pts.first.latitude;
+    double minLng = pts.first.longitude, maxLng = pts.first.longitude;
+    for (final LatLng p in pts) {
+      minLat = math.min(minLat, p.latitude);
+      maxLat = math.max(maxLat, p.latitude);
+      minLng = math.min(minLng, p.longitude);
+      maxLng = math.max(maxLng, p.longitude);
+    }
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
+  }
+
+  Future<void> _capture() async {
+    if (_done) return;
+    _done = true;
+    try {
+      final Uint8List? bytes = await _controller?.takeSnapshot();
+      widget.onSnapshot(bytes);
+    } catch (_) {
+      widget.onSnapshot(null);
+    }
+  }
+
+  Future<void> _onCreated(GoogleMapController c) async {
+    _controller = c;
+    final List<LatLng> pts = _pts;
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    try {
+      await c.animateCamera(CameraUpdate.newLatLngBounds(_bounds(pts), 56));
+    } catch (_) {}
+    // Give tiles time to load, then snapshot.
+    await Future<void>.delayed(const Duration(milliseconds: 1400));
+    await _capture();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<LatLng> pts = _pts;
+    // Safety net: if the map never settles, proceed without it.
+    Future<void>.delayed(const Duration(seconds: 6), () {
+      if (!_done) _capture();
+    });
+    return GoogleMap(
+      initialCameraPosition: CameraPosition(target: pts.first, zoom: 15),
+      style: _darkMapStyle,
+      liteModeEnabled: false,
+      myLocationEnabled: false,
+      zoomControlsEnabled: false,
+      mapToolbarEnabled: false,
+      compassEnabled: false,
+      onMapCreated: _onCreated,
+      polylines: <Polyline>{
+        Polyline(
+          polylineId: const PolylineId('r'),
+          points: pts,
+          color: FitBoxColors.red,
+          width: 6,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          jointType: JointType.round,
+        ),
+      },
     );
   }
 }
 
 /// One share-card style, rendered at a fixed 9:16 aspect for capture.
 class _ShareCard extends StatelessWidget {
-  const _ShareCard({required this.run, required this.style});
+  const _ShareCard({required this.run, required this.style, this.mapBytes});
 
   final RunActivity run;
   final _CardStyle style;
+  final Uint8List? mapBytes;
 
   String get _distance => '${run.distanceKm.toStringAsFixed(2)} km';
   String get _time {
@@ -170,6 +323,8 @@ class _ShareCard extends StatelessWidget {
     final int sec = ((p - m) * 60).round();
     return "$m'${sec.toString().padLeft(2, '0')}";
   }
+
+  bool get _hasMap => mapBytes != null;
 
   @override
   Widget build(BuildContext context) {
@@ -187,67 +342,83 @@ class _ShareCard extends StatelessWidget {
       style: AppTypography.brand(
           size: 15, weight: FontWeight.w700, letterSpacing: 1.5, color: color));
 
+  Widget _mapImageOr(Widget fallback) => _hasMap
+      ? Image.memory(mapBytes!, fit: BoxFit.cover)
+      : fallback;
+
   Widget _trace({double stroke = 5}) =>
       CustomPaint(painter: _RoutePainter(run.route, stroke: stroke));
 
-  // 1) Map-style — route trace over the app's dark "map" gradient, stats bottom.
+  // 1) Map-style — real map (or trace fallback), stats over a bottom scrim.
   Widget _mapCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[Color(0xFF15181C), Color(0xFF0B0D10)],
-          ),
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: <Widget>[
-            CustomPaint(painter: _GridPainter()),
-            Padding(
-              padding: const EdgeInsets.all(22),
-              child: _trace(stroke: 6),
+      child: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          _mapImageOr(
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: <Color>[Color(0xFF15181C), Color(0xFF0B0D10)],
+                ),
+              ),
+              child: Stack(fit: StackFit.expand, children: <Widget>[
+                CustomPaint(painter: _GridPainter()),
+                Padding(padding: const EdgeInsets.all(22), child: _trace(stroke: 6)),
+              ]),
             ),
-            Positioned(
-              left: 20,
-              right: 20,
-              bottom: 22,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: <Widget>[
-                      const Icon(Icons.directions_run,
-                          color: Colors.white, size: 22),
-                      _brand(),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(run.title.toUpperCase(),
-                      style: AppTypography.heading(size: 22, color: Colors.white)),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: <Widget>[
-                      _stat('DISTANCE', _distance),
-                      const SizedBox(width: 22),
-                      _stat('TIME', _time),
-                      const SizedBox(width: 22),
-                      _stat('PACE', '$_pace /km'),
-                    ],
-                  ),
-                ],
+          ),
+          // Bottom scrim for legibility.
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.center,
+                end: Alignment.bottomCenter,
+                colors: <Color>[Color(0x00000000), Color(0xE6000000)],
               ),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            left: 20,
+            right: 20,
+            bottom: 22,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: <Widget>[
+                    const Icon(Icons.directions_run,
+                        color: Colors.white, size: 22),
+                    _brand(),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(run.title.toUpperCase(),
+                    style:
+                        AppTypography.heading(size: 22, color: Colors.white)),
+                const SizedBox(height: 12),
+                Row(
+                  children: <Widget>[
+                    _stat('DISTANCE', _distance),
+                    const SizedBox(width: 22),
+                    _stat('TIME', _time),
+                    const SizedBox(width: 22),
+                    _stat('PACE', '$_pace /km'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // 2) Story-style — branded dark card, centered route panel, stats + tagline.
+  // 2) Story-style — branded dark card with a map/route panel + stats.
   Widget _storyCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -256,23 +427,26 @@ class _ShareCard extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: <Widget>[
-            // Brand accent stripes across the top corner.
             CustomPaint(painter: _StripePainter()),
             Padding(
               padding: const EdgeInsets.fromLTRB(22, 40, 22, 28),
               child: Column(
                 children: <Widget>[
                   Expanded(
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.10)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: _mapImageOr(
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.10)),
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          padding: const EdgeInsets.all(18),
+                          child: _trace(stroke: 5),
+                        ),
                       ),
-                      padding: const EdgeInsets.all(18),
-                      child: _trace(stroke: 5),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -305,7 +479,7 @@ class _ShareCard extends StatelessWidget {
     );
   }
 
-  // 3) Transparent — no background (transparent PNG) to drop onto any story.
+  // 3) Transparent — genuinely transparent PNG (no background painted).
   Widget _transparentCard() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
@@ -379,11 +553,8 @@ class _RoutePainter extends CustomPainter {
             .reduce((double a, double b) => a + b) /
         route.length;
     final double cosLat = math.cos(midLat * math.pi / 180).abs().clamp(0.01, 1);
-
-    // Project to a flat, aspect-correct space.
-    final List<Offset> pts = route
-        .map((GeoPoint g) => Offset(g.lng * cosLat, -g.lat))
-        .toList();
+    final List<Offset> pts =
+        route.map((GeoPoint g) => Offset(g.lng * cosLat, -g.lat)).toList();
     double minX = pts.first.dx, maxX = pts.first.dx;
     double minY = pts.first.dy, maxY = pts.first.dy;
     for (final Offset o in pts) {
@@ -397,22 +568,14 @@ class _RoutePainter extends CustomPainter {
     const double pad = 16;
     final double scale = math.min(
         (size.width - pad * 2) / spanX, (size.height - pad * 2) / spanY);
-    final double drawW = spanX * scale;
-    final double drawH = spanY * scale;
-    final double offX = (size.width - drawW) / 2;
-    final double offY = (size.height - drawH) / 2;
-
+    final double offX = (size.width - spanX * scale) / 2;
+    final double offY = (size.height - spanY * scale) / 2;
     final Path path = Path();
     for (int i = 0; i < pts.length; i++) {
       final double x = offX + (pts[i].dx - minX) * scale;
       final double y = offY + (pts[i].dy - minY) * scale;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
     }
-
     canvas.drawPath(
       path,
       Paint()
@@ -476,3 +639,38 @@ class _StripePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+/// Grey checkerboard shown behind the transparent card in the PREVIEW only, so
+/// the see-through nature is obvious (it is not part of the exported image).
+class _CheckerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const double c = 22;
+    final Paint a = Paint()..color = const Color(0xFF2A2E33);
+    final Paint b = Paint()..color = const Color(0xFF20242A);
+    for (int y = 0; y * c < size.height; y++) {
+      for (int x = 0; x * c < size.width; x++) {
+        canvas.drawRect(
+          Rect.fromLTWH(x * c, y * c, c, c),
+          (x + y).isEven ? a : b,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+const String _darkMapStyle = '''
+[
+  {"elementType":"geometry","stylers":[{"color":"#12151a"}]},
+  {"elementType":"labels.icon","stylers":[{"visibility":"off"}]},
+  {"elementType":"labels.text.fill","stylers":[{"color":"#8a8f98"}]},
+  {"elementType":"labels.text.stroke","stylers":[{"color":"#12151a"}]},
+  {"featureType":"poi","stylers":[{"visibility":"off"}]},
+  {"featureType":"road","elementType":"geometry","stylers":[{"color":"#22262d"}]},
+  {"featureType":"transit","stylers":[{"visibility":"off"}]},
+  {"featureType":"water","elementType":"geometry","stylers":[{"color":"#0a0c0f"}]}
+]
+''';
