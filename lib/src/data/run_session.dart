@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import 'models/geo_point.dart';
 import 'models/run_activity.dart';
 
 enum RunStatus { idle, running, paused }
@@ -16,6 +18,8 @@ class RunSession {
     required this.elapsed,
     required this.steps,
     this.startedAt,
+    this.route = const <GeoPoint>[],
+    this.gpsMetres = 0,
   });
 
   final RunStatus status;
@@ -23,11 +27,19 @@ class RunSession {
   final int steps;
   final DateTime? startedAt;
 
-  // Step-derived metrics (no GPS yet — distance comes from the step sensor).
+  /// GPS route sampled during the run (empty until the first fix / indoors).
+  final List<GeoPoint> route;
+
+  /// Distance accumulated from GPS, in metres.
+  final double gpsMetres;
+
+  // Fallbacks when there's no GPS (indoor / no fix): step-derived metrics.
   static const double _strideMetres = 0.762;
   static const double _kcalPerStep = 0.045;
 
-  double get distanceKm => steps * _strideMetres / 1000;
+  /// Prefer real GPS distance once we have a route; fall back to step-derived.
+  double get distanceKm =>
+      gpsMetres > 0 ? gpsMetres / 1000 : steps * _strideMetres / 1000;
   int get calories => (steps * _kcalPerStep).round();
   double get paceMinPerKm =>
       distanceKm <= 0 ? 0 : elapsed.inSeconds / 60 / distanceKm;
@@ -37,12 +49,16 @@ class RunSession {
     Duration? elapsed,
     int? steps,
     DateTime? startedAt,
+    List<GeoPoint>? route,
+    double? gpsMetres,
   }) =>
       RunSession(
         status: status ?? this.status,
         elapsed: elapsed ?? this.elapsed,
         steps: steps ?? this.steps,
         startedAt: startedAt ?? this.startedAt,
+        route: route ?? this.route,
+        gpsMetres: gpsMetres ?? this.gpsMetres,
       );
 
   static const RunSession idle = RunSession(
@@ -59,6 +75,12 @@ class RunSessionController extends Notifier<RunSession> {
   int _committedSteps = 0; // steps banked from finished running segments
   int? _segmentBaseline; // cumulative sensor count at current segment start
 
+  // GPS route recording.
+  StreamSubscription<Position>? _posSub;
+  final List<GeoPoint> _route = <GeoPoint>[];
+  double _gpsMetres = 0;
+  Position? _lastPos;
+
   @override
   RunSession build() {
     ref.onDispose(_teardown);
@@ -69,6 +91,9 @@ class RunSessionController extends Notifier<RunSession> {
     await _ensurePermission();
     _committedSteps = 0;
     _segmentBaseline = null;
+    _route.clear();
+    _gpsMetres = 0;
+    _lastPos = null;
     state = RunSession(
       status: RunStatus.running,
       elapsed: Duration.zero,
@@ -77,12 +102,14 @@ class RunSessionController extends Notifier<RunSession> {
     );
     _startTimer();
     _listenSteps();
+    _listenPositions();
   }
 
   void pause() {
     if (state.status != RunStatus.running) return;
     _committedSteps = state.steps; // bank steps so far
     _segmentBaseline = null; // re-baseline on resume
+    _lastPos = null; // don't bridge a straight line across the pause gap
     _timer?.cancel();
     state = state.copyWith(status: RunStatus.paused);
   }
@@ -106,6 +133,7 @@ class RunSessionController extends Notifier<RunSession> {
       duration: s.elapsed,
       caloriesKcal: s.calories,
       steps: s.steps,
+      route: s.route,
     );
     _teardown();
     state = RunSession.idle;
@@ -127,6 +155,53 @@ class RunSessionController extends Notifier<RunSession> {
             elapsed: state.elapsed + const Duration(seconds: 1));
       }
     });
+  }
+
+  /// Streams GPS fixes while running: appends to the route and accumulates real
+  /// distance (jitter/outlier-filtered). Silently no-ops without permission or a
+  /// location fix (indoor / emulator) — the run still records via the timer.
+  Future<void> _listenPositions() async {
+    if (kIsWeb) return;
+    try {
+      LocationPermission perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        return;
+      }
+      if (!await Geolocator.isLocationServiceEnabled()) return;
+
+      _posSub?.cancel();
+      _posSub = Geolocator.getPositionStream(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.best,
+          distanceFilter: 4, // metres between updates
+        ),
+      ).listen((Position pos) {
+        if (state.status != RunStatus.running) {
+          _lastPos = null; // paused — restart the segment on resume
+          return;
+        }
+        if (_lastPos != null) {
+          final double d = Geolocator.distanceBetween(
+            _lastPos!.latitude,
+            _lastPos!.longitude,
+            pos.latitude,
+            pos.longitude,
+          );
+          // Ignore GPS jitter (<2 m) and implausible jumps (>100 m per fix).
+          if (d >= 2 && d < 100) _gpsMetres += d;
+        }
+        _lastPos = pos;
+        _route.add(GeoPoint(pos.latitude, pos.longitude));
+        state = state.copyWith(
+          route: List<GeoPoint>.unmodifiable(_route),
+          gpsMetres: _gpsMetres,
+        );
+      }, onError: (_) {/* no fix — timer/steps still record the run */});
+    } catch (_) {/* location unavailable */}
   }
 
   void _listenSteps() {
@@ -161,6 +236,8 @@ class RunSessionController extends Notifier<RunSession> {
     _timer = null;
     _sub?.cancel();
     _sub = null;
+    _posSub?.cancel();
+    _posSub = null;
   }
 }
 

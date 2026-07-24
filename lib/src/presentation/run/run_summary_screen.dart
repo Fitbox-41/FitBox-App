@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
 import '../widgets/glass.dart';
+import '../widgets/live_run_map.dart';
 import '../widgets/map_placeholder.dart';
 import '../widgets/motion.dart';
 
@@ -32,6 +33,7 @@ class RunSummaryScreen extends StatelessWidget {
     final Duration dur = run?.duration ?? const Duration(minutes: 28, seconds: 15);
     final int steps = run?.steps ?? 0;
     final int calories = run?.caloriesKcal ?? 310;
+    final bool hasRoute = (run?.route.length ?? 0) >= 2;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Run summary')),
@@ -68,7 +70,15 @@ class RunSummaryScreen extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: <Widget>[
-                    const MapPlaceholder(showBadge: false),
+                    if (hasRoute)
+                      LiveRunMap(
+                        route: run!.route,
+                        follow: false,
+                        interactive: false,
+                        showMyLocation: false,
+                      )
+                    else
+                      const MapPlaceholder(showBadge: false),
                     Positioned(
                       left: 14,
                       bottom: 14,

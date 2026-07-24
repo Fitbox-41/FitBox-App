@@ -1,3 +1,5 @@
+import 'geo_point.dart';
+
 /// A completed run/workout — always **recorded in-app** by the user (never
 /// synced from Apple Health / Health Connect).
 class RunActivity {
@@ -9,6 +11,7 @@ class RunActivity {
     required this.duration,
     required this.caloriesKcal,
     this.steps = 0,
+    this.route = const <GeoPoint>[],
   });
 
   final String id;
@@ -18,6 +21,9 @@ class RunActivity {
   final Duration duration;
   final int caloriesKcal;
   final int steps;
+
+  /// The recorded GPS route (empty for step-only / indoor runs).
+  final List<GeoPoint> route;
 
   /// Average pace in minutes per kilometre.
   double get paceMinPerKm =>
@@ -31,6 +37,7 @@ class RunActivity {
         duration: duration,
         caloriesKcal: caloriesKcal,
         steps: steps,
+        route: route,
       );
 
   /// Parses a run as stored by the app backend (distance in metres, duration in
@@ -47,6 +54,10 @@ class RunActivity {
       duration: Duration(seconds: seconds),
       caloriesKcal: (json['calories'] as num?)?.round() ?? 0,
       steps: (json['steps'] as num?)?.toInt() ?? 0,
+      route: (json['route'] as List<dynamic>?)
+              ?.map((dynamic e) => GeoPoint.fromPair(e as List<dynamic>))
+              .toList() ??
+          const <GeoPoint>[],
     );
   }
 
@@ -59,6 +70,7 @@ class RunActivity {
         'calories': caloriesKcal,
         'steps': steps,
         'startedAt': date.toUtc().toIso8601String(),
+        'route': route.map((GeoPoint p) => p.toPair()).toList(),
       };
 
   /// Compact map for local persistence (kilometres/seconds kept as-is).
@@ -70,6 +82,7 @@ class RunActivity {
         'seconds': duration.inSeconds,
         'calories': caloriesKcal,
         'steps': steps,
+        'route': route.map((GeoPoint p) => p.toPair()).toList(),
       };
 
   factory RunActivity.fromMap(Map<String, dynamic> m) => RunActivity(
@@ -80,5 +93,9 @@ class RunActivity {
         duration: Duration(seconds: (m['seconds'] as num?)?.toInt() ?? 0),
         caloriesKcal: (m['calories'] as num?)?.toInt() ?? 0,
         steps: (m['steps'] as num?)?.toInt() ?? 0,
+        route: (m['route'] as List<dynamic>?)
+                ?.map((dynamic e) => GeoPoint.fromPair(e as List<dynamic>))
+                .toList() ??
+            const <GeoPoint>[],
       );
 }

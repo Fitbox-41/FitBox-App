@@ -10,7 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/recorded_runs.dart';
 import '../../data/run_session.dart';
 import '../widgets/glass.dart';
-import '../widgets/map_placeholder.dart';
+import '../widgets/live_run_map.dart';
 import '../widgets/motion.dart';
 
 /// Live run recording. A per-second timer + the device step sensor drive the
@@ -117,7 +117,8 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     return Scaffold(
       body: Stack(
         children: <Widget>[
-          const Positioned.fill(child: MapPlaceholder(showBadge: false)),
+          Positioned.fill(
+              child: LiveRunMap(route: s.route, follow: true)),
           Positioned(
             top: MediaQuery.paddingOf(context).top + 10,
             left: 16,
