@@ -23,9 +23,9 @@ class TerritoryRepository {
         .toList();
   }
 
-  /// Claims the area enclosed by a finished run loop. Returns the caller's new
-  /// total area (sqm), or null if the loop was too small to claim.
-  Future<double?> capture(List<GeoPoint> route) async {
+  /// Claims the area enclosed by a finished run loop. Returns the area claimed
+  /// by this run and the caller's new total (both sqm).
+  Future<({double claimed, double total})> capture(List<GeoPoint> route) async {
     // Backend expects GeoJSON order: [lng, lat].
     final List<List<double>> coords =
         route.map((GeoPoint g) => <double>[g.lng, g.lat]).toList();
@@ -34,7 +34,10 @@ class TerritoryRepository {
       data: <String, dynamic>{'route': coords},
     );
     final Map<dynamic, dynamic> data = res.data as Map<dynamic, dynamic>;
-    return (data['area'] as num?)?.toDouble();
+    return (
+      claimed: (data['claimed'] as num?)?.toDouble() ?? 0,
+      total: (data['area'] as num?)?.toDouble() ?? 0,
+    );
   }
 }
 

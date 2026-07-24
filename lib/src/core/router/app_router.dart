@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/run_activity.dart';
+import '../../data/models/run_result.dart';
 import '../../presentation/widgets/glass.dart';
 import '../../presentation/activity/activity_screen.dart';
 import '../../presentation/auth/auth_controller.dart';
@@ -113,8 +114,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           pageBuilder: (_, _) => _ios(const RecordRunScreen())),
       GoRoute(
         path: '/run-summary',
-        pageBuilder: (_, GoRouterState s) =>
-            _ios(RunSummaryScreen(run: s.extra as RunActivity?)),
+        pageBuilder: (_, GoRouterState s) {
+          final Object? e = s.extra;
+          if (e is RunResult) {
+            return _ios(RunSummaryScreen(
+                run: e.run, claimedAreaSqm: e.claimedAreaSqm));
+          }
+          return _ios(RunSummaryScreen(run: e as RunActivity?));
+        },
       ),
       GoRoute(
           path: '/leaderboard',

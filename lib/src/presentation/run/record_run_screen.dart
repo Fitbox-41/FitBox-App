@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/models/run_result.dart';
 import '../../data/recorded_runs.dart';
 import '../../data/run_session.dart';
 import '../../data/territory_repository.dart';
@@ -98,13 +99,19 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
       await ref.read(recordedRunsProvider.notifier).addRun(run);
       // Claim the territory enclosed by the loop (signed-in users only; guests
       // and non-loops fail quietly — the run is still saved locally).
+      double? claimed;
       if (run.route.length >= 4) {
         try {
-          await ref.read(territoryRepositoryProvider).capture(run.route);
+          final ({double claimed, double total}) r =
+              await ref.read(territoryRepositoryProvider).capture(run.route);
+          claimed = r.claimed;
           ref.invalidate(territoriesProvider);
         } catch (_) {/* no loop / guest / offline */}
       }
-      if (mounted) context.pushReplacement('/run-summary', extra: run);
+      if (mounted) {
+        context.pushReplacement('/run-summary',
+            extra: RunResult(run: run, claimedAreaSqm: claimed));
+      }
     } else {
       ref.read(runSessionProvider.notifier).discard();
       if (mounted) context.pop();

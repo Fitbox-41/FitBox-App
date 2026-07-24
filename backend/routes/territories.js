@@ -2,7 +2,7 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const Territory = require('../models/Territory');
 const User = require('../models/User');
-const { routeToPolygon, applyCapture } = require('../territoryEngine');
+const { routeToPolygon, applyCapture, areaOf } = require('../territoryEngine');
 
 const router = express.Router();
 
@@ -79,7 +79,11 @@ router.post('/capture', auth, async (req, res) => {
       { upsert: true },
     );
 
-    res.json({ success: true, area: result.capturerArea });
+    res.json({
+      success: true,
+      area: result.capturerArea, // caller's new total
+      claimed: areaOf(newPoly.geometry), // area enclosed by this run's loop
+    });
   } catch (error) {
     console.error('Territory capture error:', error);
     res.status(500).json({ success: false, message: 'Server error' });

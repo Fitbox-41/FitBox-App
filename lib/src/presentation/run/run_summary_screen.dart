@@ -14,9 +14,12 @@ import 'share_run_sheet.dart';
 /// Post-run summary — the celebratory moment. Hero headline + framed route +
 /// headline metrics, with share + delete actions.
 class RunSummaryScreen extends ConsumerWidget {
-  const RunSummaryScreen({super.key, this.run});
+  const RunSummaryScreen({super.key, this.run, this.claimedAreaSqm});
 
   final RunActivity? run;
+
+  /// Territory area (sqm) claimed by this run's loop, if any.
+  final double? claimedAreaSqm;
 
   String _pace(double p) {
     final int m = p.floor();
@@ -52,6 +55,42 @@ class RunSummaryScreen extends ConsumerWidget {
       await ref.read(recordedRunsProvider.notifier).removeRun(r.id);
       if (context.mounted) context.go('/home');
     }
+  }
+
+  Widget _territoryBanner(BuildContext context, double sqm) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(colors: <Color>[
+          FitBoxColors.red.withValues(alpha: 0.26),
+          FitBoxColors.red.withValues(alpha: 0.06),
+        ]),
+        border: Border.all(color: FitBoxColors.red.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const CircleAvatar(
+            backgroundColor: FitBoxColors.red,
+            child: Icon(Icons.flag_rounded, color: Colors.white),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text('TERRITORY CLAIMED', style: AppText.labelCaps(context)),
+              CountUpText(
+                value: sqm,
+                builder: (BuildContext c, double v) => Text(
+                  '+${v < 100000 ? '${v.round()} m²' : '${(v / 1e6).toStringAsFixed(2)} km²'}',
+                  style: AppText.kinetic(context, size: 24, color: FitBoxColors.red),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -166,6 +205,10 @@ class RunSummaryScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if ((claimedAreaSqm ?? 0) > 0) ...<Widget>[
+            const SizedBox(height: 12),
+            _territoryBanner(context, claimedAreaSqm!),
+          ],
           const SizedBox(height: 16),
           Row(
             children: <Widget>[

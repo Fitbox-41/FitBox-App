@@ -1,23 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/models/territory.dart';
+import '../../data/territory_repository.dart';
+import '../auth/auth_controller.dart';
+import '../widgets/common.dart';
 import '../widgets/glass.dart';
 import '../widgets/motion.dart';
+import '../widgets/shimmer.dart';
 
 class _Entry {
-  const _Entry(this.rank, this.name, this.area, {this.me = false});
+  const _Entry(this.rank, this.name, this.sqm, {this.me = false});
   final int rank;
   final String name;
-  final String area;
+  final double sqm;
   final bool me;
 
-  /// Numeric part of the area string ("18.4 km²" → 18.4) for CountUp.
-  double get areaValue =>
-      double.tryParse(area.split(' ').first) ?? 0;
-
-  /// Unit suffix ("18.4 km²" → "km²").
-  String get areaUnit => area.contains(' ') ? area.split(' ').last : '';
+  String get area => sqm < 100000
+      ? '${sqm.round()} m²'
+      : '${(sqm / 1000000).toStringAsFixed(2)} km²';
 }
 
 /// Medal accent tones for the podium (gold/silver/bronze), warmed toward the
@@ -25,61 +28,134 @@ class _Entry {
 Color _medal(int rank) {
   switch (rank) {
     case 1:
-      return const Color(0xFFE7C15A); // gold
+      return const Color(0xFFE7C15A);
     case 2:
-      return const Color(0xFFB8C0CC); // silver
+      return const Color(0xFFB8C0CC);
     case 3:
-      return const Color(0xFFCE8E5C); // bronze
+      return const Color(0xFFCE8E5C);
     default:
       return FitBoxColors.red;
   }
 }
 
-/// Weekly leaderboard by territory captured. Sample standings until the
-/// territory game goes live (arrives with Maps).
-class LeaderboardScreen extends StatelessWidget {
+/// Live leaderboard ranked by territory captured (area), from the shared map.
+class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
 
-  static const List<_Entry> _entries = <_Entry>[
-    _Entry(1, 'A. Mercer', '18.4 km²'),
-    _Entry(2, 'J. Rivera', '15.1 km²'),
-    _Entry(3, 'S. Kaur', '12.7 km²'),
-    _Entry(4, 'You', '9.8 km²', me: true),
-    _Entry(5, 'D. Osei', '8.2 km²'),
-    _Entry(6, 'L. Rossi', '6.5 km²'),
-  ];
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String? myId = ref.watch(authControllerProvider).user?.id;
+    final AsyncValue<List<TerritoryArea>> async =
+        ref.watch(territoriesProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Leaderboard')),
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(territoriesProvider),
+        child: async.when(
+          loading: () => const SkeletonList(count: 6),
+          error: (Object e, _) => ListView(
+            children: <Widget>[
+              const SizedBox(height: 140),
+              AsyncRetry(
+                message: "Couldn't load the leaderboard.",
+                onRetry: () => ref.invalidate(territoriesProvider),
+              ),
+            ],
+          ),
+          data: (List<TerritoryArea> list) {
+            final List<TerritoryArea> sorted = <TerritoryArea>[...list]
+              ..sort((TerritoryArea a, TerritoryArea b) =>
+                  b.area.compareTo(a.area));
+            final List<_Entry> entries = <_Entry>[
+              for (int i = 0; i < sorted.length; i++)
+                _Entry(i + 1, sorted[i].userName, sorted[i].area,
+                    me: sorted[i].userId == myId),
+            ];
+
+            if (entries.isEmpty) return const _EmptyBoard();
+
+            final List<_Entry> top = entries.take(3).toList();
+            final List<_Entry> rest = entries.skip(3).toList();
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+              children: <Widget>[
+                Text('Ranked by territory', style: AppText.labelCaps(context)),
+                const SizedBox(height: 20),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Expanded(
+                      child: top.length > 1
+                          ? _Podium(top[1], height: 92)
+                          : const SizedBox.shrink(),
+                    ),
+                    Expanded(child: _Podium(top[0], height: 128, gold: true)),
+                    Expanded(
+                      child: top.length > 2
+                          ? _Podium(top[2], height: 74)
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+                if (rest.isNotEmpty) ...<Widget>[
+                  const SizedBox(height: 28),
+                  Text('Standings', style: AppText.labelCaps(context)),
+                  const SizedBox(height: 12),
+                  GlassCard(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Column(
+                      children: <Widget>[
+                        for (final _Entry e in rest) _Row(e),
+                      ],
+                    ),
+                  ),
+                ],
+              ].revealStagger(),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyBoard extends StatelessWidget {
+  const _EmptyBoard();
 
   @override
   Widget build(BuildContext context) {
-    final List<_Entry> rest = _entries.where((e) => e.rank > 3).toList();
-    return Scaffold(
-      appBar: AppBar(title: const Text('Leaderboard')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-        children: <Widget>[
-          Text('This week', style: AppText.labelCaps(context)),
-          const SizedBox(height: 20),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: <Widget>[
-              Expanded(child: _Podium(_entries[1], height: 92)),
-              Expanded(child: _Podium(_entries[0], height: 128, gold: true)),
-              Expanded(child: _Podium(_entries[2], height: 74)),
-            ],
-          ),
-          const SizedBox(height: 28),
-          Text('Standings', style: AppText.labelCaps(context)),
-          const SizedBox(height: 12),
-          GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Column(
-              children: <Widget>[
-                for (final _Entry e in rest) _Row(e),
-              ],
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 100, 24, 24),
+      children: <Widget>[
+        Center(
+          child: Container(
+            width: 84,
+            height: 84,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(colors: <Color>[
+                FitBoxColors.red.withValues(alpha: 0.28),
+                FitBoxColors.red.withValues(alpha: 0.06),
+              ]),
+              border: Border.all(color: FitBoxColors.red.withValues(alpha: 0.3)),
             ),
+            child: const Icon(Icons.flag_rounded,
+                color: FitBoxColors.red, size: 40),
           ),
-        ].revealStagger(),
-      ),
+        ),
+        const SizedBox(height: 20),
+        Text('No territory claimed yet',
+            textAlign: TextAlign.center, style: AppText.kinetic(context, size: 22)),
+        const SizedBox(height: 8),
+        Text('Run a loop around an area to claim your first territory and top '
+            'the board.',
+            textAlign: TextAlign.center,
+            style: AppTypography.body(size: 14, color: cs.onSurfaceVariant)),
+      ],
     );
   }
 }
@@ -99,17 +175,12 @@ class _Podium extends StatelessWidget {
 
     return Column(
       children: <Widget>[
-        // Medal-ringed avatar; gold gets a soft brand glow for extra emphasis.
         Container(
           padding: const EdgeInsets.all(2.5),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: SweepGradient(
-              colors: <Color>[
-                medal,
-                medal.withValues(alpha: 0.35),
-                medal,
-              ],
+              colors: <Color>[medal, medal.withValues(alpha: 0.35), medal],
             ),
             boxShadow: gold
                 ? <BoxShadow>[
@@ -123,11 +194,10 @@ class _Podium extends StatelessWidget {
           ),
           child: CircleAvatar(
             radius: avatarRadius,
-            backgroundColor: gold
-                ? FitBoxColors.red.withValues(alpha: 0.22)
-                : cs.surface,
+            backgroundColor:
+                gold ? FitBoxColors.red.withValues(alpha: 0.22) : cs.surface,
             child: Text(
-              entry.name.characters.first,
+              entry.name.characters.first.toUpperCase(),
               style: AppText.kinetic(context,
                   size: gold ? 24 : 19,
                   color: gold ? FitBoxColors.red : medal),
@@ -140,9 +210,9 @@ class _Podium extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: AppTypography.title(size: 14, color: cs.onSurface)),
         const SizedBox(height: 2),
-        Text(entry.area, style: AppTypography.caption(color: cs.onSurfaceVariant)),
+        Text(entry.area,
+            style: AppTypography.caption(color: cs.onSurfaceVariant)),
         const SizedBox(height: 10),
-        // Pillar with a big rank numeral that counts up on reveal.
         Container(
           height: height,
           margin: const EdgeInsets.symmetric(horizontal: 6),
@@ -188,19 +258,7 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
-    final Color rankColor =
-        entry.me ? FitBoxColors.red : cs.onSurfaceVariant;
-
-    final Widget points = entry.me
-        ? CountUpText(
-            value: entry.areaValue,
-            builder: (BuildContext context, double v) => Text(
-              '${v.toStringAsFixed(1)} ${entry.areaUnit}',
-              style: AppText.data(context, size: 17, color: FitBoxColors.red),
-            ),
-          )
-        : Text(entry.area,
-            style: AppText.data(context, size: 16, color: cs.onSurfaceVariant));
+    final Color rankColor = entry.me ? FitBoxColors.red : cs.onSurfaceVariant;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -231,7 +289,7 @@ class _Row extends StatelessWidget {
                   ? FitBoxColors.red.withValues(alpha: 0.25)
                   : cs.onSurface.withValues(alpha: 0.1),
               child: Text(
-                entry.name.characters.first,
+                entry.name.characters.first.toUpperCase(),
                 style: AppText.kinetic(context,
                     size: 15,
                     color: entry.me ? FitBoxColors.red : cs.onSurface),
@@ -240,12 +298,17 @@ class _Row extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(entry.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.title(
                     size: 15,
                     color: entry.me ? FitBoxColors.red : cs.onSurface,
                   )),
             ),
-            points,
+            Text(entry.area,
+                style: AppText.data(context,
+                    size: 16,
+                    color: entry.me ? FitBoxColors.red : cs.onSurfaceVariant)),
           ],
         ),
       ),
