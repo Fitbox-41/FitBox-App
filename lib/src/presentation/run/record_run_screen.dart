@@ -100,7 +100,9 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
       // Claim the territory enclosed by the loop (signed-in users only; guests
       // and non-loops fail quietly — the run is still saved locally).
       double? claimed;
-      if (run.route.length >= 4) {
+      // Only claim from a genuine loop with real movement — GPS jitter while
+      // standing still (a few metres) must not capture territory.
+      if (run.route.length >= 4 && run.distanceKm >= 0.1) {
         try {
           final ({double claimed, double total}) r =
               await ref.read(territoryRepositoryProvider).capture(run.route);
@@ -182,7 +184,8 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                  16, 16, 16, 16 + MediaQuery.paddingOf(context).bottom),
               child: GlassCard(
                 radius: 28,
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
