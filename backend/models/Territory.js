@@ -1,34 +1,20 @@
 const mongoose = require('mongoose');
 
+// One territory document per user — the union of everything they currently hold
+// (a GeoJSON Polygon or MultiPolygon, since contests fragment territory). Stored
+// as Mixed because the geometry alternates between Polygon and MultiPolygon; the
+// shared map just reads all docs, so no geo-index/query is needed.
 const TerritorySchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
-    ref: 'User'
+    unique: true,
+    index: true,
   },
-  polygon: {
-    type: {
-      type: String,
-      enum: ['Polygon'],
-      required: true,
-      default: 'Polygon'
-    },
-    coordinates: {
-      type: [[[Number]]], // Array of arrays of arrays of numbers [[[lng, lat], ...]]
-      required: true
-    }
-  },
-  area: {
-    type: Number, // Square meters or custom units
-    required: true
-  },
-  weekOf: {
-    type: String, // String representation of the week, e.g. "2026-W28"
-    required: true
-  }
+  userName: { type: String, default: 'Runner' }, // denormalized for map/leaderboard
+  geometry: { type: mongoose.Schema.Types.Mixed, required: true }, // GeoJSON Polygon|MultiPolygon
+  area: { type: Number, default: 0 }, // square metres currently held
 }, { timestamps: true });
-
-TerritorySchema.index({ polygon: '2dsphere' });
-TerritorySchema.index({ weekOf: 1 });
 
 module.exports = mongoose.model('Territory', TerritorySchema, 'territories');
