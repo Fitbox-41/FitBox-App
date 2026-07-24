@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:pedometer/pedometer.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../services/run_notifier.dart';
 import 'models/geo_point.dart';
 import 'models/run_activity.dart';
 
@@ -103,6 +104,7 @@ class RunSessionController extends Notifier<RunSession> {
     _startTimer();
     _listenSteps();
     _listenPositions();
+    _pushNotification();
   }
 
   void pause() {
@@ -112,6 +114,7 @@ class RunSessionController extends Notifier<RunSession> {
     _lastPos = null; // don't bridge a straight line across the pause gap
     _timer?.cancel();
     state = state.copyWith(status: RunStatus.paused);
+    _pushNotification();
   }
 
   void resume() {
@@ -119,6 +122,7 @@ class RunSessionController extends Notifier<RunSession> {
     _segmentBaseline = null;
     state = state.copyWith(status: RunStatus.running);
     _startTimer();
+    _pushNotification();
   }
 
   /// Ends the session and returns the recorded run (caller persists it).
@@ -153,8 +157,34 @@ class RunSessionController extends Notifier<RunSession> {
       if (state.status == RunStatus.running) {
         state = state.copyWith(
             elapsed: state.elapsed + const Duration(seconds: 1));
+        _pushNotification();
       }
     });
+  }
+
+  // ---- live notification ----
+
+  String _fmtElapsed(Duration d) {
+    final String mm = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final String ss = (d.inSeconds % 60).toString().padLeft(2, '0');
+    return d.inHours > 0 ? '${d.inHours}:$mm:$ss' : '$mm:$ss';
+  }
+
+  String _fmtPace(double p) {
+    if (p <= 0) return "0'00";
+    final int m = p.floor();
+    return "$m'${((p - m) * 60).round().toString().padLeft(2, '0')}";
+  }
+
+  void _pushNotification() {
+    final RunSession s = state;
+    final bool paused = s.status == RunStatus.paused;
+    final String body =
+        '${_fmtElapsed(s.elapsed)}  ·  ${s.distanceKm.toStringAsFixed(2)} km  ·  ${_fmtPace(s.paceMinPerKm)}/km';
+    ref.read(runNotifierProvider).update(
+          title: paused ? 'FitBox — paused' : 'FitBox — recording run',
+          body: body,
+        );
   }
 
   /// Streams GPS fixes while running: appends to the route and accumulates real
@@ -238,6 +268,7 @@ class RunSessionController extends Notifier<RunSession> {
     _sub = null;
     _posSub?.cancel();
     _posSub = null;
+    ref.read(runNotifierProvider).clear();
   }
 }
 

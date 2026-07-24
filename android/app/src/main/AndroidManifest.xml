@@ -4,6 +4,8 @@
     <!-- GPS — for the live run route + territory map. Requested at run time. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Live run notification (Android 13+ runtime permission). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="FitBox"
         android:name="${applicationName}"
