@@ -123,7 +123,15 @@ router.get('/', auth, async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/credit', serviceAuth, async (req, res) => {
   try {
-    const { userId, amount, source, sourceId, idempotencyKey, description } = req.body;
+    let { userId, email, amount, source, sourceId, idempotencyKey, description } = req.body;
+    // Allow crediting by email (admin bonuses) — resolve to the user's _id.
+    if (!userId && email) {
+      const u = await User.findOne({ email }).select('_id').lean();
+      if (!u) {
+        return res.status(404).json({ success: false, message: 'No user for that email' });
+      }
+      userId = String(u._id);
+    }
     const result = await applyLedgerEntry({
       userId,
       type: 'credit',
