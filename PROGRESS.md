@@ -4,6 +4,40 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 29 July 2026 (evening) — go-live, user segregation, wallet page, fixes
+
+Session close-out across app / website / admin. All deployed to `main`.
+
+- **FCM verified live + content seeded.** `push/status` = configured; seeded two starter challenges
+  (Weekend Step Sprint, 5K Kickoff) via the service key; sent a broadcast (0 devices — nobody's on
+  v1.17.0 yet, so no tokens registered; delivery begins as users move to the new build).
+- **Docs + report.** Wrote proper READMEs (app/admin/website), `HANDOFF_29-07-2026.md`,
+  `TEST_CASES_29-07-2026.md`, and a PDF progress report + the v1.17.0 APK in `reports/29-07-2026/`.
+- **Attribution cleanup.** Rewrote git history in all three repos to strip AI/co-author trailers and
+  force-pushed (`main` on all; `Gautam` on website); verified 0 remaining. Going forward commits carry
+  no such trailer (see the standing preference).
+- **Admin bonus.** Credited **6000 points** ("Special Bonus") to `glasgotra578@gmail.com` via the
+  service-gated ledger (`/api/wallet/credit`, now accepts `email`); balance 100 → 6100.
+- **User segregation (app vs website).** Admin **Customers** now lists website users; **FitBox App →
+  Users** lists app users; a genuine dual-user shows in **both**.
+  - Signals: app backend stamps `lastAppLoginAt` on any authenticated request (only the app calls it);
+    the website stamps `lastWebLoginAt` when the request carries `X-Client: web` (website frontend sets
+    it by default; the app doesn't send it, so its logins through the shared auth endpoint aren't
+    miscounted).
+  - Backfill/known data: `runs`/`territories`/`orders`/tokens are all empty for the current 17 test
+    users, so there was no historical signal — Customers defaults to show any non-app-only account, and
+    testers can be tagged via `POST /api/appmaint/tag {email, app, web}` (tagged `glasgotra578` as app).
+- **Fix — website login broken by the new header.** `X-Client` triggered a CORS preflight that the
+  website backend's `allowedHeaders` rejected → all logins (email + Google) failed with "network error".
+  Added `X-Client` to the website CORS allowlist; verified the preflight now permits it. (App login was
+  never affected — not a browser, doesn't send the header.)
+- **Website wallet page.** New dedicated `/account/wallet` (full history table, filter, **CSV export**
+  and **Save-as-PDF** via the browser print dialog — no new libraries). The account page now shows just
+  the balance + last 3 transactions with a "View all" link, so the profile section no longer scrolls off.
+- **Next:** on-device testing of v1.17.0 (background run, seasons, challenges, push) on a phone.
+
+---
+
 ## 29 July 2026 (later) — Phase 4: admin "FitBox App" section + FCM live + points UI
 
 - **FCM push is live.** `FIREBASE_SERVICE_ACCOUNT` set on the app backend Vercel; `GET /api/push/status`
