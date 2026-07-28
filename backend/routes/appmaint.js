@@ -92,4 +92,26 @@ router.post('/backfill-segments', serviceAuth, async (req, res) => {
   }
 });
 
+// POST /api/appmaint/tag — manually mark a user (by email) as an app and/or
+// website user. Handy for known testers before they re-sign-in on the new build.
+// Body: { email, app?: true, web?: true }
+router.post('/tag', serviceAuth, async (req, res) => {
+  try {
+    const { email, app, web } = req.body || {};
+    if (!email) return res.status(400).json({ success: false, message: 'email required' });
+    const set = {};
+    if (app) set.lastAppLoginAt = new Date();
+    if (web) set.lastWebLoginAt = new Date();
+    if (!Object.keys(set).length) {
+      return res.status(400).json({ success: false, message: 'Set app:true and/or web:true' });
+    }
+    const r = await coll('users').updateOne({ email }, { $set: set });
+    if (!r.matchedCount) return res.status(404).json({ success: false, message: 'No user for that email' });
+    res.json({ success: true, email, set });
+  } catch (e) {
+    console.error('appmaint/tag:', e);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;
