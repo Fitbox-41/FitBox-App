@@ -11,6 +11,7 @@ import '../../presentation/auth/auth_landing_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/reset_password_screen.dart';
 import '../../presentation/auth/signup_screen.dart';
+import '../../presentation/challenges/challenges_screen.dart';
 import '../../presentation/goals/goals_screen.dart';
 import '../../presentation/home/home_screen.dart';
 import '../../presentation/leaderboard/leaderboard_screen.dart';
@@ -127,6 +128,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/leaderboard',
           pageBuilder: (_, _) => _ios(const LeaderboardScreen())),
       GoRoute(path: '/goals', pageBuilder: (_, _) => _ios(const GoalsScreen())),
+      GoRoute(
+          path: '/challenges',
+          pageBuilder: (_, _) => _ios(const ChallengesScreen())),
       GoRoute(
           path: '/notifications',
           pageBuilder: (_, _) => _ios(const NotificationsScreen())),

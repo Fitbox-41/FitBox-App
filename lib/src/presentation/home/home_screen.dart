@@ -85,6 +85,42 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 22),
+              GlassCard(
+                radius: 22,
+                onTap: () => context.push('/challenges'),
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: FitBoxColors.red.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.emoji_events_outlined,
+                          color: FitBoxColors.red, size: 24),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text('Challenges',
+                              style: AppTypography.title(
+                                  size: 16, color: cs.onSurface)),
+                          const SizedBox(height: 2),
+                          Text('Earn points for hitting goals',
+                              style: AppTypography.body(
+                                  size: 12.5, color: cs.onSurfaceVariant)),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+                  ],
+                ),
+              ),
             ]
                 .animate(interval: 70.ms)
                 .fadeIn(duration: 320.ms)
