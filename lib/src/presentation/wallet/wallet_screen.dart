@@ -64,6 +64,8 @@ class WalletScreen extends ConsumerWidget {
                     padding: const EdgeInsets.only(bottom: 10),
                     child: _TxTile(t),
                   ),
+              const SizedBox(height: 14),
+              const _PointsTermsLink(),
             ].revealStagger(),
           ),
         ),
@@ -285,6 +287,50 @@ class _EmptyLedger extends StatelessWidget {
               style: AppTypography.body(
                   size: 14, color: cs.onSurfaceVariant)),
         ],
+      ),
+    );
+  }
+}
+
+/// Points terms & conditions — a tappable footer that opens the T&C, so the
+/// points programme is clearly disclosed to users.
+class _PointsTermsLink extends StatelessWidget {
+  const _PointsTermsLink();
+
+  static const String _terms = '''
+• FitBox Points are a promotional reward with no cash value. They cannot be transferred, sold, or withdrawn as cash.
+• 1 point = ₹0.10 discount at the FitBox store.
+• Points can be redeemed for up to 50% of an order's value; the remaining amount must be paid.
+• Points are earned from in-app activity (e.g. distance covered) and challenges. Rewards may be limited, capped, or changed at any time.
+• FitBox may adjust, expire, or revoke points in case of error, abuse, or fraud.
+• Points may expire and carry no guarantee of availability.
+• These terms may change; continued use of FitBox constitutes acceptance.''';
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Center(
+      child: TextButton.icon(
+        onPressed: () => showDialog<void>(
+          context: context,
+          builder: (BuildContext ctx) => AlertDialog(
+            title: const Text('FitBox Points — Terms'),
+            content: SingleChildScrollView(
+              child: Text(_terms,
+                  style: AppTypography.body(
+                      size: 13, color: cs.onSurfaceVariant)),
+            ),
+            actions: <Widget>[
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Got it')),
+            ],
+          ),
+        ),
+        icon: Icon(Icons.info_outline,
+            size: 16, color: cs.onSurfaceVariant),
+        label: Text('How points work · Terms',
+            style: AppTypography.caption(size: 12, color: cs.onSurfaceVariant)),
       ),
     );
   }
