@@ -8,7 +8,9 @@ import 'package:home_widget/home_widget.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/theme_mode_controller.dart';
+import 'presentation/auth/auth_controller.dart';
 import 'presentation/widgets/glass.dart';
+import 'services/push_service.dart';
 
 /// Messenger key so we can surface feedback (e.g. from a home-screen widget
 /// launch) without a screen-local context.
@@ -36,6 +38,18 @@ class _FitBoxAppState extends ConsumerState<FitBoxApp> {
       HomeWidget.setAppGroupId('group.com.fitboxsports.app');
       HomeWidget.initiallyLaunchedFromHomeWidget().then(_handleWidgetUri);
       _widgetClicks = HomeWidget.widgetClicked.listen(_handleWidgetUri);
+
+      // Register for push once the user is signed in (the token is stored
+      // against their account, so it needs an authenticated session).
+      if (ref.read(authControllerProvider).status == AuthStatus.authenticated) {
+        ref.read(pushServiceProvider).register();
+      }
+      ref.listenManual(authControllerProvider, (AuthState? prev, AuthState next) {
+        if (next.status == AuthStatus.authenticated &&
+            prev?.status != AuthStatus.authenticated) {
+          ref.read(pushServiceProvider).register();
+        }
+      });
     }
   }
 

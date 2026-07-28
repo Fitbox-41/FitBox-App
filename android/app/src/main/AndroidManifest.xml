@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <!-- Live run notification (Android 13+ runtime permission). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- True background run: geolocator runs a location foreground service so the
+         run keeps recording (timer + GPS + steps) while the app is backgrounded. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application
         android:label="FitBox"
         android:name="${applicationName}"

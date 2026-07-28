@@ -5,22 +5,41 @@ import '../services/api_client.dart';
 import 'models/geo_point.dart';
 import 'models/territory.dart';
 
+/// The shared map plus the current weekly-season context (territory resets each
+/// Monday, so the app shows a countdown to the reset).
+class TerritorySnapshot {
+  const TerritorySnapshot({
+    required this.areas,
+    this.season,
+    this.seasonEndsAt,
+  });
+
+  final List<TerritoryArea> areas;
+  final String? season; // ISO year-week, e.g. "2026-W31"
+  final DateTime? seasonEndsAt; // when the current season resets (UTC)
+}
+
 /// Talks to the app backend's territory endpoints (`/api/territories`).
 class TerritoryRepository {
   TerritoryRepository(this._dio);
 
   final Dio _dio;
 
-  /// Every user's current territory, for the shared map.
-  Future<List<TerritoryArea>> fetchAll() async {
+  /// Every user's current-season territory, plus the season/countdown.
+  Future<TerritorySnapshot> fetchAll() async {
     final Response<dynamic> res = await _dio.get<dynamic>('/territories');
     final Map<dynamic, dynamic> data = res.data as Map<dynamic, dynamic>;
     final List<dynamic> list =
         (data['territories'] as List<dynamic>?) ?? <dynamic>[];
-    return list
-        .map((dynamic e) =>
-            TerritoryArea.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList();
+    return TerritorySnapshot(
+      areas: list
+          .map((dynamic e) =>
+              TerritoryArea.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList(),
+      season: data['season'] as String?,
+      seasonEndsAt:
+          DateTime.tryParse((data['seasonEndsAt'] as String?) ?? '')?.toLocal(),
+    );
   }
 
   /// Claims the area enclosed by a finished run loop. Returns the area claimed
@@ -45,7 +64,7 @@ final territoryRepositoryProvider = Provider<TerritoryRepository>(
   (ref) => TerritoryRepository(ref.watch(appDioProvider)),
 );
 
-/// All users' territories for the shared Territory map.
-final territoriesProvider = FutureProvider<List<TerritoryArea>>(
+/// All users' territories for the shared Territory map, plus season context.
+final territoriesProvider = FutureProvider<TerritorySnapshot>(
   (ref) async => ref.watch(territoryRepositoryProvider).fetchAll(),
 );

@@ -21,13 +21,24 @@ class TerritoryScreen extends ConsumerWidget {
     return '${(sqm / 1000000).toStringAsFixed(2)} km²';
   }
 
+  /// "RESETS IN 2D 14H" — how long until the weekly season rolls over.
+  String? _seasonLabel(DateTime? endsAt) {
+    if (endsAt == null) return null;
+    final Duration d = endsAt.difference(DateTime.now());
+    if (d.isNegative) return 'RESETTING…';
+    if (d.inDays >= 1) return 'RESETS IN ${d.inDays}D ${d.inHours % 24}H';
+    if (d.inHours >= 1) return 'RESETS IN ${d.inHours}H ${d.inMinutes % 60}M';
+    return 'RESETS IN ${d.inMinutes}M';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
     final String? myId = ref.watch(authControllerProvider).user?.id;
-    final AsyncValue<List<TerritoryArea>> async = ref.watch(territoriesProvider);
-    final List<TerritoryArea> list =
-        async.asData?.value ?? const <TerritoryArea>[];
+    final AsyncValue<TerritorySnapshot> async = ref.watch(territoriesProvider);
+    final TerritorySnapshot? snap = async.asData?.value;
+    final List<TerritoryArea> list = snap?.areas ?? const <TerritoryArea>[];
+    final DateTime? seasonEndsAt = snap?.seasonEndsAt;
 
     final double myArea = list
         .where((TerritoryArea t) => t.userId == myId)
@@ -99,6 +110,20 @@ class TerritoryScreen extends ConsumerWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
+                    if (_seasonLabel(seasonEndsAt) != null) ...<Widget>[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          Icon(Icons.timer_outlined,
+                              size: 13,
+                              color: FitBoxColors.red.withValues(alpha: 0.9)),
+                          const SizedBox(width: 6),
+                          Text('SEASON · ${_seasonLabel(seasonEndsAt)}',
+                              style: AppText.labelCaps(context, size: 10)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Row(
                       children: <Widget>[
                         Expanded(

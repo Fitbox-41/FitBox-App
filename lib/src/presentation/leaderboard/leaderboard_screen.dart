@@ -45,7 +45,7 @@ class LeaderboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String? myId = ref.watch(authControllerProvider).user?.id;
-    final AsyncValue<List<TerritoryArea>> async =
+    final AsyncValue<TerritorySnapshot> async =
         ref.watch(territoriesProvider);
 
     return Scaffold(
@@ -63,7 +63,8 @@ class LeaderboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          data: (List<TerritoryArea> list) {
+          data: (TerritorySnapshot snap) {
+            final List<TerritoryArea> list = snap.areas;
             final List<TerritoryArea> sorted = <TerritoryArea>[...list]
               ..sort((TerritoryArea a, TerritoryArea b) =>
                   b.area.compareTo(a.area));

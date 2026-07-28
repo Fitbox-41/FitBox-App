@@ -177,6 +177,10 @@ class RunSessionController extends Notifier<RunSession> {
   }
 
   void _pushNotification() {
+    // Android shows the geolocator location-foreground-service notification
+    // (which also keeps the run alive in the background), so the live-stats
+    // local notification is iOS-only — otherwise Android would show two.
+    if (kIsWeb || defaultTargetPlatform == TargetPlatform.android) return;
     final RunSession s = state;
     final bool paused = s.status == RunStatus.paused;
     final String body =
@@ -185,6 +189,43 @@ class RunSessionController extends Notifier<RunSession> {
           title: paused ? 'FitBox — paused' : 'FitBox — recording run',
           body: body,
         );
+  }
+
+  /// Platform GPS settings. On Android the stream runs under a **location
+  /// foreground service** (ongoing notification) so the OS keeps the process
+  /// alive — the timer, steps and GPS all keep recording when the app is
+  /// backgrounded or the screen is off. On iOS we opt into background location
+  /// updates (see UIBackgroundModes in Info.plist).
+  LocationSettings _locationSettings() {
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      return AndroidSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 4,
+        foregroundNotificationConfig: const ForegroundNotificationConfig(
+          notificationTitle: 'FitBox — recording run',
+          notificationText: 'Tracking your run · tap to return',
+          notificationChannelName: 'Run tracking',
+          enableWakeLock: true,
+          setOngoing: true,
+          notificationIcon:
+              AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
+        ),
+      );
+    }
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      return AppleSettings(
+        accuracy: LocationAccuracy.best,
+        distanceFilter: 4,
+        activityType: ActivityType.fitness,
+        allowBackgroundLocationUpdates: true,
+        pauseLocationUpdatesAutomatically: false,
+        showBackgroundLocationIndicator: true,
+      );
+    }
+    return const LocationSettings(
+      accuracy: LocationAccuracy.best,
+      distanceFilter: 4,
+    );
   }
 
   /// Streams GPS fixes while running: appends to the route and accumulates real
@@ -205,10 +246,7 @@ class RunSessionController extends Notifier<RunSession> {
 
       _posSub?.cancel();
       _posSub = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.best,
-          distanceFilter: 4, // metres between updates
-        ),
+        locationSettings: _locationSettings(),
       ).listen((Position pos) {
         if (state.status != RunStatus.running) {
           _lastPos = null; // paused — restart the segment on resume
@@ -251,6 +289,8 @@ class RunSessionController extends Notifier<RunSession> {
     if (kIsWeb) return;
     if (defaultTargetPlatform == TargetPlatform.android) {
       await Permission.activityRecognition.request();
+      // Needed for the foreground-service notification to be visible (API 33+).
+      await Permission.notification.request();
     }
   }
 

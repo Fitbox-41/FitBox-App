@@ -70,6 +70,11 @@
 	<string>FitBox counts your steps while you record a run in the app.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>FitBox uses your location to map your run route and capture territory.</string>
+	<!-- Keep tracking the run route while the app is backgrounded / screen off. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
 	<!-- Google Maps SDK key — injected at build time on Codemagic via the
 	     MAPS_API_KEY build setting so it isn't committed to source. -->
 	<key>GMSApiKey</key>

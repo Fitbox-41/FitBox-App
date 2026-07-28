@@ -9,12 +9,17 @@ const TerritorySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true,
     index: true,
   },
+  // Weekly season (ISO year-week, e.g. "2026-W31"). Territory resets each week:
+  // the map/leaderboard only count the current season, so past weeks drop off.
+  season: { type: String, required: true, index: true },
   userName: { type: String, default: 'Runner' }, // denormalized for map/leaderboard
   geometry: { type: mongoose.Schema.Types.Mixed, required: true }, // GeoJSON Polygon|MultiPolygon
   area: { type: Number, default: 0 }, // square metres currently held
 }, { timestamps: true });
+
+// One territory per user per season.
+TerritorySchema.index({ userId: 1, season: 1 }, { unique: true });
 
 module.exports = mongoose.model('Territory', TerritorySchema, 'territories');

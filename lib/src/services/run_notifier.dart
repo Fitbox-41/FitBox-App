@@ -63,6 +63,31 @@ class RunNotifier {
       await _plugin.cancel(_id);
     } catch (_) {}
   }
+
+  /// A one-off alert (used to surface push messages that arrive while the app is
+  /// in the foreground, which the OS otherwise wouldn't display).
+  Future<void> alert({required String title, required String body}) async {
+    if (kIsWeb) return;
+    if (!_ready) await init();
+    if (!_ready) return;
+    const AndroidNotificationDetails android = AndroidNotificationDetails(
+      'messages',
+      'Notifications',
+      channelDescription: 'Challenges, territory and updates',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const DarwinNotificationDetails darwin = DarwinNotificationDetails();
+    try {
+      await _plugin.show(
+        DateTime.now().millisecondsSinceEpoch ~/ 1000 & 0x7fffffff,
+        title,
+        body,
+        const NotificationDetails(android: android, iOS: darwin),
+      );
+    } catch (_) {/* ignore */}
+  }
 }
 
 final runNotifierProvider = Provider<RunNotifier>((ref) => RunNotifier());
