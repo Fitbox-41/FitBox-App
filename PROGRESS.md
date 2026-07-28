@@ -4,6 +4,40 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 29 July 2026 — Phase 3: seasons, true background run, FCM push (v1.16.0 → v1.17.0+39)
+
+Follows Phase 1 (points economy: 1pt = ₹0.10, 50% redeem cap, in-app + website T&C) and Phase 2
+(Challenges: admin-created steps/distance goals with a first-N reward cap; app screen + backend).
+
+- **Weekly territory seasons (backend + app).** Territory is now scoped to an ISO week (e.g.
+  `2026-W31`); the shared map and leaderboard count **only the current season**, so everyone's turf
+  **auto-resets every Monday 00:00 UTC** (past weeks are kept as history). `Territory` unique index
+  moved to `{userId, season}`; `GET /api/territories` returns `season` + `seasonEndsAt`. The app shows
+  a **"SEASON · RESETS IN 2D 14H"** countdown on the territory card.
+- **True background run.** The GPS stream runs under a **location foreground service** (Android, via
+  geolocator's `ForegroundNotificationConfig`) so the timer, steps and route keep recording when the
+  app is backgrounded or the screen is off — the run no longer freezes. iOS opts into background
+  location (`UIBackgroundModes: location` + `AppleSettings`). Added `FOREGROUND_SERVICE` /
+  `_LOCATION` / `WAKE_LOCK` perms and a runtime notifications request. On Android the FGS notification
+  is the run notification (the live-stats local notification is now iOS-only, so there's only one).
+- **Push notifications (FCM).** `firebase_core` + `firebase_messaging`: Firebase initialised at
+  startup, device token registered per signed-in user, foreground messages surfaced locally, background
+  handler wired. Backend: `firebase-admin` sender (`fcm.js`), `/api/push/register` + `/unregister`
+  (auth) and a service-key `/api/push/send` (broadcast **or** targeted — for the admin push composer).
+  **Territory capture now pushes** "under attack / territory lost" to contested users.
+  - **Live sending needs `FIREBASE_SERVICE_ACCOUNT`** (the Firebase Admin JSON) set on the app
+    backend's Vercel project. Until then `/send` returns 503 but token registration already works.
+    iOS delivery additionally needs an APNs key uploaded to Firebase + push capability (Codemagic).
+- **Verified.** `flutter analyze` clean; release APK built → `APKs/FitBox_v1.17.0_2026-07-29.apk`
+  (72 MB). Backend deployed to `main` (Vercel): `/health` ok, `/api/territories` 401,
+  `/api/push/register` 401, `/api/push/send` 403 — all as designed. On-device install pending a
+  connected phone (none on adb this session).
+- **Next — Phase 4 (admin portal).** New sidebar "App" section: App Analytics, App Users, Challenges
+  CRUD, Territory/seasons controls, Points & Wallet + T&C editor, Push composer (uses `/api/push/send`).
+  Plus website checkout UI for the 50% cap / ₹0.10 and the points T&C on the website T&C page.
+
+---
+
 ## 23 July 2026 (later) — Guest mode, Maps cost report, login 500 fix (v1.9.2 → v1.10.x)
 
 - **Guest mode (Phase 2 done):** "Continue as guest" on the landing → browse the app
