@@ -4,6 +4,32 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 29 July 2026 (later) — Phase 4: admin "FitBox App" section + FCM live + points UI
+
+- **FCM push is live.** `FIREBASE_SERVICE_ACCOUNT` set on the app backend Vercel; `GET /api/push/status`
+  → `{configured:true}`. Android delivery works now; iOS still needs an APNs key in Firebase.
+- **Admin portal — new "FitBox App" section** (sidebar → `/app`), a tabbed page on the shared Atlas DB:
+  - **Overview** — users, runs (+14-day chart), points economy (earned/redeemed/by-source/outstanding
+    liability at ₹0.10), challenges, current-season territory.
+  - **Users** — every app user with points, runs, distance, territory, push-enabled flag.
+  - **Challenges** — full CRUD (create/edit/delete) → the app was showing an empty Challenges screen
+    because nothing could create them; admins can now. Proxied to the app backend admin endpoints.
+  - **Push** — composer (all users or a single user) wired to the live FCM sender; shows config status.
+  - **Territory** — current season + reset date + season leaderboard.
+  - Backend: `Backend/routes/app.js` (`/api/app/*`, `protect`) — analytics/users read the DB directly;
+    challenges + push proxy to the app backend with the shared `X-Service-Key`.
+  - **Admin backend Vercel env needed** for the Challenges/Push tabs: `APP_API_BASE=https://fit-box-app.vercel.app`
+    and `WALLET_SERVICE_KEY` (same key as the app backend). Overview/Users/Territory work without them.
+- **Website checkout aligned + points T&C.** `Cart.jsx` still used the old ₹2/point with **no cap** while
+  the backend enforced ₹0.10 + 50% — fixed (shows point value, 50% rule, discount). The server cap now
+  computes on the pre-discount order value so client preview == server clamp. Added a **"FitBox Points &
+  Rewards"** clause to the website Terms page (no cash value, ₹0.10, 50% limit, earn/expiry/misuse/refund).
+- **Verified.** App backend `push/status` live; admin frontend + website frontend both build clean;
+  all three repos pushed to `main` (app, admin, website Vercel deploys triggered). Admin `/api/app`
+  live-check pending the admin backend URL + an admin login.
+
+---
+
 ## 29 July 2026 — Phase 3: seasons, true background run, FCM push (v1.16.0 → v1.17.0+39)
 
 Follows Phase 1 (points economy: 1pt = ₹0.10, 50% redeem cap, in-app + website T&C) and Phase 2
