@@ -6,6 +6,12 @@ const { isConfigured, sendToUser, sendToTokens } = require('../fcm');
 
 const router = express.Router();
 
+// Whether push sending is wired up (FIREBASE_SERVICE_ACCOUNT present). Public and
+// leaks nothing — just a boolean the app/admin can use to show push status.
+router.get('/status', (req, res) => {
+  res.json({ success: true, configured: isConfigured() });
+});
+
 // Register this device's FCM token against the signed-in user. Idempotent —
 // $addToSet dedupes, so re-registering on every launch is fine.
 router.post('/register', auth, async (req, res) => {
