@@ -124,7 +124,10 @@ class RecordedRuns extends Notifier<List<RunActivity>> {
         _pending.remove(r.id);
         if (result.claimedAreaSqm > 0) claimed = true;
       } catch (_) {
-        break; // still offline — keep the rest queued for next time
+        // Keep going: one run that the server rejects (or that times out on a
+        // cold start) must not hold back the rest of the queue. Whatever fails
+        // stays pending and is tried again next time.
+        continue;
       }
     }
     // Drop ids that are no longer in history at all (deleted runs).
