@@ -4,6 +4,31 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## Planned — 7 August 2026 (points config, mentor-requested)
+
+Target: **the Android app is wrapped up by 10 August 2026**, so these land first.
+
+1. **Redemption cap 50% → 10%, and stop stating it at the point of sale.** The cart currently prints
+   "1 point = ₹0.10 · Redeemable up to 50% of order (Max N Pts)". The mentor wants that replaced with a
+   simple **`*` + "Terms and conditions apply"** linking to the Terms page — the exact value and cap stay
+   disclosed in the **legal T&C** (website Terms page + in-app wallet T&C), just not spelled out on
+   cart/checkout. The server-side clamp is unchanged, so over-applying is still clamped.
+2. **Make the point value and the cap configurable from admin → FitBox App**, held **server-side** and
+   read at runtime by the website checkout, the app and admin analytics — **changing a value must not
+   need an app rebuild or a store update**. The **T&C copy must render the configured values**, so
+   editing them in admin updates what users see in the app and on the website Terms page.
+   - Replaces today's compile-time constants (`FitBox_Website/Backend/Utils/points.js`,
+     `Frontend/src/config/points.js`), which stay as the offline/fallback default. The admin liability
+     figure (`valueInr` in `FitBox_Admin/Backend/routes/app.js`) must read the same config.
+   - Note: changing the value **re-prices every existing balance** — the admin screen should show what
+     the outstanding liability becomes before saving.
+
+Also queued (Gautam, on-device): more runs in different areas, and a **second account** to exercise the
+contest path — running over another user's land must subtract it from them. That path is unit-tested but
+has never been run by two real users.
+
+---
+
 ## 6 August 2026 (later) — on-device test fallout: runs never saved, territory reworked (v1.18.0+40)
 
 First real on-device testing (3 recorded runs) surfaced four issues. Investigating them turned up a
