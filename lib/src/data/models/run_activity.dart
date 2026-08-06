@@ -46,7 +46,10 @@ class RunActivity {
     final metres = (json['distance'] as num?)?.toDouble() ?? 0;
     final seconds = (json['duration'] as num?)?.toInt() ?? 0;
     return RunActivity(
-      id: (json['_id'] ?? json['id'] ?? '').toString(),
+      // Prefer the client id the run was recorded with: a run that has synced
+      // then keeps one identity on the phone and on the server, so it can't
+      // show up twice in history or be mistaken for an unsynced run.
+      id: (json['clientId'] ?? json['_id'] ?? json['id'] ?? '').toString(),
       title: (json['title'] ?? 'Run').toString(),
       date: DateTime.tryParse(json['startedAt']?.toString() ?? '')?.toLocal() ??
           DateTime.fromMillisecondsSinceEpoch(0),

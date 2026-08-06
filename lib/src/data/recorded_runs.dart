@@ -59,13 +59,22 @@ class RecordedRuns extends Notifier<List<RunActivity>> {
     try {
       final List<RunActivity> backend =
           await ref.read(runsRepositoryProvider).fetch();
-      final Set<String> ids = runs.map((RunActivity r) => r.id).toSet();
+      final Set<String> localIds = runs.map((RunActivity r) => r.id).toSet();
+      final Set<String> backendIds =
+          backend.map((RunActivity r) => r.id).toSet();
+      // Any run held only on this phone still owes its owner points and
+      // territory, so queue it — this is also what recovers runs recorded by
+      // builds whose uploads were failing outright.
+      for (final RunActivity r in runs) {
+        if (!backendIds.contains(r.id)) _pending.add(r.id);
+      }
       runs = <RunActivity>[
         ...runs,
-        ...backend.where((RunActivity r) => !ids.contains(r.id)),
+        ...backend.where((RunActivity r) => !localIds.contains(r.id)),
       ];
       runs.sort((RunActivity a, RunActivity b) => b.date.compareTo(a.date));
       state = runs;
+      await _persistPending();
     } catch (_) {/* offline / not signed in yet */}
 
     await _retryPending();
