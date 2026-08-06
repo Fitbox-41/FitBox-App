@@ -17,8 +17,27 @@ app.use(express.json());
 
 // Liveness probe — intentionally before the DB middleware so it reports the
 // service is up even if the database is unreachable.
+//
+// It also reports which build is live. Every endpoint that would reveal that is
+// behind auth, so without this there's no way to tell whether a push actually
+// deployed — bump `apiVersion` when a change matters to the app.
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'FitBox App Backend' });
+  res.json({
+    status: 'ok',
+    service: 'FitBox App Backend',
+    apiVersion: '1.18.0',
+    // Capabilities the app can rely on, so a client can tell what it's talking
+    // to instead of guessing from behaviour.
+    features: {
+      runClaimsTerritory: true, // POST /api/runs claims land server-side
+      routeCorridorClaims: true, // claims a corridor, not just enclosed loops
+      idempotentRuns: true, // clientId-based deduplication of re-uploads
+    },
+    commit: process.env.VERCEL_GIT_COMMIT_SHA
+      ? String(process.env.VERCEL_GIT_COMMIT_SHA).slice(0, 7)
+      : null,
+    deployedAt: process.env.VERCEL_DEPLOYMENT_ID || null,
+  });
 });
 
 // Ensure the database is connected before handling any API request. Safe on
