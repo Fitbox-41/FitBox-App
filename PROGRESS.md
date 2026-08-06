@@ -4,6 +4,54 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 6 August 2026 (later) — on-device test fallout: runs never saved, territory reworked (v1.18.0+40)
+
+First real on-device testing (3 recorded runs) surfaced four issues. Investigating them turned up a
+fifth, bigger one.
+
+- **Runs were never reaching the backend.** `RunActivity.toBackendJson()` sent `route` as a flat
+  `[[lat,lng]]` array and omitted `endedAt`, but the Mongoose schema requires a GeoJSON
+  `{type, coordinates}` in `[lng,lat]` order — so **every** `POST /api/runs` failed validation and
+  500'd. Consequences: runs lived only on the phone (reinstall = history gone), the **10 points/km
+  reward had never been credited to anyone** (that code sits after the failing `save()`), and admin
+  analytics reported 0 runs. Reads were broken the same way (`json['route'] as List` on a Map).
+  Fixed on both sides: the app sends proper GeoJSON and parses either shape; the backend normalises
+  array *or* object, and tolerates runs with no route at all (indoor/step-only).
+- **Territory rework — the actual USP fix.** Land was claimed **only from the area a closed loop
+  encloses**, so a big out-and-back road run claimed a hairline sliver (measured: a 5 km out-and-back
+  claimed 4,867 m² — invisible on the map). That's why a big run "showed no territory" while a loopy
+  one did. A run now claims **a 25 m corridor along its route unioned with any enclosed area**, so
+  every run takes land in proportion to ground covered while loops still pay ~7× more. Same 5 km
+  out-and-back now claims ~115,000 m². Guarded by `MIN_ROUTE_METRES = 150` + a bbox-spread check so
+  GPS jitter while stationary claims nothing (it previously would have taken 2,061 m²).
+  - The engine itself was **not** the bug — verified it already unioned disjoint areas into a
+    MultiPolygon correctly. Territories in different areas always accumulated; there just wasn't
+    enough area to see.
+- **Territory can no longer be silently lost.** Claiming was a separate client call whose failures
+  were swallowed by `catch (_) {}` — a cold start or a dropped connection lost that run's land
+  permanently. Now `POST /api/runs` claims server-side as part of saving the run, runs carry a
+  `clientId` (unique per user) so retries are idempotent, and any run that fails to upload is queued
+  and retried on next launch or pull-to-refresh. Shared logic lives in `backend/territoryService.js`
+  so the run-save and `/capture` paths can't drift.
+- **Activity screen lag.** `RecordedRuns._hydrate()` published state only *after* awaiting the network
+  fetch, so History sat empty until that finished (or timed out) despite the local cache being read
+  first. Now it paints from local storage immediately and merges the backend copy in the background.
+- **Finishing a run didn't go anywhere.** Save awaited two sequential network calls with no spinner
+  (up to ~40 s on a cold start) before navigating. Now the run is stored locally and the summary opens
+  instantly; the upload continues in the background and the territory banner resolves itself
+  (claiming… → "+115,000 m²" → or an honest reason it claimed nothing). Every exit from the summary
+  after a run lands on **History** with the new run on top.
+- **Territory screen** now shows REGIONS (how many separate holdings) next to area and rank.
+- **Tests.** New `backend/test/territoryEngine.test.js` (`npm test`, 8 cases) locks in: out-and-back
+  claims a corridor, loops still beat it 5×, standing still claims nothing, separate areas accumulate
+  as a MultiPolygon, re-running the same ground doesn't inflate the total, and a rival running through
+  your land takes it. `flutter analyze` clean, widget test passing, release APK built →
+  `reports/06-08-2026/FitBox_v1.18.0.apk`.
+- **Deploy note:** the app changes need the app backend deployed to work — v1.18.0 expects
+  `claimedAreaSqm` from `POST /api/runs`.
+
+---
+
 ## 6 August 2026 — pulled Diwakar's work; fixed a reverted point value
 
 Pulled all three repos before resuming development (app was already current; website +13 commits,

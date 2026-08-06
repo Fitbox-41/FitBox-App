@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/run_activity.dart';
+import '../../data/models/run_result.dart';
 import '../../data/recorded_runs.dart';
 import '../widgets/glass.dart';
 import '../widgets/live_run_map.dart';
@@ -13,13 +14,29 @@ import 'share_run_sheet.dart';
 
 /// Post-run summary — the celebratory moment. Hero headline + framed route +
 /// headline metrics, with share + delete actions.
+///
+/// Opened immediately after a run finishes, before the upload completes: [sync]
+/// is that in-flight upload, and the territory banner resolves itself when it
+/// lands. Leaving the screen after a run goes to History, where the saved run
+/// is waiting at the top.
 class RunSummaryScreen extends ConsumerWidget {
-  const RunSummaryScreen({super.key, this.run, this.claimedAreaSqm});
+  const RunSummaryScreen({
+    super.key,
+    this.run,
+    this.claimedAreaSqm,
+    this.sync,
+  });
 
   final RunActivity? run;
 
-  /// Territory area (sqm) claimed by this run's loop, if any.
+  /// Territory area (sqm) already known for this run, if any.
   final double? claimedAreaSqm;
+
+  /// The in-flight upload for a just-finished run (null when reopening a past
+  /// run from History).
+  final Future<RunSyncResult?>? sync;
+
+  bool get _justFinished => sync != null;
 
   String _pace(double p) {
     final int m = p.floor();
@@ -57,39 +74,120 @@ class RunSummaryScreen extends ConsumerWidget {
     }
   }
 
-  Widget _territoryBanner(BuildContext context, double sqm) {
+  /// Shell for the territory banner so its three states (claiming / claimed /
+  /// nothing claimed) share one look.
+  Widget _banner(
+    BuildContext context, {
+    required Widget leading,
+    required String label,
+    required Widget value,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: LinearGradient(colors: <Color>[
-          FitBoxColors.red.withValues(alpha: 0.26),
-          FitBoxColors.red.withValues(alpha: 0.06),
+          color.withValues(alpha: 0.26),
+          color.withValues(alpha: 0.06),
         ]),
-        border: Border.all(color: FitBoxColors.red.withValues(alpha: 0.45)),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
       child: Row(
         children: <Widget>[
-          const CircleAvatar(
-            backgroundColor: FitBoxColors.red,
-            child: Icon(Icons.flag_rounded, color: Colors.white),
-          ),
+          leading,
           const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text('TERRITORY CLAIMED', style: AppText.labelCaps(context)),
-              CountUpText(
-                value: sqm,
-                builder: (BuildContext c, double v) => Text(
-                  '+${v < 100000 ? '${v.round()} m²' : '${(v / 1e6).toStringAsFixed(2)} km²'}',
-                  style: AppText.kinetic(context, size: 24, color: FitBoxColors.red),
-                ),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(label, style: AppText.labelCaps(context)),
+                value,
+              ],
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _territoryClaimed(BuildContext context, double sqm) => _banner(
+        context,
+        color: FitBoxColors.red,
+        leading: const CircleAvatar(
+          backgroundColor: FitBoxColors.red,
+          child: Icon(Icons.flag_rounded, color: Colors.white),
+        ),
+        label: 'TERRITORY CLAIMED',
+        value: CountUpText(
+          value: sqm,
+          builder: (BuildContext c, double v) => Text(
+            '+${v < 100000 ? '${v.round()} m²' : '${(v / 1e6).toStringAsFixed(2)} km²'}',
+            style: AppText.kinetic(context, size: 24, color: FitBoxColors.red),
+          ),
+        ),
+      );
+
+  /// The upload is still in flight — the run is already saved locally.
+  Widget _territoryPending(BuildContext context) => _banner(
+        context,
+        color: FitBoxColors.red,
+        leading: const CircleAvatar(
+          backgroundColor: FitBoxColors.red,
+          child: SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+                strokeWidth: 2.2, color: Colors.white),
+          ),
+        ),
+        label: 'TERRITORY',
+        value: Text('Claiming your land…',
+            style: AppText.kinetic(context, size: 20, color: FitBoxColors.red)),
+      );
+
+  /// Nothing was claimed — say why instead of failing silently.
+  Widget _territoryNone(BuildContext context, String message) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return _banner(
+      context,
+      color: cs.onSurface,
+      leading: CircleAvatar(
+        backgroundColor: cs.onSurface.withValues(alpha: 0.18),
+        child: Icon(Icons.flag_outlined, color: cs.onSurfaceVariant),
+      ),
+      label: 'NO TERRITORY CLAIMED',
+      value: Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(message,
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+      ),
+    );
+  }
+
+  /// Resolves the in-flight upload into the right banner.
+  Widget _territorySection(BuildContext context) {
+    if (!_justFinished) {
+      final double sqm = claimedAreaSqm ?? 0;
+      return sqm > 0
+          ? _territoryClaimed(context, sqm)
+          : const SizedBox.shrink();
+    }
+    return FutureBuilder<RunSyncResult?>(
+      future: sync,
+      builder: (BuildContext c, AsyncSnapshot<RunSyncResult?> snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return _territoryPending(c);
+        }
+        final RunSyncResult? r = snap.data;
+        if (r == null) {
+          return _territoryNone(
+              c, 'Saved on your phone. We\'ll claim your land when you\'re back online.');
+        }
+        if (r.claimedAreaSqm > 0) return _territoryClaimed(c, r.claimedAreaSqm);
+        return _territoryNone(
+            c, r.territoryMessage ?? 'This run didn\'t cover enough ground to claim land.');
+      },
     );
   }
 
@@ -103,8 +201,25 @@ class RunSummaryScreen extends ConsumerWidget {
     final int calories = run?.caloriesKcal ?? 310;
     final bool hasRoute = (run?.route.length ?? 0) >= 2;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Run summary')),
+    // After finishing a run, every way out of this screen (back button, gesture,
+    // Done) goes to History with the new run at the top — that's where the user
+    // expects to land once the run is saved.
+    return PopScope(
+      canPop: !_justFinished,
+      onPopInvokedWithResult: (bool didPop, Object? _) {
+        if (!didPop && context.mounted) context.go('/activity');
+      },
+      child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Run summary'),
+        leading: _justFinished
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to history',
+                onPressed: () => context.go('/activity'),
+              )
+            : null,
+      ),
       body: ListView(
         padding: EdgeInsets.fromLTRB(
             20, 8, 20, 24 + MediaQuery.paddingOf(context).bottom),
@@ -205,10 +320,8 @@ class RunSummaryScreen extends ConsumerWidget {
               ],
             ),
           ),
-          if ((claimedAreaSqm ?? 0) > 0) ...<Widget>[
-            const SizedBox(height: 12),
-            _territoryBanner(context, claimedAreaSqm!),
-          ],
+          const SizedBox(height: 12),
+          _territorySection(context),
           const SizedBox(height: 16),
           Row(
             children: <Widget>[
@@ -279,6 +392,14 @@ class RunSummaryScreen extends ConsumerWidget {
                       ),
                     ),
           ),
+          if (_justFinished) ...<Widget>[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () => context.go('/activity'),
+              icon: const Icon(Icons.list_alt_rounded),
+              label: const Text('Done — see my runs'),
+            ),
+          ],
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: run == null
@@ -289,6 +410,7 @@ class RunSummaryScreen extends ConsumerWidget {
             label: const Text('Delete run'),
           ),
         ].revealStagger(),
+      ),
       ),
     );
   }

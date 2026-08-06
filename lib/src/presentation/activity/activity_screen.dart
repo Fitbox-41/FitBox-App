@@ -26,7 +26,12 @@ class ActivityScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(recordedRunsProvider),
+        // Also pushes up any run that never reached the backend, so a pull is
+        // how you recover the points and territory a flaky connection cost you.
+        onRefresh: () async {
+          await ref.read(recordedRunsProvider.notifier).retryPendingSyncs();
+          ref.invalidate(recordedRunsProvider);
+        },
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 4, 20, 120),
           children: <Widget>[

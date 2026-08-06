@@ -10,7 +10,6 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/run_result.dart';
 import '../../data/recorded_runs.dart';
 import '../../data/run_session.dart';
-import '../../data/territory_repository.dart';
 import '../widgets/glass.dart';
 import '../widgets/live_run_map.dart';
 import '../widgets/motion.dart';
@@ -96,23 +95,18 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     }
     if (save) {
       final run = ref.read(runSessionProvider.notifier).finish();
+      // Store locally first — that's fast, and it's what History reads, so the
+      // run is never lost even if the upload fails.
       await ref.read(recordedRunsProvider.notifier).addRun(run);
-      // Claim the territory enclosed by the loop (signed-in users only; guests
-      // and non-loops fail quietly — the run is still saved locally).
-      double? claimed;
-      // Only claim from a genuine loop with real movement — GPS jitter while
-      // standing still (a few metres) must not capture territory.
-      if (run.route.length >= 4 && run.distanceKm >= 0.1) {
-        try {
-          final ({double claimed, double total}) r =
-              await ref.read(territoryRepositoryProvider).capture(run.route);
-          claimed = r.claimed;
-          ref.invalidate(territoriesProvider);
-        } catch (_) {/* no loop / guest / offline */}
-      }
+      // Upload in the background: the server saves the run, claims the
+      // territory its route covered and credits the distance points. The
+      // summary opens straight away and fills those in when this lands, so
+      // finishing a run never waits on the network.
+      final Future<RunSyncResult?> sync =
+          ref.read(recordedRunsProvider.notifier).syncRun(run);
       if (mounted) {
         context.pushReplacement('/run-summary',
-            extra: RunResult(run: run, claimedAreaSqm: claimed));
+            extra: RunResult(run: run, sync: sync));
       }
     } else {
       ref.read(runSessionProvider.notifier).discard();

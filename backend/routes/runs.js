@@ -3,11 +3,28 @@ const auth = require('../middleware/auth');
 const Run = require('../models/Run');
 const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
+const { claimRoute } = require('../territoryService');
 
 const router = express.Router();
 
 // Activity reward: 10 points per km (1 point = ₹0.10, so ₹1/km). Tunable.
 const POINTS_PER_KM = 10;
+
+/// Normalises whatever the client sent into a GeoJSON LineString (or null).
+/// Accepts both the object form `{type, coordinates}` and a bare
+/// `[[lng,lat], ...]` array, because app builds have sent both.
+function normaliseRoute(route) {
+  let coords = null;
+  if (Array.isArray(route)) coords = route;
+  else if (route && Array.isArray(route.coordinates)) coords = route.coordinates;
+  if (!coords) return null;
+  const clean = coords
+    .filter((c) => Array.isArray(c) && c.length >= 2)
+    .map((c) => [Number(c[0]), Number(c[1])])
+    .filter((c) => Number.isFinite(c[0]) && Number.isFinite(c[1]));
+  if (clean.length < 2) return null;
+  return { type: 'LineString', coordinates: clean };
+}
 
 // Get user's runs
 router.get('/', auth, async (req, res) => {
@@ -21,20 +38,58 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// Save a new run
+// Save a new run. Also claims the territory the route covered, so land can
+// never be lost to a dropped follow-up request. Re-uploading the same run
+// (same clientId) returns the original instead of duplicating it.
 router.post('/', auth, async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
-    const runData = req.body;
+    const runData = req.body || {};
+    const route = normaliseRoute(runData.route);
+    const clientId = runData.clientId ? String(runData.clientId) : null;
+
+    // Idempotent re-upload: the app retries runs that failed to sync.
+    if (clientId) {
+      const existing = await Run.findOne({ userId, clientId });
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          run: existing,
+          pointsAwarded: 0,
+          claimedAreaSqm: existing.claimedAreaSqm || 0,
+          duplicate: true,
+        });
+      }
+    }
 
     // Spread first, then set userId, so a client cannot override the
     // authenticated user by passing userId in the request body.
     const run = new Run({
       ...runData,
-      userId
+      route: route || undefined,
+      clientId: clientId || undefined,
+      userId,
     });
 
     await run.save();
+
+    // Claim the land this run covered. Never fail the save over it — the run
+    // itself matters more, and the claim can be retried from the run's route.
+    let claimedAreaSqm = 0;
+    let territoryMessage = null;
+    if (route) {
+      try {
+        const claim = await claimRoute(userId, route.coordinates);
+        claimedAreaSqm = claim.claimed;
+        territoryMessage = claim.reason;
+        if (claimedAreaSqm > 0) {
+          run.claimedAreaSqm = claimedAreaSqm;
+          await run.save();
+        }
+      } catch (e) {
+        console.error('Run territory claim error:', e.message);
+      }
+    }
 
     // Reward wallet points for the distance covered. Server-authoritative +
     // idempotent per run so a retry can't double-credit.
@@ -64,8 +119,30 @@ router.post('/', auth, async (req, res) => {
       pointsAwarded = 0; // never fail the run save over a reward hiccup
     }
 
-    res.status(201).json({ success: true, run, pointsAwarded });
+    res.status(201).json({
+      success: true,
+      run,
+      pointsAwarded,
+      claimedAreaSqm,
+      territoryMessage,
+    });
   } catch (error) {
+    // A racing duplicate upload trips the unique index — treat it as success.
+    if (error && error.code === 11000) {
+      const existing = await Run.findOne({
+        userId: req.user.id || req.user._id,
+        clientId: String((req.body || {}).clientId || ''),
+      });
+      if (existing) {
+        return res.status(200).json({
+          success: true,
+          run: existing,
+          pointsAwarded: 0,
+          claimedAreaSqm: existing.claimedAreaSqm || 0,
+          duplicate: true,
+        });
+      }
+    }
     console.error('Run save error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }

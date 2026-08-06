@@ -54,23 +54,56 @@ class RunActivity {
       duration: Duration(seconds: seconds),
       caloriesKcal: (json['calories'] as num?)?.round() ?? 0,
       steps: (json['steps'] as num?)?.toInt() ?? 0,
-      route: (json['route'] as List<dynamic>?)
-              ?.map((dynamic e) => GeoPoint.fromPair(e as List<dynamic>))
-              .toList() ??
-          const <GeoPoint>[],
+      route: _routeFromBackend(json['route']),
     );
   }
 
+  /// The backend stores the route as a GeoJSON LineString (`{type, coordinates}`
+  /// in `[lng, lat]` order). Older builds sent a bare `[lat, lng]` array, and
+  /// those documents still exist, so both shapes are accepted.
+  static List<GeoPoint> _routeFromBackend(dynamic raw) {
+    if (raw is Map) {
+      final Object? coords = raw['coordinates'];
+      if (coords is! List) return const <GeoPoint>[];
+      return coords
+          .whereType<List<dynamic>>()
+          .where((List<dynamic> p) => p.length >= 2)
+          .map((List<dynamic> p) => GeoPoint(
+                (p[1] as num).toDouble(), // lat
+                (p[0] as num).toDouble(), // lng
+              ))
+          .toList();
+    }
+    if (raw is List) {
+      return raw
+          .whereType<List<dynamic>>()
+          .where((List<dynamic> p) => p.length >= 2)
+          .map((List<dynamic> p) => GeoPoint.fromPair(p))
+          .toList();
+    }
+    return const <GeoPoint>[];
+  }
+
   /// Payload for the app backend (`POST /api/runs`): distance in metres,
-  /// duration in seconds, ISO start time.
+  /// duration in seconds, ISO start time. The route must be a GeoJSON
+  /// LineString in `[lng, lat]` order — the schema rejects anything else, which
+  /// silently cost every run its server copy, its points and its territory.
   Map<String, dynamic> toBackendJson() => <String, dynamic>{
+        'clientId': id,
         'title': title,
         'distance': (distanceKm * 1000).round(),
         'duration': duration.inSeconds,
         'calories': caloriesKcal,
         'steps': steps,
         'startedAt': date.toUtc().toIso8601String(),
-        'route': route.map((GeoPoint p) => p.toPair()).toList(),
+        'endedAt': date.add(duration).toUtc().toIso8601String(),
+        if (route.length >= 2)
+          'route': <String, dynamic>{
+            'type': 'LineString',
+            'coordinates': route
+                .map((GeoPoint p) => <double>[p.lng, p.lat])
+                .toList(),
+          },
       };
 
   /// Compact map for local persistence (kilometres/seconds kept as-is).

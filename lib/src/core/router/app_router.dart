@@ -119,7 +119,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           final Object? e = s.extra;
           if (e is RunResult) {
             return _ios(RunSummaryScreen(
-                run: e.run, claimedAreaSqm: e.claimedAreaSqm));
+              run: e.run,
+              claimedAreaSqm: e.claimedAreaSqm,
+              sync: e.sync,
+            ));
           }
           return _ios(RunSummaryScreen(run: e as RunActivity?));
         },

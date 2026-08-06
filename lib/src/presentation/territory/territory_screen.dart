@@ -40,9 +40,13 @@ class TerritoryScreen extends ConsumerWidget {
     final List<TerritoryArea> list = snap?.areas ?? const <TerritoryArea>[];
     final DateTime? seasonEndsAt = snap?.seasonEndsAt;
 
-    final double myArea = list
-        .where((TerritoryArea t) => t.userId == myId)
-        .fold(0.0, (double a, TerritoryArea t) => a + t.area);
+    final Iterable<TerritoryArea> mine =
+        list.where((TerritoryArea t) => t.userId == myId);
+    final double myArea =
+        mine.fold(0.0, (double a, TerritoryArea t) => a + t.area);
+    // Land you hold in separate places — every run in a new area adds one.
+    final int myRegions =
+        mine.fold(0, (int a, TerritoryArea t) => a + t.polygons.length);
     final List<TerritoryArea> ranked = <TerritoryArea>[...list]
       ..sort((TerritoryArea a, TerritoryArea b) => b.area.compareTo(a.area));
     final int myRank =
@@ -131,6 +135,17 @@ class TerritoryScreen extends ConsumerWidget {
                             label: 'YOUR TERRITORY',
                             value: _fmtArea(myArea),
                             color: FitBoxColors.red,
+                          ),
+                        ),
+                        Container(
+                            width: 1,
+                            height: 38,
+                            color: cs.onSurface.withValues(alpha: 0.12)),
+                        Expanded(
+                          child: _Stat(
+                            label: 'REGIONS',
+                            value: '$myRegions',
+                            color: cs.onSurface,
                           ),
                         ),
                         Container(
