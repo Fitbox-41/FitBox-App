@@ -4,6 +4,37 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 6 August 2026 — pulled Diwakar's work; fixed a reverted point value
+
+Pulled all three repos before resuming development (app was already current; website +13 commits,
+admin +5 — all fast-forward, nothing of ours lost).
+
+- **Diwakar's additions.** Website: PhonePe payment integration, PDF invoice generation, Under99 page,
+  responsive Header/Footer, dynamic store settings + sale ribbon. Admin: order management (filtering,
+  status updates, tracking, Excel analytics export), Store Settings page, product management, dashboard.
+- **Regression fixed — point value had reverted ₹0.10 → ₹1.** His checkout rework (`f67158b`) was based
+  on the **pre-rewrite** history (where the value was still ₹1), so the merge silently overwrote the
+  agreed rate in three places: the server clamp (`orderController.js`), the cart preview (`Cart.jsx`)
+  and the wallet page balance (`WalletPage.jsx`). Every point was worth 10× too much, contradicting the
+  website Terms page (still correctly ₹0.10) and the admin liability figure (`valueInr: 0.1`).
+  His 50% cap, the idempotency guard and the new refund-on-cancel/failed-order logic were all fine and
+  were kept.
+- **Hardened against a repeat.** The point value + 50% cap now live in **one module per side**
+  (`Backend/Utils/points.js`, `Frontend/src/config/points.js`) with a comment stating why they must not
+  change without sign-off, so the cart, the server clamp and the wallet page can no longer drift apart.
+  Verified: `maxRedeemablePoints(1000)` = 5000 pts = ₹500 = 50%; frontend builds clean.
+- **Also committed** the root `.gitignore` (`.env`, `node_modules`) — it existed locally since July but
+  was never tracked. Confirmed no `.env` or `node_modules` was ever committed.
+- **Note — attribution trailers are back in the website repo.** The merge resurrected the pre-cleanup
+  copies of five July commits (`d61a77f`, `f926514`, `d667534`, `dfd7bd2`, `b9fefd8`), which still carry
+  a co-author trailer; website history also now contains that July work twice (old + rewritten hashes),
+  joined at merge `29a421d`. App and admin are clean. Removing them needs another history rewrite, which
+  would break Diwakar's clone again — to be coordinated, not done unilaterally.
+- **Root cause of all of the above:** his clone was never reset after the 29 July force-push, so he
+  committed on the old history and merged it back.
+
+---
+
 ## 29 July 2026 (evening) — go-live, user segregation, wallet page, fixes
 
 Session close-out across app / website / admin. All deployed to `main`.
