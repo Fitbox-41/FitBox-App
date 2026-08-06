@@ -3,6 +3,12 @@
 _As of 14 July 2026._ Honest, feature-by-feature status of the Flutter app (Android + iOS + Web).
 "Live" = talking to the real backend / real device data, not mock.
 
+> **⚠ Historical snapshot — do not read as current state.** Two things below have
+> since changed: **Health Connect / HealthKit was removed** (activity now comes
+> only from runs recorded in the app), and runs/territory/points work differently
+> as of v1.18.0. For current state see `../PROGRESS.md` (newest entry on top),
+> `../README.md` and `../ARCHITECTURE.md`.
+
 **Live web build (test in any browser):** https://fitboxsports-8d1c0.web.app
 
 ---

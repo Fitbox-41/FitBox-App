@@ -11,7 +11,9 @@ push, and the admin "FitBox App" section. "Pass" = the Expected column holds.
 
 | # | Scenario | Steps | Expected |
 |---|---|---|---|
-| A1 | Earn points from a run | Record/finish a ~1 km run in the app | Wallet increases by ~10 points (10 pts/km); a `run_reward` row appears in the ledger |
+| A1 | Earn points from a run | Record/finish a ~1 km run in the app | Wallet increases by ~10 points (10 pts/km); a `run_reward` row appears in the ledger. **Never actually worked before v1.18.0** — the run save 500'd, so no reward was ever credited. Re-test explicitly |
+| A1b | Run reaches the server | After A1, open admin → FitBox App → Overview / Users | Run count is non-zero and the run appears against the user (before v1.18.0 every run save failed validation, so this read 0) |
+| A1c | No double credit on retry | Pull-to-refresh History repeatedly after a synced run | Points credited exactly once — the run is matched on `clientId` and the reward is idempotent per run |
 | A2 | Points value shown | Open Wallet → "How points work · Terms" | Shows 1 pt = ₹0.10, 50% redeem cap, no-cash-value terms |
 | A3 | 50% cap at checkout | On the website, add an item (say ₹100), have ≥1000 pts, tick "Apply points" | Max applied = 500 pts (₹50); total never drops below 50% of order value |
 | A4 | Client == server | Place the A3 order | Charged total equals the cart preview; wallet debited by exactly the applied points |
@@ -35,6 +37,9 @@ push, and the admin "FitBox App" section. "Pass" = the Expected column holds.
 
 ## C. Territory — weekly seasons
 
+> Updated 6 Aug 2026 (v1.18.0): a run claims a **25 m corridor along its route**
+> plus any **enclosed area** — it no longer has to be a loop. C6–C9 cover that.
+
 | # | Scenario | Steps | Expected |
 |---|---|---|---|
 | C1 | Capture tags season | Run a loop to claim territory | Your area shows on the map; stored under the current season |
@@ -42,6 +47,11 @@ push, and the admin "FitBox App" section. "Pass" = the Expected column holds.
 | C3 | Contest transfers | Have a rival loop over your area | Overlap moves from you to them; both areas update |
 | C4 | Weekly reset | After Monday 00:00 UTC | Map/leaderboard start empty for the new season; last week no longer counts |
 | C5 | Admin view | Admin → FitBox App → Territory | Shows current season, reset date, and the season leaderboard (matches app) |
+| C6 | **Non-loop run claims land** | Run ~1 km out and back along a road, save | A visible band along the road appears on the map (≈50 m wide); YOUR TERRITORY grows. Previously claimed a near-invisible sliver |
+| C7 | **Separate areas accumulate** | Run in one area, then a second run somewhere else | Both areas remain on the map; REGIONS = 2; YOUR TERRITORY = the sum. The second run must not replace the first |
+| C8 | **Loop still pays more** | Compare a loop against an out-and-back of the same distance | The loop claims several times more area |
+| C9 | **Standing still claims nothing** | Start a run, leave the phone still for 3–4 min, save | Summary says no territory claimed (route under 150 m); no land appears |
+| C10 | **Offline claim is not lost** | Turn on airplane mode, record a run, save, then reconnect and pull-to-refresh History | Summary says it will claim when back online; after the refresh the land and the run points appear |
 
 ## D. True background run
 

@@ -12,7 +12,16 @@ This doc is the contract. Read it top to bottom; everything you need to build th
 > are live on the website; credit/redeem/read are live on the app backend. **Key schema change:** the
 > balance now lives **on the user document** (`users.walletBalance`) — the separate `wallets` collection
 > was removed (so the balance is visible right in the `users` collection). The `wallet_transactions`
-> ledger is unchanged. Conversion is set to **1 point = ₹2**. Details below reflect the current design.
+> ledger is unchanged. Details below reflect the current design.
+>
+> **RATE CORRECTION (6 Aug 2026):** the conversion is **1 point = ₹0.10**, not ₹2 —
+> ₹2 was an early figure this doc carried for a week and it is wrong. Redemption
+> also covers **at most 50%** of an order's pre-discount subtotal, and runs earn
+> **10 points/km**. The authoritative constants are
+> `FitBox_Website/Backend/Utils/points.js` and
+> `FitBox_Website/Frontend/src/config/points.js` — import them, never re-declare
+> the value in a page or controller (doing exactly that shipped a 10×
+> over-valuation on 3 Aug 2026).
 
 ---
 
@@ -157,8 +166,13 @@ Until this is set on the app backend, `redeem`/`credit` return `503 "Wallet muta
 
 ## 7. The redeem rule — **decided** ✅
 
-- **Conversion: `1 point = ₹2`** (set in `POINT_VALUE_INR`, both the website checkout and the Cart UI).
-- **Cap:** the checkout caps points-usable at the order value; points are integers.
+- **Conversion: `1 point = ₹0.10`** (`POINT_VALUE_INR`, defined once per side in
+  `Backend/Utils/points.js` / `Frontend/src/config/points.js` and imported by both
+  the website checkout and the Cart UI — superseding the ₹2 figure this section
+  originally carried).
+- **Cap:** redemption covers at most **50%** of the order's pre-discount subtotal
+  (computed server-side so the client preview matches the server clamp); points
+  are integers.
 
 At checkout, convert the points the user wants to spend into a discount, cap at the order total, then the
 website's `placeOrder` debits the balance atomically inside the order transaction (idempotent per order —
@@ -213,7 +227,7 @@ Then confirm the same balance shows in the app (Wallet tab) and on the website p
 
 ## 10. Status / done
 
-- [x] **Conversion** confirmed: 1 point = ₹2 (§7).
+- [x] **Conversion** confirmed: 1 point = ₹0.10, capped at 50% of the order (§7).
 - [x] **Schema**: balance moved to `users.walletBalance`; `wallets` collection removed; ledger unchanged (§2).
 - [x] **`WALLET_SERVICE_KEY`** set on both backends (§6).
 - [x] **Refund/return path**: implemented on cancel + failed-payment (credits points back, idempotent).

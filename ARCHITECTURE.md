@@ -94,13 +94,24 @@ database credentials off the phone and out of the (public) app repo.
 ---
 
 ## 5. Data model (shared collections)
+
+> Updated 6 Aug 2026 to match what actually shipped — the original plan's
+> separate `wallets` collection and per-week `polygon` field were both changed.
+
 Existing: `users`, `orders`, `products`, `otps`.
 New (this project):
-- `wallets` — `{ userId (unique), balance, updatedAt }`.
+- **Balance lives on the customer:** `users.walletBalance`. The separate
+  `wallets` collection was dropped in July 2026 (balances reconciled onto the
+  user doc) so the website, app and admin all read one field.
 - `wallet_transactions` — append-only ledger: `{ userId, type: credit|debit, amount, balanceAfter, source, sourceId, idempotencyKey (unique), description, createdAt }`.
-- `runs` — a tracked activity: `{ userId, startedAt, endedAt, distance, duration, pace, calories, steps, route (GeoJSON LineString), ... }`.
-- `territories` — claimed areas: `{ userId, polygon (GeoJSON, 2dsphere index), area, weekOf, ... }`.
-- (Daily step/calorie summaries can live on `runs`/a lightweight `activity` doc.)
+- `runs` — a tracked activity: `{ userId, clientId, title, startedAt, endedAt, distance (m), duration (s), pace, calories, steps, claimedAreaSqm, route: { type: 'LineString', coordinates: [[lng,lat], …] } }`.
+  `route` is optional (indoor/step-only runs), and `{ userId, clientId }` is
+  unique+sparse so a re-uploaded run resolves to the same document.
+- `territories` — claimed land, **one document per user per season**:
+  `{ userId, season ("2026-W32"), userName, geometry (GeoJSON Polygon|MultiPolygon), area (m²) }`,
+  unique on `{ userId, season }`. The geometry is a **union** of everything the
+  user currently holds, so separate areas are separate parts of one MultiPolygon
+  rather than separate documents.
 
 All new collections use explicit collection names so app, website, and admin read/write the same documents.
 
@@ -108,32 +119,51 @@ All new collections use explicit collection names so app, website, and admin rea
 
 ## 6. Wallet design
 - **Earn → credit → one balance → redeem.** Every balance change writes a `wallet_transactions`
-  row and updates `wallets.balance` inside a **single MongoDB transaction**, so balance always
+  row and updates `users.walletBalance` inside a **single MongoDB transaction**, so balance always
   equals the ledger sum.
 - **Idempotency (hard requirement):** each credit/debit carries a unique `idempotencyKey`;
   a unique index makes a retried request a no-op instead of a double-credit.
-- **Redeem:** website checkout applies a `debit` (`source: 'checkout_redeem'`, `sourceId: orderId`),
-  points→discount rule agreed with Diwakar.
+- **Redeem:** website checkout applies a `debit` (`source: 'checkout_redeem'`, `sourceId: orderId`).
+- **Agreed rate (locked):** earn **10 points/km** on in-app runs; **1 point = ₹0.10**;
+  redemption covers at most **50%** of an order's pre-discount subtotal. The
+  constants live in `FitBox_Website/Backend/Utils/points.js` +
+  `Frontend/src/config/points.js` and must not be re-declared elsewhere.
 - **July note:** built and tested end-to-end with a manual/admin credit before real earning
   triggers exist, so the plumbing is locked while Diwakar (website/admin) is available.
 
 ---
 
 ## 7. Territory & geospatial
-- Routes/areas stored as **GeoJSON** with a **2dsphere index**.
-- Overlap detection via MongoDB **`$geoIntersects`**; precise area / intersection / subtraction
-  via **Turf.js** in the app backend. Standard, proven, no special paid service.
+- Routes/areas stored as **GeoJSON**; runs carry a `2dsphere` index on `route`.
+- Area / intersection / subtraction via **Turf.js** in the app backend. Standard,
+  proven, no special paid service.
+- **What a run claims** (`backend/territoryEngine.js`, unit-tested; applied by
+  `backend/territoryService.js`): a **25 m corridor along the route**, unioned
+  with **the whole area enclosed** if the route closes a loop. Every run that
+  covers ground therefore takes visible land, while looping pays roughly 5–7×
+  more for the same distance. Overlap with another user is subtracted from them
+  and unioned into the capturer.
+- **Anti-abuse:** a route must cover ≥150 m and span more than the corridor
+  width, or it claims nothing — a stationary phone's GPS jitter would otherwise
+  be paid as territory.
+- The claim runs **inside `POST /api/runs`** so it can't be lost to a dropped
+  follow-up request; `POST /api/territories/capture` remains for older builds.
+- Full rules table: `README.md` → "Territory rules".
 
 ---
 
 ## 8. Fitness data sources & device permissions
+
+> **Superseded (14 Jul 2026 decision, still in force):** Health Connect /
+> HealthKit integration was removed. Activity comes **only from runs the user
+> records in the app** — the `health` package, its Android permissions and the
+> HealthKit entitlement are all gone. Do not reintroduce them.
+
 | Data | Source (cross-platform) | Permission / capability |
 |---|---|---|
-| GPS route, distance, pace | `geolocator` | Location (iOS: When/Always in Use; Android: `ACCESS_FINE_LOCATION` + foreground service) |
-| Steps | `pedometer` + `health` | Motion (iOS `NSMotionUsageDescription`); Android `ACTIVITY_RECOGNITION` |
-| Calories, distance, heart rate (optional) | `health` (Apple HealthKit / Android Health Connect) | HealthKit entitlement + `NSHealthShareUsageDescription`; Health Connect permissions |
-
-Health data is **read on-device with explicit user consent**; it is sensitive and handled per store rules.
+| GPS route, distance, pace | `geolocator` | Location (iOS: When/Always in Use + `UIBackgroundModes: location`; Android: `ACCESS_FINE_LOCATION` + `FOREGROUND_SERVICE_LOCATION`) |
+| Steps | `pedometer` (device step sensor) | Motion (iOS `NSMotionUsageDescription`); Android `ACTIVITY_RECOGNITION` |
+| Calories, distance | derived in-app from the recorded run | none |
 
 ---
 
@@ -142,7 +172,8 @@ Health data is **read on-device with explicit user consent**; it is sensitive an
 - **No secrets in any repo** (all three are public) — keys/keystores/`.env`/service-account JSON are gitignored and live only in server/CI settings.
 - Wallet integrity via single ledger + idempotency keys.
 - Admin access stays separate from customer access.
-- Health & location data: on-device, consented, disclosed in store privacy labels.
+- Location data: collected only while a run is recording, consented, disclosed in
+  store privacy labels. No health-store data is read at all (see §8).
 
 ---
 
@@ -150,7 +181,7 @@ Health data is **read on-device with explicit user consent**; it is sensitive an
 Flutter (Dart). Planned packages — all actively maintained, cross-platform, and Codemagic-friendly (Dart/plugin, no manual Xcode steps):
 `flutter_riverpod` (state, pending confirmation) · `go_router` (nav) · `dio` (HTTP) ·
 `flutter_secure_storage` (JWT) · `geolocator` · `google_maps_flutter` · `pedometer` ·
-`health` · `fl_chart` (charts) · `google_sign_in` · `firebase_core` + `firebase_messaging` (push) ·
+`fl_chart` (charts) · `google_sign_in` · `firebase_core` + `firebase_messaging` (push) ·
 `hive`/`shared_preferences` (local cache).
 
 ---
@@ -181,5 +212,5 @@ App + backend live in one repo (`backend/` subfolder) and deploy independently �
 |---|---|
 | **July** (with Diwakar) | Lock the shared wallet; build wallet end-to-end (earn → same balance → website redeem); add app-data section(s) to admin. All cross-system work while both sides can be coordinated. |
 | **Weeks 1–2** (app frontend) | Basic frontend functioning to show the mentor: auth, home/dashboard with fitness stats, wallet screen, navigation; then connect to the live backend. |
-| **August +** (app-only) | Full GPS run tracking, map, territory claim & capture, weekly winner + reset, health integration, push. |
+| **August +** (app-only) | Full GPS run tracking, map, territory claim & capture, weekly seasons + reset, push. (Health-store integration was dropped — see §8.) |
 | **Then** | Polish, full iOS pass via Codemagic/TestFlight, dual-store publish. |
