@@ -136,6 +136,23 @@ curl https://fit-box-app.vercel.app/health
 - `WALLET_SERVICE_KEY` — shared service key (also set on the admin backend).
 - `FIREBASE_SERVICE_ACCOUNT` — Firebase Admin JSON (raw or base64) for push.
 
+## Releasing
+
+Release builds are signed with a keystore that is **never committed**; without it
+the build falls back to the debug key and warns loudly. See
+**[`android/RELEASE.md`](android/RELEASE.md)** for keystore generation, the
+backup warning, the Firebase fingerprint step (Google Sign-In fails in release
+builds without it), and the Play Console checklist.
+
+```bash
+flutter build appbundle --release   # upload this to Play
+flutter build apk --release         # direct install / testing
+```
+
+Local files required to build, all gitignored:
+`android/local.properties` (`MAPS_API_KEY`), `android/app/google-services.json`,
+`android/key.properties` + the keystore, and `backend/.env`.
+
 ## Getting started
 
 ```bash

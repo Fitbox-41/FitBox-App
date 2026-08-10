@@ -4,6 +4,63 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 August 2026 (later) — release readiness + security review; **versioned as v1.0.0**
+
+A readiness audit before handing the app to the owner. Version restarts at **1.0.0+1** for the first
+release. Report: `reports/11-08-2026/FitBox_Android_v1.0_Report_11-08-2026.pdf`; artifacts
+`FitBox_v1.0.0.apk` and `FitBox_v1.0.0.aab`.
+
+### Blocker — release builds were signed with the debug key
+`signingConfig = signingConfigs.getByName("debug")`. That key ships with every Android SDK install and
+is the same for everyone, so the build was both unpublishable (Play rejects it) and forgeable.
+
+- Generated a production keystore; signing now reads `android/key.properties`, with a **loud warning
+  fallback** to debug so a machine without the keystore can still build for testing.
+  Keystore + passwords are gitignored — verified not tracked.
+- Release APK/AAB now verify as `CN=FitBox Sports` via `apksigner`.
+- Enabled **R8 shrink + obfuscation** with rules for Flutter, Gson-backed notifications and Play Core.
+- `android/RELEASE.md` documents keystore generation, backup ("the first key to publish is the only
+  key that can ever update"), and the store checklist.
+- ⚠ **The release SHA-1 must be registered in Firebase or Google Sign-In breaks in release builds** —
+  Google authorises by signing certificate and only the debug cert was registered. Fingerprints are in
+  `android/RELEASE.md`.
+
+### Security review of the app + backend
+**Verified sound:** no secret ever committed (full history checked), Maps key injected from an untracked
+file, every mutating endpoint behind user auth or the service key, wallet mutations server-only and
+fail-closed, users scoped to their own data, HTTPS throughout, token in encrypted device storage,
+no high/critical dependency advisories.
+
+**Fixed:**
+- **No rate limiting** on the app backend — territory capture and run upload do real geometry work and
+  could be hammered by any authenticated client. Added a per-IP throttle + 1 MB body cap. Note this is
+  best-effort in serverless (per-instance counters); Vercel's edge protection is the primary layer.
+- **CORS allowed any origin** → restricted to known web origins (the mobile app is unaffected by CORS).
+- **Mass assignment in `POST /runs`** — the body was spread into the document, so a crafted request
+  could set `_id`, `claimedAreaSqm` or timestamps. Replaced with an explicit allow-list; everything
+  server-authoritative is derived.
+- Service-key comparison is now constant-time; JWT verification pins `HS256`.
+
+**Noted, not changed:** JWT lifetime is 30 days with no server-side revocation — a signed-out device's
+token stays valid until expiry. Worth revisiting before real volume.
+
+### Dead UI removed
+- Settings showed a hardcoded **"v1.1.0"** while the app was on 1.20 → now read from the package.
+- Settings **Privacy** and **About** rows did nothing; the landing page's **Terms & Privacy Policy**
+  were underlined like links with no handler. All now open the published pages — required, since app
+  stores expect a reachable privacy policy for an app collecting location. Added a Terms row.
+- Removed a permanently disabled **Map layers** button and the unused `mock_data.dart`.
+- **Apple Sign-In kept** as requested (to be enabled soon).
+
+### Privacy policy
+Rewrote the website policy to cover the mobile app: precise GPS collected **only while a run is
+recording** (never otherwise), motion data, push token, explicitly **no Apple Health / Health Connect**,
+retention per data type, deletion rights, and the processors involved. It also states plainly that
+**claimed territory is visible to other players next to the user's display name** — the one thing a
+user could reasonably be surprised by, previously undisclosed.
+
+---
+
 ## 11 August 2026 — Android feature complete, shipped v1.20.0+42
 
 Closed out the remaining gaps identified in the completion review, so every screen now runs
