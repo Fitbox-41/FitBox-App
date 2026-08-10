@@ -4,6 +4,37 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 August 2026 (close of day) — v1.0.0 signed, configured and handed over
+
+Wrap-up of the release. Artifacts in `reports/11-08-2026/`: signed `FitBox_v1.0.0.apk`,
+`FitBox_v1.0.0.aab`, and `FitBox_Android_v1.0_Report_11-08-2026.pdf` for the owner.
+
+- **Firebase now trusts the release certificate.** Both fingerprints are registered and the refreshed
+  `google-services.json` is in place — verified it carries the release hash `a83d9245…` **and** the
+  debug hash `f942fb0e…`, so `flutter run` keeps working alongside signed builds. Google Sign-In was
+  going to fail in release builds without this. `MAPS_API_KEY` confirmed present in `local.properties`.
+- **Rebuilt both artifacts against the new config** and reinstalled on device — the APK previously on
+  the phone had been built with the old `google-services.json`. Signature re-verified as
+  `CN=FitBox Sports` (SHA-1 `a83d9245…`).
+- **Keystore backed up by the owner-developer** (confirmed). `android/RELEASE.md` documents
+  regeneration, the Play App Signing recommendation, and the fingerprint step.
+
+### First live weekly settlement — the trigger works
+Season **2026-W32** closed on Monday 10 Aug and settled automatically at `18:32:51Z`, recorded in
+`season_settlements`, without any manual action or scheduler. That was the one mechanism that had never
+run in production.
+
+It paid **nobody**, correctly: territory was wiped during the 7 Aug reset and no runs have been recorded
+since, so there was no one to rank. **The trigger is proven; the payout is not.** Settling a season with
+real holders — the ₹200 prize, the winner notification, the wallet credit — is still unvalidated and is
+the next thing worth testing, either at the 17 Aug rollover or by forcing a settlement once both test
+accounts hold land.
+
+Current season is **2026-W33** (closes Mon 17 Aug 00:00 UTC). Both test accounts are clean:
+6,000 / 1,000 points, zero runs, zero territory.
+
+---
+
 ## 11 August 2026 (later) — release readiness + security review; **versioned as v1.0.0**
 
 A readiness audit before handing the app to the owner. Version restarts at **1.0.0+1** for the first

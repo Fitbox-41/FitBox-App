@@ -1,9 +1,19 @@
 # FitBox App
 
+**Current release: v1.0.0 (build 1)** — Android, production-signed.
+Artifacts and the progress report live in `reports/11-08-2026/` (gitignored;
+also attached to the GitHub release).
+
 The FitBox fitness mobile app (Flutter) — GPS run tracking, a contested
 "territory" land-grab game, activity challenges, and a rewards wallet shared
 with the FitBox e-commerce website and admin portal (one MongoDB Atlas, one
 customer account across app + website).
+
+| | |
+|---|---|
+| Android | **Feature complete**, signed, on device |
+| iOS | ~60% — all app code shared; native build, signing, APNs and device testing pending a Mac + Apple Developer account |
+| Backend | Live — check the build with `curl https://fit-box-app.vercel.app/health` |
 
 ## Features
 
