@@ -19,8 +19,11 @@ const coll = (name) => mongoose.connection.db.collection(name);
 // How many places are paid.
 const TOP_N = 20;
 
-// Total pot shared across the paid places, before area weighting.
-const SEASON_POOL_POINTS = 10000;
+// What finishing first is worth, in rupees. Everything else scales down from
+// here. Set in currency rather than points so the weekly cost stays fixed if the
+// point value is retuned in the admin portal — 2,000 points at ₹0.10, or 200 at
+// ₹1, is ₹200 either way.
+const TOP_REWARD_INR = 200;
 
 // Rank weighting: rank 1 earns much more than rank 20 even for similar area, so
 // finishing first is worth chasing. Weight for rank r (1-based) is 1/r^0.8,
@@ -29,12 +32,20 @@ function rankWeight(rank) {
   return 1 / Math.pow(rank, 0.8);
 }
 
-/// Splits the pool across the ranked holders.
+/// Splits the rewards across the ranked holders.
 ///
 /// `holders` — [{ userId, userName, area }], any order.
-/// Returns [{ userId, userName, area, rank, points }] for the paid places only,
-/// highest first. Pure, so the split is unit-testable without a database.
-function computeSeasonRewards(holders, { topN = TOP_N, pool = SEASON_POOL_POINTS } = {}) {
+/// `pointValueInr` — the configured rupee value of one point, used to convert
+/// the top award into points.
+///
+/// Rank 1 always receives exactly [TOP_REWARD_INR]; the rest are scaled down by
+/// rank and by how much land they hold relative to the leader. Returns
+/// [{ userId, userName, area, rank, points }] for the paid places only, highest
+/// first. Pure, so the split is unit-testable without a database.
+function computeSeasonRewards(
+  holders,
+  { topN = TOP_N, topRewardInr = TOP_REWARD_INR, pointValueInr = 0.1 } = {},
+) {
   const ranked = holders
     .filter((h) => Number(h.area) > 0)
     .sort((a, b) => Number(b.area) - Number(a.area))
@@ -46,14 +57,17 @@ function computeSeasonRewards(holders, { topN = TOP_N, pool = SEASON_POOL_POINTS
   const totalArea = ranked.reduce((sum, h) => sum + Number(h.area), 0);
   if (!(totalArea > 0)) return [];
 
-  // Each place's share blends its rank weight with its share of the land held,
+  const value = Number(pointValueInr) > 0 ? Number(pointValueInr) : 0.1;
+  const topPoints = Math.max(1, Math.round(Number(topRewardInr) / value));
+
+  // Each place's score blends its rank weight with its share of the land held,
   // so a runner who holds far more ground is rewarded for it, while rank still
   // dominates at the top of the table.
   const scored = ranked.map((h) => ({
     ...h,
     score: rankWeight(h.rank) * (0.5 + 0.5 * (Number(h.area) / totalArea)),
   }));
-  const totalScore = scored.reduce((sum, h) => sum + h.score, 0);
+  const topScore = scored[0].score;
 
   return scored
     .map((h) => ({
@@ -61,7 +75,8 @@ function computeSeasonRewards(holders, { topN = TOP_N, pool = SEASON_POOL_POINTS
       userName: h.userName,
       area: Number(h.area),
       rank: h.rank,
-      points: Math.max(1, Math.round((h.score / totalScore) * pool)),
+      // Relative to the leader, so rank 1 lands on exactly the top award.
+      points: Math.max(1, Math.round(topPoints * (h.score / topScore))),
     }))
     .sort((a, b) => a.rank - b.rank);
 }
@@ -73,12 +88,16 @@ function computeSeasonRewards(holders, { topN = TOP_N, pool = SEASON_POOL_POINTS
 /// Returns { season, paid, totalPoints, alreadySettled, results }.
 async function settleSeason(season) {
   const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
+  // Convert the top award at the rate in force when the season is settled.
+  const { readPointsConfig } = require('./routes/config');
+  const { pointValueInr } = await readPointsConfig();
   const rewards = computeSeasonRewards(
     territories.map((t) => ({
       userId: t.userId,
       userName: t.userName || 'Runner',
       area: t.area,
     })),
+    { pointValueInr },
   );
 
   const results = [];
@@ -147,5 +166,5 @@ module.exports = {
   settleSeason,
   isSettled,
   TOP_N,
-  SEASON_POOL_POINTS,
+  TOP_REWARD_INR,
 };

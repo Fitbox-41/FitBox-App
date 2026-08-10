@@ -63,10 +63,18 @@ which makes re-uploading a run idempotent — no duplicate runs, no double point
 ### Season rewards
 
 Territory is only worth points **at the end of the week**. When a season closes,
-holders are ranked by the area they hold at that moment and the pool
-(10,000 pts) is split across the **top 20** — weighted mostly by rank, partly by
-share of land held, so rank 1 is worth chasing and a dominant leader earns more
-than one in a tight race. Nothing is paid per run.
+holders are ranked by the area they hold at that moment and the **top 20** are
+paid. Nothing is paid per run.
+
+**Rank 1 wins ₹200** (`TOP_REWARD_INR`), and every place below scales down by
+rank and by how much land it holds relative to the leader. The award is set in
+rupees, not points, so retuning the point value in the admin portal doesn't
+change what a season costs — at ₹0.10 first place is 2,000 points; at ₹1 it's
+200. A full table of 20 costs about **₹930 per week**:
+
+| Rank | 1 | 2 | 3 | 5 | 20 |
+|---|---|---|---|---|---|
+| Award | ₹200 | ₹114.60 | ₹82.70 | ₹54.80 | ₹17.50 |
 
 Settlement is idempotent per user per season (ledger key
 `season_<season>_<userId>`) and happens lazily on the first territory fetch after

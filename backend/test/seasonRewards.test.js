@@ -5,7 +5,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
-const { computeSeasonRewards, TOP_N, SEASON_POOL_POINTS } = require('../seasonRewards');
+const { computeSeasonRewards, TOP_N, TOP_REWARD_INR } = require('../seasonRewards');
 
 const holders = (areas) =>
   areas.map((area, i) => ({ userId: `u${i}`, userName: `Runner ${i}`, area }));
@@ -30,27 +30,54 @@ test('rank 1 earns the most and awards decrease down the table', () => {
   assert.ok(rewards[0].points > rewards[rewards.length - 1].points);
 });
 
-test('holding more land earns more at the same table size', () => {
-  const even = computeSeasonRewards(holders([50000, 50000]));
-  const skewed = computeSeasonRewards(holders([90000, 10000]));
+test('below first place, holding more land earns more', () => {
+  // First place is a fixed award, so the area weighting shows up in the chasers:
+  // a runner-up who is neck-and-neck earns more than one who was crushed.
+  const close = computeSeasonRewards(holders([50000, 50000]), { pointValueInr: 0.1 });
+  const crushed = computeSeasonRewards(holders([90000, 10000]), { pointValueInr: 0.1 });
+  assert.strictEqual(close[0].points, crushed[0].points, 'first place is fixed');
   assert.ok(
-    skewed[0].points > even[0].points,
-    'a dominant leader should out-earn a leader in a tight race',
+    close[1].points > crushed[1].points,
+    `a close runner-up (${close[1].points}) should out-earn a distant one (${crushed[1].points})`,
   );
 });
 
-test('the pot is shared, not multiplied', () => {
-  const rewards = computeSeasonRewards(holders([90000, 80000, 70000]));
-  const total = rewards.reduce((sum, r) => sum + r.points, 0);
-  // Rounding to whole points moves the total slightly either way.
-  assert.ok(Math.abs(total - SEASON_POOL_POINTS) <= rewards.length,
-    `expected ~${SEASON_POOL_POINTS}, got ${total}`);
+test('rank 1 is worth exactly the top award, whatever a point is worth', () => {
+  // ₹200 at ₹0.10/point = 2,000 points.
+  const atTenPaise = computeSeasonRewards(holders([90000, 50000, 10000]), { pointValueInr: 0.1 });
+  assert.strictEqual(atTenPaise[0].points, TOP_REWARD_INR / 0.1);
+
+  // Retuning the point value must not change what first place costs in rupees.
+  const atOneRupee = computeSeasonRewards(holders([90000, 50000, 10000]), { pointValueInr: 1 });
+  assert.strictEqual(atOneRupee[0].points, TOP_REWARD_INR / 1);
+  assert.strictEqual(atOneRupee[0].points * 1, atTenPaise[0].points * 0.1);
 });
 
-test('a lone holder takes the whole pot', () => {
-  const rewards = computeSeasonRewards(holders([12345]));
+test('rank 1 gets the top award regardless of how close the race is', () => {
+  const runaway = computeSeasonRewards(holders([900000, 1000]), { pointValueInr: 0.1 });
+  const tight = computeSeasonRewards(holders([50000, 49999]), { pointValueInr: 0.1 });
+  assert.strictEqual(runaway[0].points, 2000);
+  assert.strictEqual(tight[0].points, 2000);
+});
+
+test('a full table costs a bounded amount per season', () => {
+  // Worst case for cost: 20 paid places all holding the same area.
+  const rewards = computeSeasonRewards(
+    holders(Array.from({ length: 20 }, () => 50000)),
+    { pointValueInr: 0.1 },
+  );
+  const totalPoints = rewards.reduce((sum, r) => sum + r.points, 0);
+  const totalInr = totalPoints * 0.1;
+  assert.ok(totalInr <= 1000,
+    `a full season should cost at most ~₹1000, got ₹${totalInr.toFixed(2)}`);
+  assert.ok(totalInr > TOP_REWARD_INR,
+    'paying 20 places must cost more than paying only the winner');
+});
+
+test('a lone holder takes only the top award', () => {
+  const rewards = computeSeasonRewards(holders([12345]), { pointValueInr: 0.1 });
   assert.strictEqual(rewards.length, 1);
-  assert.strictEqual(rewards[0].points, SEASON_POOL_POINTS);
+  assert.strictEqual(rewards[0].points, 2000);
 });
 
 test('holders with no land are not paid', () => {

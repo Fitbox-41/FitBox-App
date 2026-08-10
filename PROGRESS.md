@@ -44,8 +44,10 @@ claiming the territory. Signing back in re-ran the same trick in the other direc
 ### Reward model — weekly competition instead of per-run credit
 Points are no longer credited when a run ends (`POINTS_PER_KM` is gone). A season is a contest:
 when it closes, holders are ranked by the territory they hold at that moment and **only the top 20
-are paid**, rank 1 taking the largest share and the rest scaled by rank and area held
-(`backend/seasonRewards.js`, pool 10,000 pts/season).
+are paid** (`backend/seasonRewards.js`). **Rank 1 wins ₹200**; every place below scales down by rank
+and by land held relative to the leader (rank 2 ≈ ₹114.60, rank 3 ≈ ₹82.70, rank 20 ≈ ₹17.50) — a
+full table of 20 costs about **₹930/week**. The award is defined in **rupees, not points**, so
+retuning the point value in admin doesn't change what a season costs.
 
 - Settlement is **idempotent per user per season** (ledger `season_<season>_<userId>`), so a retry
   can't double-pay. It runs lazily on the first territory fetch after a season closes, so payouts
@@ -56,7 +58,19 @@ are paid**, rank 1 taking the largest share and the rest scaled by rank and area
 - Tests: `backend/test/seasonRewards.test.js` (9 cases) covers top-20 truncation, monotonic payouts,
   area weighting, pot conservation, and that no paid place rounds to zero. 17 backend tests total.
 
-Verified: `flutter analyze` clean, widget test passing, backend 17/17, website + admin frontends
+### Test data reset (live DB, requested)
+Both test accounts were wiped back to a clean slate for two-account testing. The state beforehand was
+itself evidence of the leak: **kl4us.carol1ne held 4 runs and 39 points it never earned** (account 1's
+runs re-uploaded under it), and glasgotra578 had drifted to 6,134.
+
+- Deleted 7 runs and 2 territory documents across both accounts, plus the 7 activity-reward ledger
+  rows that belonged to them; order history (redemptions/refunds) was left intact.
+- `glasgotra578@gmail.com` → **6,000 pts**, `kl4us.carol1ne@gmail.com` → **1,000 pts**, each with an
+  `admin_adjustment` ledger row so the balance is still explained by the ledger.
+- Season settlement markers cleared so a season can be settled again while testing.
+- Verified no other user had any runs or territory, so nothing else was touched.
+
+Verified: `flutter analyze` clean, widget test passing, backend 19/19, website + admin frontends
 build. APK → `reports/07-08-2026/FitBox_v1.19.0.apk`.
 
 ---
