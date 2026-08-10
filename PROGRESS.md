@@ -4,6 +4,42 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 August 2026 — Android feature complete, shipped v1.20.0+42
+
+Closed out the remaining gaps identified in the completion review, so every screen now runs
+on live data. **Progress report:** `reports/11-08-2026/FitBox_Android_Progress_Report_11-08-2026.pdf`
+(5 pages, includes the iOS status section). APK: `reports/11-08-2026/FitBox_v1.20.0.apk`.
+
+- **Notifications are real.** The screen was a hardcoded list — invented place names
+  ("SoHo"), an invented rival ("J. Rivera") and a rewards model that no longer exists.
+  Events are now persisted server-side inside `fcm.notifyUser`, so the in-app history is
+  written whenever a push is sent and survives push being off, no device token yet, or a
+  dismissed banner. New `Notification` model + `GET /api/notifications` and
+  `POST /api/notifications/read`. The screen marks everything read on open and handles
+  guest / empty / error states.
+- **Season winners are told.** Settlement previously paid out silently — a user could win
+  the weekly prize and never know. Every paid place now gets a push + in-app notification
+  with its rank and points.
+- **Goals are computed from real activity.** Daily steps, weekly distance and weekly runs
+  come from the user's own runs; badges unlock on genuine milestones (first run, a computed
+  consecutive-day streak, 10 km total, best pace, territory held, rank 1). Previously all
+  six badges and all three progress bars were hardcoded.
+- **Run delete reaches the server.** `DELETE /api/runs/:id` and `/api/runs/client/:clientId`,
+  scoped to the caller's own runs, so a deleted run no longer reappears on the next sync.
+  Territory already claimed is deliberately left alone — it's a union that can't be unpicked
+  one run at a time, and releasing land on delete would be an obvious exploit.
+- **Top prize is owner-configurable** (admin → Website Settings → FitBox Points): rank 1's
+  award in rupees, with places 2–20 derived from it. The admin page previews the resulting
+  prize table and the maximum weekly cost, since that knock-on was otherwise invisible until
+  a season settled.
+- `seasonRewards` now requires the push stack lazily, keeping the payout maths unit-testable
+  without `firebase-admin` installed.
+
+Verified: `flutter analyze` clean, widget test passing, backend 19/19, both frontends build,
+APK installed on device, backend deploy confirmed live via `/health`.
+
+---
+
 ## 7 August 2026 — points config, cross-account leak, weekly rewards (v1.19.0+41)
 
 ### Mentor-requested points changes (the two planned below — done)

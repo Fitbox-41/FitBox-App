@@ -29,7 +29,11 @@ customer account across app + website).
   is credited per run. Points are redeemable on the website; the value and the
   redemption cap are **configured in the admin portal**, not compiled in
   (defaults: 1 point = ₹0.10, up to 10% of an order).
-- **Push notifications (FCM)** — challenge/territory alerts and admin broadcasts.
+- **Push notifications (FCM)** — territory attacks, season results and admin broadcasts.
+  Every push is also recorded server-side, so the in-app Notifications list is complete even
+  if push is off, no device token is registered yet, or the banner was dismissed.
+- **Goals & achievements** — targets and badges computed from the user's own runs
+  (streak, distance, best pace, territory held, rank).
 
 ## Architecture
 
@@ -101,6 +105,8 @@ cd backend && npm test        # node --test, 8 cases
 | `GET /api/territories/rewards/preview` | user JWT | live standings — what the season would pay if it ended now |
 | `POST /api/territories/rewards/settle` | service key | pay out a closed season (idempotent per user per season) |
 | `GET /api/config/points` | public | live point value, redemption cap and the T&C wording built from them |
+| `GET /api/notifications`, `POST /api/notifications/read` | user JWT | the user's event history + mark read |
+| `DELETE /api/runs/:id`, `DELETE /api/runs/client/:clientId` | user JWT | delete one of your own runs (territory already claimed is kept) |
 | `GET /api/appmaint/leaked-runs`, `POST /api/appmaint/fix-leaked-runs`, `POST /api/appmaint/rebuild-territory` | service key | repair tools for the pre-v1.19.0 cross-account run leak |
 | `GET /api/challenges`, `POST /:id/join`, `POST /:id/claim` | user JWT | challenges |
 | `… /api/challenges/admin/*` | service key | challenge CRUD (used by admin portal) |
