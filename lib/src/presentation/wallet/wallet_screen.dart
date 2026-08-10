@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../data/models/wallet.dart';
+import '../../data/points_config_repository.dart';
 import '../../data/providers.dart';
 import '../auth/auth_controller.dart';
 import '../widgets/common.dart';
@@ -162,7 +163,10 @@ class _BalanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Text('Earn points when you’re active.\nSpend them at checkout.',
+          // Rewards come from where you finish the weekly season, so point at
+          // holding territory rather than implying every run pays out. The
+          // ranking and payout detail stay in the T&C.
+          Text('Hold territory to win points each week.\nSpend them at checkout.',
               style: AppTypography.caption(
                       size: 12, color: Colors.white.withValues(alpha: 0.8))
                   .copyWith(height: 1.35)),
@@ -294,21 +298,24 @@ class _EmptyLedger extends StatelessWidget {
 
 /// Points terms & conditions — a tappable footer that opens the T&C, so the
 /// points programme is clearly disclosed to users.
-class _PointsTermsLink extends StatelessWidget {
+///
+/// The clauses come from the backend (`GET /api/config/points`), which writes
+/// them from the rate and redemption limit an admin configured. That way a
+/// change to either is reflected in the published terms without an app release,
+/// and the numbers can never drift from what checkout actually applies.
+class _PointsTermsLink extends ConsumerWidget {
   const _PointsTermsLink();
 
-  static const String _terms = '''
-• FitBox Points are a promotional reward with no cash value. They cannot be transferred, sold, or withdrawn as cash.
-• 1 point = ₹0.10 discount at the FitBox store.
-• Points can be redeemed for up to 50% of an order's value; the remaining amount must be paid.
-• Points are earned from in-app activity (e.g. distance covered) and challenges. Rewards may be limited, capped, or changed at any time.
-• FitBox may adjust, expire, or revoke points in case of error, abuse, or fraud.
-• Points may expire and carry no guarantee of availability.
-• These terms may change; continued use of FitBox constitutes acceptance.''';
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final PointsConfig config = ref.watch(pointsConfigProvider).maybeWhen(
+          data: (PointsConfig c) => c,
+          orElse: () => PointsConfig.fallback,
+        );
+    final String terms =
+        config.terms.map((String t) => '• $t').join('\n\n');
+
     return Center(
       child: TextButton.icon(
         onPressed: () => showDialog<void>(
@@ -316,7 +323,7 @@ class _PointsTermsLink extends StatelessWidget {
           builder: (BuildContext ctx) => AlertDialog(
             title: const Text('FitBox Points — Terms'),
             content: SingleChildScrollView(
-              child: Text(_terms,
+              child: Text(terms,
                   style: AppTypography.body(
                       size: 13, color: cs.onSurfaceVariant)),
             ),

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../presentation/auth/auth_controller.dart';
 import '../services/api_client.dart';
 import 'models/geo_point.dart';
 import 'models/territory.dart';
@@ -65,6 +66,11 @@ final territoryRepositoryProvider = Provider<TerritoryRepository>(
 );
 
 /// All users' territories for the shared Territory map, plus season context.
-final territoriesProvider = FutureProvider<TerritorySnapshot>(
-  (ref) async => ref.watch(territoryRepositoryProvider).fetchAll(),
-);
+///
+/// Keyed on the signed-in user: the map highlights "yours" by user id, so a
+/// cached snapshot from a previous account would paint their land as this
+/// account's.
+final territoriesProvider = FutureProvider<TerritorySnapshot>((ref) async {
+  ref.watch(authControllerProvider.select((AuthState s) => s.user?.id));
+  return ref.watch(territoryRepositoryProvider).fetchAll();
+});

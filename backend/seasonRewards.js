@@ -1,0 +1,151 @@
+// End-of-season territory rewards.
+//
+// Points are NOT paid per run. A season (one ISO week) is a competition: when it
+// closes, the leaderboard is settled and the top holders are paid by how much
+// land they finished with — rank 1 takes the largest share, and only the top
+// TOP_N are paid at all. That's what makes holding territory to Monday matter,
+// rather than banking points the moment a run ends.
+//
+// The payout table is deliberately not shown in the app UI; it's disclosed in
+// the points T&C.
+
+const mongoose = require('mongoose');
+const Territory = require('./models/Territory');
+const WalletTransaction = require('./models/WalletTransaction');
+const User = require('./models/User');
+
+const coll = (name) => mongoose.connection.db.collection(name);
+
+// How many places are paid.
+const TOP_N = 20;
+
+// Total pot shared across the paid places, before area weighting.
+const SEASON_POOL_POINTS = 10000;
+
+// Rank weighting: rank 1 earns much more than rank 20 even for similar area, so
+// finishing first is worth chasing. Weight for rank r (1-based) is 1/r^0.8,
+// which decays fast at the top and flattens out lower down.
+function rankWeight(rank) {
+  return 1 / Math.pow(rank, 0.8);
+}
+
+/// Splits the pool across the ranked holders.
+///
+/// `holders` — [{ userId, userName, area }], any order.
+/// Returns [{ userId, userName, area, rank, points }] for the paid places only,
+/// highest first. Pure, so the split is unit-testable without a database.
+function computeSeasonRewards(holders, { topN = TOP_N, pool = SEASON_POOL_POINTS } = {}) {
+  const ranked = holders
+    .filter((h) => Number(h.area) > 0)
+    .sort((a, b) => Number(b.area) - Number(a.area))
+    .slice(0, topN)
+    .map((h, i) => ({ ...h, rank: i + 1 }));
+
+  if (!ranked.length) return [];
+
+  const totalArea = ranked.reduce((sum, h) => sum + Number(h.area), 0);
+  if (!(totalArea > 0)) return [];
+
+  // Each place's share blends its rank weight with its share of the land held,
+  // so a runner who holds far more ground is rewarded for it, while rank still
+  // dominates at the top of the table.
+  const scored = ranked.map((h) => ({
+    ...h,
+    score: rankWeight(h.rank) * (0.5 + 0.5 * (Number(h.area) / totalArea)),
+  }));
+  const totalScore = scored.reduce((sum, h) => sum + h.score, 0);
+
+  return scored
+    .map((h) => ({
+      userId: h.userId,
+      userName: h.userName,
+      area: Number(h.area),
+      rank: h.rank,
+      points: Math.max(1, Math.round((h.score / totalScore) * pool)),
+    }))
+    .sort((a, b) => a.rank - b.rank);
+}
+
+/// Pays out a finished season. Idempotent per user per season via the ledger's
+/// unique `idempotencyKey`, so re-running it (a retried cron, two instances
+/// racing) cannot double-pay.
+///
+/// Returns { season, paid, totalPoints, alreadySettled, results }.
+async function settleSeason(season) {
+  const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
+  const rewards = computeSeasonRewards(
+    territories.map((t) => ({
+      userId: t.userId,
+      userName: t.userName || 'Runner',
+      area: t.area,
+    })),
+  );
+
+  const results = [];
+  let paid = 0;
+  let totalPoints = 0;
+  let alreadySettled = 0;
+
+  for (const r of rewards) {
+    const idempotencyKey = `season_${season}_${String(r.userId)}`;
+    const existing = await WalletTransaction.findOne({ idempotencyKey }).lean();
+    if (existing) {
+      alreadySettled += 1;
+      results.push({ ...r, userId: String(r.userId), skipped: 'already settled' });
+      continue;
+    }
+
+    try {
+      const updated = await User.findByIdAndUpdate(
+        r.userId,
+        { $inc: { walletBalance: r.points } },
+        { new: true },
+      );
+      await WalletTransaction.create({
+        userId: r.userId,
+        type: 'credit',
+        amount: r.points,
+        balanceAfter: updated ? updated.walletBalance || 0 : r.points,
+        source: 'season_reward',
+        sourceId: season,
+        idempotencyKey,
+        description: `Season ${season} — rank #${r.rank} (${(r.area / 1e6).toFixed(2)} km² held)`,
+      });
+      paid += 1;
+      totalPoints += r.points;
+      results.push({ ...r, userId: String(r.userId) });
+    } catch (e) {
+      // A duplicate key here means a concurrent settle already paid this user.
+      if (e && e.code === 11000) {
+        alreadySettled += 1;
+        results.push({ ...r, userId: String(r.userId), skipped: 'already settled' });
+        continue;
+      }
+      throw e;
+    }
+  }
+
+  // Record that the season was settled, so the "settle what's due" path knows
+  // not to look at it again even if nobody qualified for a payout.
+  await coll('season_settlements').updateOne(
+    { season },
+    { $set: { season, settledAt: new Date(), paid, totalPoints } },
+    { upsert: true },
+  );
+
+  return { season, paid, totalPoints, alreadySettled, results };
+}
+
+/// True when the given season has already been settled.
+async function isSettled(season) {
+  const doc = await coll('season_settlements').findOne({ season });
+  return !!doc;
+}
+
+module.exports = {
+  computeSeasonRewards,
+  settleSeason,
+  isSettled,
+  TOP_N,
+  SEASON_POOL_POINTS,
+};

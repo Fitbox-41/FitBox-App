@@ -1,0 +1,63 @@
+// Runtime configuration the app reads at startup.
+//
+// The points economy is set in the admin portal and stored in the shared
+// `settings` document, so the rate and redemption limit can change without a
+// mobile app release. The app renders whatever this returns — including the T&C
+// wording — instead of shipping the numbers in the binary.
+const express = require('express');
+const mongoose = require('mongoose');
+
+const router = express.Router();
+
+// Used until an admin saves settings, or if the read fails. Must match
+// FitBox_Website/Backend/Utils/points.js.
+const DEFAULT_POINT_VALUE_INR = 0.1;
+const DEFAULT_REDEEM_CAP_PERCENT = 10;
+
+async function readPointsConfig() {
+  try {
+    const settings = await mongoose.connection.db.collection('settings').findOne({});
+    const v = Number(settings && settings.pointValueInr);
+    const c = Number(settings && settings.redeemCapPercent);
+    return {
+      pointValueInr: Number.isFinite(v) && v > 0 ? v : DEFAULT_POINT_VALUE_INR,
+      redeemCapPercent:
+        Number.isFinite(c) && c >= 0 && c <= 100 ? c : DEFAULT_REDEEM_CAP_PERCENT,
+    };
+  } catch (_) {
+    return {
+      pointValueInr: DEFAULT_POINT_VALUE_INR,
+      redeemCapPercent: DEFAULT_REDEEM_CAP_PERCENT,
+    };
+  }
+}
+
+// Public: the app needs this before/without a signed-in user, and it contains
+// nothing sensitive — it's the same information published in the Terms.
+router.get('/points', async (req, res) => {
+  try {
+    const config = await readPointsConfig();
+    res.json({
+      success: true,
+      ...config,
+      // Rendered verbatim in the app's wallet T&C so the published wording
+      // follows the configured numbers automatically.
+      terms: [
+        `Each point has a redemption value of ₹${config.pointValueInr.toFixed(2)} when applied to an eligible order. This value is for redemption only.`,
+        'Points are not money, carry no cash value, and cannot be transferred, sold, exchanged for cash, or withdrawn.',
+        `Points may be redeemed for a discount of up to ${config.redeemCapPercent}% of an order's value. The remaining balance must be paid using a standard payment method.`,
+        'Points are awarded as a weekly competition, not per activity. Each season runs Monday to Monday (UTC). When a season closes, players are ranked by the territory they hold at that moment, and only the top 20 receive points — the highest rank receives the largest award, with the remainder scaled by rank and area held. Territory held during a season carries no value until the season closes.',
+        'Points are credited for genuine in-app activity only. We do not sync or reward activity from third-party services such as Apple Health or Google Health Connect.',
+        'We may change the earn rate, redemption value, redemption limit, or expire unused points, and may modify or discontinue the programme, at any time with or without notice.',
+        'We may withhold, reduce, or revoke points and suspend accounts where we reasonably suspect fraud, error, abuse, or any breach of these terms.',
+        'If an order paid partly with points is cancelled or refunded, the redeemed points are returned to your wallet.',
+      ],
+    });
+  } catch (error) {
+    console.error('Points config error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+module.exports = router;
+module.exports.readPointsConfig = readPointsConfig;

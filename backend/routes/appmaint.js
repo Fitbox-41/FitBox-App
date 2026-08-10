@@ -114,4 +114,162 @@ router.post('/tag', serviceAuth, async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// Repair tools for the cross-account run leak (fixed in app v1.19.0).
+//
+// Before that build, run history was cached under one device-wide key, so
+// signing in as a second account showed the first account's runs and re-uploaded
+// them under the new user — handing over that user's points and territory. The
+// signature is the same `clientId` appearing under more than one userId.
+// ---------------------------------------------------------------------------
+
+// GET /api/appmaint/leaked-runs — report runs that exist under more than one
+// account. Read-only; run this first to see what a fix would touch.
+router.get('/leaked-runs', serviceAuth, async (req, res) => {
+  try {
+    const groups = await coll('runs').aggregate([
+      { $match: { clientId: { $exists: true, $ne: null } } },
+      {
+        $group: {
+          _id: '$clientId',
+          users: { $addToSet: '$userId' },
+          runs: { $push: { _id: '$_id', userId: '$userId', createdAt: '$createdAt', distance: '$distance' } },
+        },
+      },
+      { $match: { 'users.1': { $exists: true } } }, // 2+ distinct owners
+    ]).toArray();
+
+    res.json({
+      success: true,
+      duplicatedClientIds: groups.length,
+      extraRuns: groups.reduce((n, g) => n + (g.runs.length - 1), 0),
+      groups: groups.map((g) => ({
+        clientId: g._id,
+        owners: g.users.map(String),
+        runs: g.runs
+          .map((r) => ({ id: String(r._id), userId: String(r.userId), createdAt: r.createdAt, distance: r.distance }))
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)),
+      })),
+    });
+  } catch (e) {
+    console.error('appmaint/leaked-runs:', e);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// POST /api/appmaint/fix-leaked-runs — keep the earliest upload of each
+// duplicated run and delete the copies, reversing the points they were awarded.
+// Body: { confirm: true }. Territory is NOT corrected here — run
+// /rebuild-territory afterwards.
+router.post('/fix-leaked-runs', serviceAuth, async (req, res) => {
+  try {
+    if (!req.body || req.body.confirm !== true) {
+      return res.status(400).json({ success: false, message: 'Send { "confirm": true } — this deletes runs and reverses points.' });
+    }
+
+    const groups = await coll('runs').aggregate([
+      { $match: { clientId: { $exists: true, $ne: null } } },
+      { $group: { _id: '$clientId', users: { $addToSet: '$userId' }, runs: { $push: { _id: '$_id', userId: '$userId', createdAt: '$createdAt' } } } },
+      { $match: { 'users.1': { $exists: true } } },
+    ]).toArray();
+
+    let deleted = 0;
+    let pointsReversed = 0;
+    const affectedUsers = new Set();
+
+    for (const g of groups) {
+      // The original is whichever copy was uploaded first.
+      const ordered = g.runs.slice().sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const duplicates = ordered.slice(1);
+
+      for (const dup of duplicates) {
+        const runId = String(dup._id);
+        affectedUsers.add(String(dup.userId));
+
+        // Reverse the reward this copy paid out, if any.
+        const ledger = await coll('wallet_transactions').findOne({ idempotencyKey: 'run_' + runId });
+        if (ledger && ledger.amount > 0) {
+          await coll('users').updateOne(
+            { _id: dup.userId },
+            { $inc: { walletBalance: -ledger.amount } }
+          );
+          await coll('wallet_transactions').deleteOne({ _id: ledger._id });
+          pointsReversed += ledger.amount;
+        }
+
+        await coll('runs').deleteOne({ _id: dup._id });
+        deleted += 1;
+      }
+    }
+
+    res.json({
+      success: true,
+      duplicatedClientIds: groups.length,
+      runsDeleted: deleted,
+      pointsReversed,
+      affectedUsers: [...affectedUsers],
+      next: 'POST /api/appmaint/rebuild-territory to recompute the map from the surviving runs.',
+    });
+  } catch (e) {
+    console.error('appmaint/fix-leaked-runs:', e);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// POST /api/appmaint/rebuild-territory — recompute the current season's map from
+// scratch by replaying every run of the season in chronological order. Territory
+// is a union, so a wrongly-attributed claim can't be subtracted out again; this
+// is the way back to a correct map. Body: { confirm: true, season?: "2026-W32" }.
+router.post('/rebuild-territory', serviceAuth, async (req, res) => {
+  try {
+    if (!req.body || req.body.confirm !== true) {
+      return res.status(400).json({ success: false, message: 'Send { "confirm": true } — this rewrites the season map.' });
+    }
+    const { claimRoute, currentSeason } = require('../territoryService');
+    const season = (req.body && req.body.season) || currentSeason();
+
+    // Season bounds: the ISO week that `season` names, Monday 00:00 UTC to the
+    // following Monday.
+    const now = new Date();
+    const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7));
+    const nextMonday = new Date(monday.getTime() + 7 * 86400000);
+
+    await coll('territories').deleteMany({ season });
+
+    const runs = await coll('runs')
+      .find({
+        startedAt: { $gte: monday, $lt: nextMonday },
+        'route.coordinates.1': { $exists: true },
+      })
+      .sort({ startedAt: 1 })
+      .toArray();
+
+    let replayed = 0;
+    let skipped = 0;
+    for (const run of runs) {
+      try {
+        const result = await claimRoute(run.userId, run.route.coordinates);
+        if (result.ok) replayed += 1;
+        else skipped += 1;
+      } catch (e) {
+        skipped += 1;
+      }
+    }
+
+    const totals = await coll('territories').find({ season }).toArray();
+    res.json({
+      success: true,
+      season,
+      runsConsidered: runs.length,
+      replayed,
+      skipped,
+      holdings: totals.map((t) => ({ userId: String(t.userId), userName: t.userName, areaSqm: Math.round(t.area || 0) })),
+    });
+  } catch (e) {
+    console.error('appmaint/rebuild-territory:', e);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

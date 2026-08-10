@@ -23,8 +23,12 @@ customer account across app + website).
   Monday 00:00 UTC. See "Territory rules" below.
 - **Challenges** — admin-created step/distance goals with a "first N users"
   reward cap; join in-app and claim points on completion.
-- **Rewards wallet** — points earned from runs (10 pts/km) and challenges;
-  1 point = ₹0.10, redeemable for up to 50% of an order on the website.
+- **Rewards wallet** — points are won as a **weekly competition**: when a season
+  closes, holders are ranked by the territory they hold and only the **top 20**
+  are paid, rank 1 taking the largest share (`backend/seasonRewards.js`). Nothing
+  is credited per run. Points are redeemable on the website; the value and the
+  redemption cap are **configured in the admin portal**, not compiled in
+  (defaults: 1 point = ₹0.10, up to 10% of an order).
 - **Push notifications (FCM)** — challenge/territory alerts and admin broadcasts.
 
 ## Architecture
@@ -56,6 +60,24 @@ A claim happens **inside `POST /api/runs`**, so land can't be lost to a dropped
 follow-up request. Runs carry a client-generated `clientId` (unique per user),
 which makes re-uploading a run idempotent — no duplicate runs, no double points.
 
+### Season rewards
+
+Territory is only worth points **at the end of the week**. When a season closes,
+holders are ranked by the area they hold at that moment and the pool
+(10,000 pts) is split across the **top 20** — weighted mostly by rank, partly by
+share of land held, so rank 1 is worth chasing and a dominant leader earns more
+than one in a tight race. Nothing is paid per run.
+
+Settlement is idempotent per user per season (ledger key
+`season_<season>_<userId>`) and happens lazily on the first territory fetch after
+a season closes, so payouts don't depend on a scheduler being configured.
+`POST /api/territories/rewards/settle` forces it; `.../rewards/preview` shows the
+live table. Rules live in `backend/seasonRewards.js` and are covered by
+`backend/test/seasonRewards.test.js`.
+
+The payout table is deliberately **not** shown in the app — it's disclosed in the
+points T&C, which the backend generates from the configured values.
+
 Run the rules:
 
 ```bash
@@ -66,8 +88,12 @@ cd backend && npm test        # node --test, 8 cases
 
 | Route | Auth | Purpose |
 |---|---|---|
-| `GET /api/runs`, `POST /api/runs` | user JWT | list / record runs — credits 10 pts/km **and** claims the route's territory; idempotent per `clientId` |
+| `GET /api/runs`, `POST /api/runs` | user JWT | list / record runs — claims the route's territory; idempotent per `clientId`. Credits **no** points (rewards are weekly) |
 | `GET /api/territories`, `POST /api/territories/capture` | user JWT | current-season map + a standalone claim (older builds / re-claiming a past run) |
+| `GET /api/territories/rewards/preview` | user JWT | live standings — what the season would pay if it ended now |
+| `POST /api/territories/rewards/settle` | service key | pay out a closed season (idempotent per user per season) |
+| `GET /api/config/points` | public | live point value, redemption cap and the T&C wording built from them |
+| `GET /api/appmaint/leaked-runs`, `POST /api/appmaint/fix-leaked-runs`, `POST /api/appmaint/rebuild-territory` | service key | repair tools for the pre-v1.19.0 cross-account run leak |
 | `GET /api/challenges`, `POST /:id/join`, `POST /:id/claim` | user JWT | challenges |
 | `… /api/challenges/admin/*` | service key | challenge CRUD (used by admin portal) |
 | `GET /api/wallet` | user JWT | balance + ledger |

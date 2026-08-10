@@ -4,6 +4,63 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 7 August 2026 — points config, cross-account leak, weekly rewards (v1.19.0+41)
+
+### Mentor-requested points changes (the two planned below — done)
+- **Redemption cap is now 10%** and **no longer stated on the cart/checkout**. Those screens show
+  "*Terms and conditions apply" linking to the Terms page; the exact rate and cap stay disclosed
+  there and in the app's wallet T&C. The server still clamps, and its rejection message quotes the
+  allowance ("you can redeem at most N points") rather than the percentage rule.
+- **Point value + cap are now admin-configurable, server-side.** Both live on the shared `settings`
+  document (admin → Website Settings → *FitBox Points*), so changing them needs **no website deploy
+  and no app release**. Consumers all read it: website checkout clamp, cart preview, wallet page,
+  the published Terms copy, the admin liability figure (was a hardcoded `0.1`), and the app via the
+  new public `GET /api/config/points` — which also returns the **T&C wording written from the
+  configured numbers**, so the published terms can't drift from what checkout applies.
+  Saving a new rate warns what the outstanding liability becomes first, since it re-prices every
+  point already issued.
+
+### Bug — one account could take another's runs, points and territory (critical)
+Reported from two-account testing: signing in as account 2 showed account 1's runs, points and
+territory as its own, and after a contest run the land ended up back with whoever signed in last.
+
+**Cause:** run history was cached under a single device-wide key (`recorded_runs`) and `logout()`
+only cleared the JWT. So account 2 read account 1's runs — and yesterday's "queue anything the
+backend doesn't have" retry then **uploaded them under account 2**, transferring the points and
+claiming the territory. Signing back in re-ran the same trick in the other direction.
+
+- History is now **stored per user id**, reset whenever the signed-in user changes, and never
+  uploaded by an account that didn't record it. The old shared cache is deleted on upgrade (those
+  runs already exist server-side under their real owner).
+- `walletProvider` and `territoriesProvider` now key on the signed-in user, so a switch refetches
+  instead of showing the previous account's balance/land from cache.
+- **Repair tools** for the data this already corrupted (service key):
+  `GET /api/appmaint/leaked-runs` reports runs whose `clientId` appears under more than one account;
+  `POST /api/appmaint/fix-leaked-runs {confirm:true}` keeps the earliest upload, deletes the copies
+  and reverses the points they paid; `POST /api/appmaint/rebuild-territory {confirm:true}` replays
+  the season's runs in chronological order to rebuild a correct map (territory is a union, so a
+  wrong claim can't simply be subtracted back out).
+
+### Reward model — weekly competition instead of per-run credit
+Points are no longer credited when a run ends (`POINTS_PER_KM` is gone). A season is a contest:
+when it closes, holders are ranked by the territory they hold at that moment and **only the top 20
+are paid**, rank 1 taking the largest share and the rest scaled by rank and area held
+(`backend/seasonRewards.js`, pool 10,000 pts/season).
+
+- Settlement is **idempotent per user per season** (ledger `season_<season>_<userId>`), so a retry
+  can't double-pay. It runs lazily on the first territory fetch after a season closes, so payouts
+  don't depend on a scheduler existing; `POST /api/territories/rewards/settle` (service key) can
+  also be called directly, and `GET /api/territories/rewards/preview` shows the live standings.
+- The ranking, the top-20 limit and "territory carries no value until the season closes" are
+  **written into the T&C** (website Terms + in-app) but not surfaced in the app UI, as requested.
+- Tests: `backend/test/seasonRewards.test.js` (9 cases) covers top-20 truncation, monotonic payouts,
+  area weighting, pot conservation, and that no paid place rounds to zero. 17 backend tests total.
+
+Verified: `flutter analyze` clean, widget test passing, backend 17/17, website + admin frontends
+build. APK → `reports/07-08-2026/FitBox_v1.19.0.apk`.
+
+---
+
 ## Planned — 7 August 2026 (points config, mentor-requested)
 
 Target: **the Android app is wrapped up by 10 August 2026**, so these land first.

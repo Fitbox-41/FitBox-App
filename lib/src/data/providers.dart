@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../presentation/auth/auth_controller.dart';
 import 'models/fitness_stats.dart';
 import 'models/run_activity.dart';
 import 'models/wallet.dart';
@@ -7,7 +8,11 @@ import 'recorded_runs.dart';
 import 'wallet_repository.dart';
 
 /// Wallet — LIVE from the app backend (shared MongoDB).
+///
+/// Keyed on the signed-in user so switching accounts refetches instead of
+/// showing the previous user's balance from cache.
 final walletProvider = FutureProvider<WalletData>((ref) async {
+  ref.watch(authControllerProvider.select((AuthState s) => s.user?.id));
   return ref.watch(walletRepositoryProvider).fetch();
 });
 

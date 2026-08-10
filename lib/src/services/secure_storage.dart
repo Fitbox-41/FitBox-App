@@ -27,6 +27,8 @@ class SecureStorage {
       _storage.write(key: key, value: value);
 
   Future<String?> read(String key) => _storage.read(key: key);
+
+  Future<void> delete(String key) => _storage.delete(key: key);
 }
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
