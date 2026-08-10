@@ -19,10 +19,14 @@ const coll = (name) => mongoose.connection.db.collection(name);
 // How many places are paid.
 const TOP_N = 20;
 
-// What finishing first is worth, in rupees. Everything else scales down from
-// here. Set in currency rather than points so the weekly cost stays fixed if the
-// point value is retuned in the admin portal — 2,000 points at ₹0.10, or 200 at
-// ₹1, is ₹200 either way.
+// What finishing first is worth, in rupees — the fallback when settings haven't
+// been saved. The live value is set in the admin portal
+// (`settings.seasonTopRewardInr`); everything else scales down from it, so that
+// one number sets the whole prize table.
+//
+// Held in currency rather than points so the weekly cost stays fixed if the
+// point value is retuned — 2,000 points at ₹0.10, or 200 at ₹1, is ₹200 either
+// way.
 const TOP_REWARD_INR = 200;
 
 // Rank weighting: rank 1 earns much more than rank 20 even for similar area, so
@@ -88,16 +92,16 @@ function computeSeasonRewards(
 /// Returns { season, paid, totalPoints, alreadySettled, results }.
 async function settleSeason(season) {
   const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
-  // Convert the top award at the rate in force when the season is settled.
+  // Prize and rate as configured when the season is settled.
   const { readPointsConfig } = require('./routes/config');
-  const { pointValueInr } = await readPointsConfig();
+  const { pointValueInr, seasonTopRewardInr } = await readPointsConfig();
   const rewards = computeSeasonRewards(
     territories.map((t) => ({
       userId: t.userId,
       userName: t.userName || 'Runner',
       area: t.area,
     })),
-    { pointValueInr },
+    { pointValueInr, topRewardInr: seasonTopRewardInr },
   );
 
   const results = [];

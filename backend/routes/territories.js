@@ -8,7 +8,6 @@ const {
   settleSeason,
   isSettled,
   TOP_N,
-  TOP_REWARD_INR,
 } = require('../seasonRewards');
 const { readPointsConfig } = require('./config');
 
@@ -85,14 +84,14 @@ router.get('/rewards/preview', auth, async (req, res) => {
   try {
     const season = currentSeason();
     const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
-    const { pointValueInr } = await readPointsConfig();
+    const { pointValueInr, seasonTopRewardInr } = await readPointsConfig();
     const rewards = computeSeasonRewards(
       territories.map((t) => ({
         userId: String(t.userId),
         userName: t.userName || 'Runner',
         area: t.area,
       })),
-      { pointValueInr },
+      { pointValueInr, topRewardInr: seasonTopRewardInr },
     );
     const me = String(req.user.id || req.user._id);
     res.json({
@@ -100,7 +99,7 @@ router.get('/rewards/preview', auth, async (req, res) => {
       season,
       seasonEndsAt: seasonEndsAt(),
       paidPlaces: TOP_N,
-      topRewardInr: TOP_REWARD_INR,
+      topRewardInr: seasonTopRewardInr,
       standings: rewards,
       you: rewards.find((r) => r.userId === me) || null,
     });

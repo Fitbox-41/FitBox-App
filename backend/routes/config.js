@@ -10,24 +10,30 @@ const mongoose = require('mongoose');
 const router = express.Router();
 
 // Used until an admin saves settings, or if the read fails. Must match
-// FitBox_Website/Backend/Utils/points.js.
+// FitBox_Website/Backend/Utils/points.js and seasonRewards.js.
 const DEFAULT_POINT_VALUE_INR = 0.1;
 const DEFAULT_REDEEM_CAP_PERCENT = 10;
+const DEFAULT_SEASON_TOP_REWARD_INR = 200;
 
 async function readPointsConfig() {
   try {
     const settings = await mongoose.connection.db.collection('settings').findOne({});
     const v = Number(settings && settings.pointValueInr);
     const c = Number(settings && settings.redeemCapPercent);
+    const r = Number(settings && settings.seasonTopRewardInr);
     return {
       pointValueInr: Number.isFinite(v) && v > 0 ? v : DEFAULT_POINT_VALUE_INR,
       redeemCapPercent:
         Number.isFinite(c) && c >= 0 && c <= 100 ? c : DEFAULT_REDEEM_CAP_PERCENT,
+      // 0 is meaningful (prizes switched off), so only fall back when unset.
+      seasonTopRewardInr:
+        Number.isFinite(r) && r >= 0 ? r : DEFAULT_SEASON_TOP_REWARD_INR,
     };
   } catch (_) {
     return {
       pointValueInr: DEFAULT_POINT_VALUE_INR,
       redeemCapPercent: DEFAULT_REDEEM_CAP_PERCENT,
+      seasonTopRewardInr: DEFAULT_SEASON_TOP_REWARD_INR,
     };
   }
 }
