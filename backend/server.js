@@ -83,7 +83,9 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'FitBox App Backend',
-    apiVersion: '1.19.0',
+    // Tracks the app release this backend is built for; both restarted at 1.0
+    // for the first release.
+    apiVersion: '1.0.0',
     // Capabilities the app can rely on, so a client can tell what it's talking
     // to instead of guessing from behaviour.
     features: {
