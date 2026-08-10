@@ -17,4 +17,12 @@ class AppConfig {
   /// Firebase project. Used as `serverClientId` for Google sign-in on Android.
   static const String googleServerClientId =
       '422023009692-q75tlf263r6g50tio60bffg4gi503g0d.apps.googleusercontent.com';
+
+  /// Public site. The legal pages below must stay reachable: app stores require
+  /// a working privacy policy link for an app that collects location, and the
+  /// points terms are the disclosure behind the "*" shown at checkout.
+  static const String websiteUrl = 'https://www.fitboxsports.in';
+  static const String privacyPolicyUrl = '$websiteUrl/privacy';
+  static const String termsUrl = '$websiteUrl/terms';
+  static const String supportEmail = 'fitboxsports01@gmail.com';
 }

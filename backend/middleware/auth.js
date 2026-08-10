@@ -26,8 +26,12 @@ const auth = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // Website uses JWT_SECRET, we must use the same
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Website uses JWT_SECRET, we must use the same. The algorithm is pinned:
+    // without it a token could ask to be verified a different way, and only
+    // HS256 is ever issued.
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ['HS256'],
+    });
 
     // Attach the user info from token to the request
     // Assumes token contains { id: '...userId...' } based on standard MERN practice

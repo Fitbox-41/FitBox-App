@@ -6,6 +6,8 @@
 //   - the admin backend / a future territory-reward service (credit points).
 // Those callers hold the shared WALLET_SERVICE_KEY and pass the target userId
 // explicitly. End-user clients can only READ their own wallet (see auth.js).
+const crypto = require('crypto');
+
 module.exports = function serviceAuth(req, res, next) {
   const configured = process.env.WALLET_SERVICE_KEY;
   if (!configured) {
@@ -17,7 +19,7 @@ module.exports = function serviceAuth(req, res, next) {
   }
 
   const provided = req.headers['x-service-key'];
-  if (!provided || provided !== configured) {
+  if (!provided || !safeEqual(String(provided), String(configured))) {
     return res
       .status(403)
       .json({ success: false, message: 'Service authentication required' });
@@ -25,3 +27,12 @@ module.exports = function serviceAuth(req, res, next) {
 
   next();
 };
+
+// Constant-time comparison so the response time can't be used to discover the
+// key a character at a time. Length is compared first via hashing, because
+// timingSafeEqual throws on mismatched lengths.
+function safeEqual(a, b) {
+  const ha = crypto.createHash('sha256').update(a).digest();
+  const hb = crypto.createHash('sha256').update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}

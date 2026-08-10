@@ -1,9 +1,12 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/external_link.dart';
 import '../widgets/glass.dart';
 import '../widgets/hero_carousel.dart';
 import 'auth_controller.dart';
@@ -137,17 +140,27 @@ class _AuthSheet extends ConsumerWidget {
                   style: AppTypography.button(size: 13, color: muted)),
             ),
             const SizedBox(height: 6),
+            // These are the agreement the user is being asked to accept, so
+            // they have to actually open — underlining text that does nothing
+            // is worse than not offering the link.
             Text.rich(
               TextSpan(
                 text: 'By continuing, you agree to our ',
-                children: const <TextSpan>[
+                children: <TextSpan>[
                   TextSpan(
-                      text: 'Terms',
-                      style: TextStyle(decoration: TextDecoration.underline)),
-                  TextSpan(text: ' & '),
+                    text: 'Terms',
+                    style: const TextStyle(decoration: TextDecoration.underline),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () => openExternalUrl(context, AppConfig.termsUrl),
+                  ),
+                  const TextSpan(text: ' & '),
                   TextSpan(
-                      text: 'Privacy Policy',
-                      style: TextStyle(decoration: TextDecoration.underline)),
+                    text: 'Privacy Policy',
+                    style: const TextStyle(decoration: TextDecoration.underline),
+                    recognizer: TapGestureRecognizer()
+                      ..onTap =
+                          () => openExternalUrl(context, AppConfig.privacyPolicyUrl),
+                  ),
                 ],
               ),
               textAlign: TextAlign.center,

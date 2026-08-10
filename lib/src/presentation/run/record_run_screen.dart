@@ -232,11 +232,6 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
                             semanticLabel: 'Finish run',
                             primary: true,
                             onTap: _stop),
-                        const _CircleButton(
-                            icon: Icons.layers_outlined,
-                            semanticLabel: 'Map layers',
-                            primary: false,
-                            onTap: null),
                       ],
                     ),
                   ],

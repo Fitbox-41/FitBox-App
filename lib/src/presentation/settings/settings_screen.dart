@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../widgets/external_link.dart';
 import '../widgets/glass.dart';
 import '../widgets/motion.dart';
 import '../widgets/theme_selector.dart';
@@ -19,6 +22,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _metric = true;
   bool _pushWorkout = true;
   bool _pushWeekly = true;
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((PackageInfo info) {
+      if (mounted) setState(() => _version = 'v${info.version}');
+    }).catchError((_) {/* leave blank rather than show a wrong number */});
+  }
+
+  Future<void> _showAbout(BuildContext context) async {
+    showAboutDialog(
+      context: context,
+      applicationName: 'FitBox',
+      applicationVersion: _version,
+      applicationLegalese: '© ${DateTime.now().year} FitBox Sports, Jalandhar, Punjab, India',
+      children: <Widget>[
+        const SizedBox(height: 12),
+        const Text(
+          'Track your runs, claim territory and earn rewards you can spend on '
+          'FitBox Sports gym equipment.',
+        ),
+        const SizedBox(height: 12),
+        Text('Support: ${AppConfig.supportEmail}'),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,15 +93,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 20),
           _group(context, 'About', <Widget>[
             _LinkRow(
-                icon: Icons.privacy_tip_outlined,
-                title: 'Privacy',
-                onTap: () {}),
+              icon: Icons.privacy_tip_outlined,
+              title: 'Privacy Policy',
+              onTap: () => openExternalUrl(context, AppConfig.privacyPolicyUrl),
+            ),
+            _divider(cs),
+            _LinkRow(
+              icon: Icons.gavel_outlined,
+              title: 'Terms & Conditions',
+              onTap: () => openExternalUrl(context, AppConfig.termsUrl),
+            ),
             _divider(cs),
             _LinkRow(
               icon: Icons.info_outline,
               title: 'About FitBox',
-              trailing: 'v1.1.0',
-              onTap: () {},
+              // Read from the package rather than typed in — the hardcoded
+              // string here said v1.1.0 long after the app had moved on.
+              trailing: _version,
+              onTap: () => _showAbout(context),
             ),
           ]),
         ].revealStagger(),

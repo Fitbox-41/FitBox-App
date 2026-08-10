@@ -57,13 +57,29 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // Spread first, then set userId, so a client cannot override the
-    // authenticated user by passing userId in the request body.
+    // Explicit allow-list rather than spreading the body: a spread let a client
+    // set any field on the document, including `_id`, `claimedAreaSqm` and the
+    // timestamps. Everything server-authoritative (owner, claimed area, dates)
+    // is derived here, never accepted from the caller.
+    const startedAt = runData.startedAt ? new Date(runData.startedAt) : new Date();
+    const endedAt = runData.endedAt ? new Date(runData.endedAt) : startedAt;
+    const num = (v) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n >= 0 ? n : 0;
+    };
+
     const run = new Run({
-      ...runData,
-      route: route || undefined,
-      clientId: clientId || undefined,
       userId,
+      clientId: clientId || undefined,
+      title: typeof runData.title === 'string' ? runData.title.slice(0, 120) : 'Run',
+      startedAt: isNaN(startedAt) ? new Date() : startedAt,
+      endedAt: isNaN(endedAt) ? new Date() : endedAt,
+      distance: num(runData.distance),
+      duration: num(runData.duration),
+      pace: num(runData.pace),
+      calories: num(runData.calories),
+      steps: num(runData.steps),
+      route: route || undefined,
     });
 
     await run.save();
