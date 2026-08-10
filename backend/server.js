@@ -26,13 +26,15 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'FitBox App Backend',
-    apiVersion: '1.18.0',
+    apiVersion: '1.19.0',
     // Capabilities the app can rely on, so a client can tell what it's talking
     // to instead of guessing from behaviour.
     features: {
       runClaimsTerritory: true, // POST /api/runs claims land server-side
       routeCorridorClaims: true, // claims a corridor, not just enclosed loops
       idempotentRuns: true, // clientId-based deduplication of re-uploads
+      weeklySeasonRewards: true, // points paid on season close, not per run
+      configurablePoints: true, // GET /api/config/points drives value + cap
     },
     commit: process.env.VERCEL_GIT_COMMIT_SHA
       ? String(process.env.VERCEL_GIT_COMMIT_SHA).slice(0, 7)
