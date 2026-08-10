@@ -119,4 +119,41 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
+// Delete one of your own runs. Scoped to the authenticated user, so an id from
+// someone else's history simply isn't found.
+//
+// Territory already claimed is deliberately left alone: it's a union of every
+// claim in the season and can't be unpicked one run at a time, and letting a
+// delete hand land back to rivals would be an obvious exploit. Deleting a run
+// removes it from history only.
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const result = await Run.deleteOne({ _id: req.params.id, userId });
+    if (!result.deletedCount) {
+      return res.status(404).json({ success: false, message: 'Run not found' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Run delete error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Delete by the client-generated id instead, which is what the app holds for a
+// run it recorded locally.
+router.delete('/client/:clientId', auth, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const result = await Run.deleteOne({ clientId: req.params.clientId, userId });
+    if (!result.deletedCount) {
+      return res.status(404).json({ success: false, message: 'Run not found' });
+    }
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Run delete error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

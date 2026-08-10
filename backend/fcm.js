@@ -6,6 +6,7 @@
 // the API keeps working; push simply stays dark until the key is configured.
 const admin = require('firebase-admin');
 const User = require('./models/User');
+const Notification = require('./models/Notification');
 
 let cachedApp; // memoized across warm serverless invocations
 let triedInit = false;
@@ -95,8 +96,27 @@ async function sendToUser(userId, msg) {
 
 // Best-effort push that never throws into the caller's request flow (used for
 // event notifications like "your territory was taken").
+//
+// It also records the event so the in-app Notifications list shows it even when
+// push is unconfigured, the device has no token registered yet, or the user
+// dismissed the system notification. Pass { persist: false } for things that
+// shouldn't appear in that history (e.g. an admin broadcast test).
 function notifyUser(userId, msg) {
-  sendToUser(userId, msg).catch((err) =>
+  const { persist = true, ...push } = msg || {};
+
+  if (persist) {
+    Notification.create({
+      userId,
+      type: (push.data && push.data.type) || 'system',
+      title: push.title,
+      body: push.body || '',
+      data: push.data || {},
+    }).catch((err) =>
+      console.error('Notification persist failed:', err.message),
+    );
+  }
+
+  sendToUser(userId, push).catch((err) =>
     console.error('Push notifyUser failed:', err.message),
   );
 }

@@ -179,13 +179,18 @@ class RecordedRuns extends Notifier<List<RunActivity>> {
   /// How many recorded runs are still waiting to reach the backend.
   int get pendingCount => _pending.length;
 
-  /// Removes a run (local history). Backend has no delete endpoint yet, so this
-  /// clears it locally; a re-sync won't resurrect a locally-recorded run.
+  /// Removes a run from history, locally and on the server, so a later sync
+  /// can't bring it back. The local copy goes first — deleting must feel
+  /// immediate and must work offline; if the server call fails the run is gone
+  /// from this device and the next fetch simply re-adds it.
   Future<void> removeRun(String id) async {
     state = state.where((RunActivity r) => r.id != id).toList();
     _pending.remove(id);
     await _persist();
     await _persistPending();
+    try {
+      await ref.read(runsRepositoryProvider).delete(id);
+    } catch (_) {/* offline — history is already correct on this device */}
   }
 
   Future<void> _persist() async {

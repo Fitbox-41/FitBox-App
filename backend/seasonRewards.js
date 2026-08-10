@@ -14,6 +14,10 @@ const Territory = require('./models/Territory');
 const WalletTransaction = require('./models/WalletTransaction');
 const User = require('./models/User');
 
+// Required lazily inside settleSeason: pulling in firebase-admin at module load
+// would make computeSeasonRewards — a pure function — impossible to unit-test
+// without the push stack installed.
+
 const coll = (name) => mongoose.connection.db.collection(name);
 
 // How many places are paid.
@@ -92,6 +96,7 @@ function computeSeasonRewards(
 /// Returns { season, paid, totalPoints, alreadySettled, results }.
 async function settleSeason(season) {
   const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
+  const { notifyUser } = require('./fcm');
   // Prize and rate as configured when the season is settled.
   const { readPointsConfig } = require('./routes/config');
   const { pointValueInr, seasonTopRewardInr } = await readPointsConfig();
@@ -134,6 +139,22 @@ async function settleSeason(season) {
         idempotencyKey,
         description: `Season ${season} — rank #${r.rank} (${(r.area / 1e6).toFixed(2)} km² held)`,
       });
+      // Tell them they won — a silent payout is indistinguishable from no
+      // payout, and this is the moment the whole weekly contest pays off.
+      notifyUser(r.userId, {
+        title:
+          r.rank === 1
+            ? `You won the week! #${r.rank}`
+            : `You finished #${r.rank} this week`,
+        body: `${r.points.toLocaleString()} points for ${(r.area / 1e6).toFixed(2)} km² held. Season ${season}.`,
+        data: {
+          type: 'season',
+          season,
+          rank: r.rank,
+          points: r.points,
+        },
+      });
+
       paid += 1;
       totalPoints += r.points;
       results.push({ ...r, userId: String(r.userId) });

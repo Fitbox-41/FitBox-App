@@ -35,6 +35,17 @@ class RunsRepository {
       territoryMessage: map['territoryMessage'] as String?,
     );
   }
+
+  /// Deletes a run server-side too, so it doesn't reappear on the next sync.
+  ///
+  /// Runs recorded in the app are matched by their client id; anything else is
+  /// a server id. Territory already claimed stays claimed — it's a union and
+  /// can't be unpicked one run at a time.
+  Future<void> delete(String id) async {
+    final String path =
+        id.startsWith('local-') ? '/runs/client/$id' : '/runs/$id';
+    await _dio.delete(path);
+  }
 }
 
 final runsRepositoryProvider = Provider<RunsRepository>(

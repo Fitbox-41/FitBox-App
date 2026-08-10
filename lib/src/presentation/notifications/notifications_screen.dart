@@ -1,60 +1,107 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/notifications_repository.dart';
+import '../auth/auth_controller.dart';
+import '../widgets/common.dart';
 import '../widgets/glass.dart';
+import '../widgets/guest_gate.dart';
 import '../widgets/motion.dart';
 
-class _Note {
-  const _Note(
-    this.icon,
-    this.color,
-    this.title,
-    this.body,
-    this.time, {
-    this.unread = false,
-  });
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String body;
-  final String time;
-  final bool unread;
-}
-
-class NotificationsScreen extends StatelessWidget {
+/// The user's real notification history, written server-side whenever an event
+/// is pushed — so it's complete even if push is off or the banner was missed.
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
-  static const List<_Note> _notes = <_Note>[
-    _Note(Icons.local_fire_department, FitBoxColors.red, 'Daily goal reached',
-        'You hit 8,000 steps — +10 pts credited.', '2h ago',
-        unread: true),
-    _Note(Icons.map, FitBoxColors.credit, 'Territory captured',
-        'You claimed a new zone in SoHo. +150 pts.', 'Yesterday',
-        unread: true),
-    _Note(Icons.warning_amber, FitBoxColors.debit, "You've been overtaken",
-        'J. Rivera took the lead in Covent Garden.', 'Yesterday'),
-    _Note(Icons.emoji_events, FitBoxColors.red, 'Weekly results',
-        'You finished #4 this week. Keep pushing!', '3d ago'),
-  ];
+  @override
+  ConsumerState<NotificationsScreen> createState() =>
+      _NotificationsScreenState();
+}
+
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
+  bool _markedRead = false;
+
+  /// Opening the screen is what "seeing" them means, so clear the unread state
+  /// once the list has actually loaded — but only once per visit.
+  void _markReadOnce(int unread) {
+    if (_markedRead || unread == 0) return;
+    _markedRead = true;
+    ref
+        .read(notificationsRepositoryProvider)
+        .markRead()
+        .then((_) => ref.invalidate(notificationsProvider))
+        .catchError((_) {/* not fatal — they stay unread and retry next time */});
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(guestModeProvider)) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Notifications')),
+        body: const GuestGate(
+          icon: Icons.notifications_none,
+          title: 'Your alerts live here',
+          message:
+              'Sign in to get alerts about your territory, rivals and weekly results.',
+        ),
+      );
+    }
+
+    final AsyncValue<NotificationsData> async =
+        ref.watch(notificationsProvider);
+
     return Scaffold(
       appBar: AppBar(title: const Text('Notifications')),
-      body: _notes.isEmpty
-          ? const _EmptyState()
-          : ListView(
+      body: RefreshIndicator(
+        onRefresh: () async => ref.invalidate(notificationsProvider),
+        child: async.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (Object e, StackTrace _) => AsyncRetry(
+            message: 'Could not load notifications.',
+            onRetry: () => ref.invalidate(notificationsProvider),
+          ),
+          data: (NotificationsData d) {
+            _markReadOnce(d.unread);
+            if (d.items.isEmpty) {
+              return ListView(
+                children: const <Widget>[
+                  SizedBox(height: 120),
+                  _EmptyState(),
+                ],
+              );
+            }
+            return ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
               children: <Widget>[
-                for (int i = 0; i < _notes.length; i++)
+                for (int i = 0; i < d.items.length; i++)
                   Padding(
                     padding: EdgeInsets.only(
-                        bottom: i == _notes.length - 1 ? 0 : 12),
-                    child: _NoteRow(note: _notes[i]),
+                        bottom: i == d.items.length - 1 ? 0 : 12),
+                    child: _NoteRow(note: d.items[i]),
                   ),
               ].revealStagger(),
-            ),
+            );
+          },
+        ),
+      ),
     );
+  }
+}
+
+/// Category styling for a notification type.
+({IconData icon, Color color}) _styleFor(String type) {
+  switch (type) {
+    case 'territory':
+      return (icon: Icons.map, color: FitBoxColors.credit);
+    case 'season':
+      return (icon: Icons.emoji_events, color: FitBoxColors.red);
+    case 'challenge':
+      return (icon: Icons.local_fire_department, color: FitBoxColors.red);
+    case 'wallet':
+      return (icon: Icons.account_balance_wallet, color: FitBoxColors.credit);
+    default:
+      return (icon: Icons.notifications, color: FitBoxColors.red);
   }
 }
 
@@ -64,11 +111,12 @@ class NotificationsScreen extends StatelessWidget {
 class _NoteRow extends StatelessWidget {
   const _NoteRow({required this.note});
 
-  final _Note note;
+  final AppNotification note;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme cs = Theme.of(context).colorScheme;
+    final ({IconData icon, Color color}) style = _styleFor(note.type);
     return GlassCard(
       radius: 20,
       padding: const EdgeInsets.all(14),
@@ -79,10 +127,10 @@ class _NoteRow extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: note.color.withValues(alpha: 0.16),
+              color: style.color.withValues(alpha: 0.16),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(note.icon, color: note.color, size: 22),
+            child: Icon(style.icon, color: style.color, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -91,7 +139,7 @@ class _NoteRow extends StatelessWidget {
               children: <Widget>[
                 Row(
                   children: <Widget>[
-                    if (note.unread) ...<Widget>[
+                    if (!note.read) ...<Widget>[
                       Container(
                         width: 8,
                         height: 8,
@@ -110,7 +158,7 @@ class _NoteRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(note.time,
+                    Text(note.relativeTime,
                         style: AppText.labelCaps(context, size: 10)),
                   ],
                 ),
