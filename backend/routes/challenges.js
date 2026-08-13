@@ -6,6 +6,7 @@ const ChallengeProgress = require('../models/ChallengeProgress');
 const Run = require('../models/Run');
 const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
+const { notifyAllAppUsers } = require('../fcm');
 
 const router = express.Router();
 
@@ -166,7 +167,28 @@ router.get('/admin/all', serviceAuth, async (req, res) => {
 router.post('/admin', serviceAuth, async (req, res) => {
   try {
     const c = await Challenge.create(req.body);
-    res.status(201).json({ success: true, challenge: c });
+
+    // Announce it, so a new challenge actually reaches people instead of only
+    // appearing to whoever happens to open the Challenges screen. Awaited
+    // rather than fired and forgotten: on serverless the function can be frozen
+    // the moment the response is sent, which would drop the send.
+    let announced = { recipients: 0, sent: 0 };
+    if (c.active) {
+      const goal =
+        c.goalType === 'distance'
+          ? `${c.goalTarget} km`
+          : `${Number(c.goalTarget).toLocaleString()} steps`;
+      announced = await notifyAllAppUsers({
+        title: 'New challenge: ' + c.title,
+        body:
+          `${goal} in ${c.durationDays} day${c.durationDays === 1 ? '' : 's'}` +
+          (c.rewardPoints > 0 ? ` · ${c.rewardPoints} points` : '') +
+          '. Tap to join.',
+        data: { type: 'challenge', challengeId: String(c._id) },
+      });
+    }
+
+    res.status(201).json({ success: true, challenge: c, announced });
   } catch (e) {
     res.status(400).json({ success: false, message: e.message });
   }

@@ -121,4 +121,65 @@ function notifyUser(userId, msg) {
   );
 }
 
-module.exports = { isConfigured, sendToTokens, sendToUser, notifyUser };
+/// Announces something to every app user — push where a device is registered,
+/// and an in-app notification for everyone, so a user who has push disabled (or
+/// hasn't opened the app since installing) still sees it in their list.
+///
+/// The audience is app users only: anyone with a registered device or who has
+/// signed in from the app. Website-only customers are left out — they have no
+/// use for a challenge announcement.
+///
+/// Best-effort by design: never throws, so an announcement failing can't take
+/// down whatever triggered it.
+async function notifyAllAppUsers({ title, body, data } = {}) {
+  try {
+    const users = await User.find({
+      $or: [
+        { fcmTokens: { $exists: true, $ne: [] } },
+        { lastAppLoginAt: { $exists: true } },
+      ],
+    })
+      .select('_id fcmTokens')
+      .lean();
+
+    if (!users.length) return { recipients: 0, sent: 0 };
+
+    // In-app history first — it's the part that doesn't depend on push being
+    // configured, so it should survive a push outage.
+    try {
+      await Notification.insertMany(
+        users.map((u) => ({
+          userId: u._id,
+          type: (data && data.type) || 'system',
+          title,
+          body: body || '',
+          data: data || {},
+        })),
+        { ordered: false },
+      );
+    } catch (err) {
+      console.error('Broadcast notification persist failed:', err.message);
+    }
+
+    const tokens = users.flatMap((u) => u.fcmTokens || []).filter(Boolean);
+    const { sent, invalid } = await sendToTokens(tokens, { title, body, data });
+    if (invalid && invalid.length) {
+      await User.updateMany(
+        { fcmTokens: { $in: invalid } },
+        { $pull: { fcmTokens: { $in: invalid } } },
+      );
+    }
+    return { recipients: users.length, sent };
+  } catch (err) {
+    console.error('notifyAllAppUsers failed:', err.message);
+    return { recipients: 0, sent: 0 };
+  }
+}
+
+module.exports = {
+  isConfigured,
+  sendToTokens,
+  sendToUser,
+  notifyUser,
+  notifyAllAppUsers,
+};
