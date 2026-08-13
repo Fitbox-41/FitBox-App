@@ -135,10 +135,27 @@ workflows:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
-    publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
+    # Publishing to TestFlight is commented out until there is an Apple
+    # Developer account.
+    #
+    # `auth: integration` refers to an App Store Connect integration configured
+    # in the Codemagic UI, and Codemagic rejects the WHOLE file if that
+    # reference can't be resolved — which also blocks ios-validate from running.
+    # So this stays off until the integration exists.
+    #
+    # To turn it on, once the Apple account and integration are set up:
+    #   1. Codemagic → Teams/App settings → Integrations → App Store Connect,
+    #      connect it and note the integration name.
+    #   2. Add the integration to this workflow's environment:
+    #        environment:
+    #          integrations:
+    #            app_store_connect: <the integration name>
+    #   3. Uncomment the block below.
+    #
+    # publishing:
+    #   app_store_connect:
+    #     auth: integration
+    #     submit_to_testflight: true
 
   android-release:
     name: Android — build App Bundle
