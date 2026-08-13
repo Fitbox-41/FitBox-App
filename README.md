@@ -12,7 +12,7 @@ customer account across app + website).
 | | |
 |---|---|
 | Android | **Feature complete**, signed, on device |
-| iOS | ~60% — all app code shared; native build, signing, APNs and device testing pending a Mac + Apple Developer account |
+| iOS | All Windows-side work complete — see **[`ios/IOS_STATUS.md`](ios/IOS_STATUS.md)**. Remaining items need a Mac/Codemagic + Apple Developer account. **Needs its own Maps API key** (a key can be restricted to Android *or* iOS, not both). |
 | Backend | Live — check the build with `curl https://fit-box-app.vercel.app/health` |
 
 ## Features

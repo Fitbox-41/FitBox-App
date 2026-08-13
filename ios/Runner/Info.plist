@@ -100,5 +100,10 @@
 			</array>
 		</dict>
 	</array>
+	<!-- The app uses only standard HTTPS, which is exempt from US export
+	     regulations. Declaring it here stops App Store Connect asking for an
+	     export-compliance answer on every single upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

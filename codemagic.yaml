@@ -21,6 +21,21 @@
 #     CM_KEY_PASSWORD
 #     GCLOUD_SERVICE_ACCOUNT_CREDENTIALS # Play Developer API service-account JSON
 #
+#   Group "firebase_and_maps" (BOTH platforms — the build fails without these,
+#   because all four files are gitignored and therefore absent on a fresh clone):
+#     GOOGLE_SERVICES_JSON               # base64 of android/app/google-services.json
+#     GOOGLE_SERVICE_INFO_PLIST          # base64 of ios/Runner/GoogleService-Info.plist
+#     MAPS_API_KEY_ANDROID               # Maps key restricted to the Android app
+#     MAPS_API_KEY_IOS                   # Maps key restricted to the iOS bundle id
+#
+#   Two separate Maps keys are required. A Google Maps key takes exactly ONE
+#   application restriction — "Android apps" OR "iOS apps" — so a key locked to
+#   the Android package is rejected on iOS, and vice versa.
+#
+#   To produce the base64 values (macOS/Linux):  base64 -i <file> | pbcopy
+#   On Windows PowerShell:
+#     [Convert]::ToBase64String([IO.File]::ReadAllBytes("path\to\file")) | Set-Clipboard
+#
 # The App Store Connect integration is configured under
 # Codemagic UI → Teams/App settings → Integrations → App Store Connect.
 
@@ -39,10 +54,20 @@ workflows:
       <<: *flutter_setup
       groups:
         - appstore_credentials
+        - firebase_and_maps
       vars:
         BUNDLE_ID: "com.fitboxsports.app"
         APP_STORE_APPLE_ID: "0000000000" # TODO: set the numeric App Store Connect app ID
     scripts:
+      - name: Restore gitignored config
+        script: |
+          set -e
+          # Firebase config for iOS — absent from the repo by design.
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          # Info.plist reads GMSApiKey from $(MAPS_API_KEY); supply it as an Xcode
+          # build setting. Must be the iOS-restricted key, not the Android one.
+          echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Release.xcconfig
+          echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Debug.xcconfig
       - name: Get Flutter packages
         script: flutter pub get
       - name: Analyze
@@ -81,9 +106,18 @@ workflows:
       <<: *flutter_setup
       groups:
         - google_play_credentials
+        - firebase_and_maps
       vars:
         PACKAGE_NAME: "com.fitboxsports.app"
     scripts:
+      - name: Restore gitignored config
+        script: |
+          set -e
+          # The google-services Gradle plugin fails the build without this file,
+          # and it is deliberately not committed.
+          echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+          # AndroidManifest reads ${MAPS_API_KEY} from local.properties.
+          echo "MAPS_API_KEY=$MAPS_API_KEY_ANDROID" >> android/local.properties
       - name: Get Flutter packages
         script: flutter pub get
       - name: Analyze

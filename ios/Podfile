@@ -1,0 +1,69 @@
+# Flutter iOS Podfile.
+#
+# Written by hand because the project has never been built on a Mac — Flutter
+# normally generates this on the first iOS build. Committing it pins the
+# deployment target so CocoaPods can't pick a lower default and fail.
+#
+# iOS 14.0 is the floor: google_maps_flutter_ios declares `s.platform = :ios,
+# '14.0'`, and `pod install` aborts if the app targets anything lower. Keep this
+# in step with IPHONEOS_DEPLOYMENT_TARGET in the Xcode project.
+platform :ios, '14.0'
+
+# CocoaPods analytics slow the build down and add nothing here.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. Run `flutter pub get` first."
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run `flutter pub get`."
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks!
+  use_modular_headers!
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
+    target.build_configurations.each do |config|
+      # Some pods still default to an older target than the app; force them up so
+      # the build doesn't warn (or fail) on mismatched deployment targets.
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+
+      # permission_handler compiles every permission by default. Only the ones
+      # the app actually asks for are enabled, so the App Store review doesn't
+      # question permissions the app never uses.
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_LOCATION=1',
+        'PERMISSION_NOTIFICATIONS=1',
+        'PERMISSION_SENSORS=1',
+      ]
+    end
+  end
+end

@@ -4,6 +4,37 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 11 August 2026 (close of day, later) — iOS taken as far as Windows allows
+
+v1.0.0 released on GitHub (tag `v1.0.0`, APK + PDF attached) after the Maps key was restricted.
+Then pushed iOS to the limit of what can be done without a Mac. Status doc: **`ios/IOS_STATUS.md`**.
+
+- **⚠ iOS needs its own Maps API key.** A Google Maps key accepts exactly **one** application
+  restriction — *Android apps* **or** *iOS apps*, never both. The key just restricted to the Android
+  package will be **rejected on iOS**. A second key restricted to bundle id `com.fitboxsports.app`
+  must be created before the first iOS build.
+- **Deployment target 13.0 → 14.0.** `google_maps_flutter_ios` 2.18.4 declares `s.platform = :ios,
+  '14.0'`, so `pod install` would have **failed on the very first Codemagic build**. Caught by reading
+  the plugin's podspec rather than waiting for CI to fail.
+- **Added `ios/Podfile`** (hand-written — Flutter only generates it on a Mac), pinning iOS 14.0 and
+  trimming `permission_handler` to the permissions actually used, so App Review isn't asked to explain
+  permissions the app never requests.
+- **Added `ios/Runner/PrivacyInfo.xcprivacy`** — Apple requires a privacy manifest for submission.
+  Declares precise location, email, name, fitness and purchase data, plus the required-reason APIs
+  (UserDefaults, file timestamp, disk space, boot time). Kept consistent with the published policy.
+- **`ITSAppUsesNonExemptEncryption = false`** so TestFlight stops asking export-compliance on every
+  upload.
+- **`codemagic.yaml` would have failed on the first run** — `google-services.json`,
+  `GoogleService-Info.plist` and the Maps keys are all gitignored, so they don't exist on a fresh CI
+  clone. Both workflows now restore them from Codemagic secrets before building.
+- **Deliberately not added: the `aps-environment` entitlement.** It fails signing until the Apple App
+  ID actually has Push enabled, so it belongs with the Apple-account work, not now.
+
+Still requires a Mac / Apple account: `pod install` + first compile, signing, APNs, registering the
+widget target, Live Activity, device testing, TestFlight.
+
+---
+
 ## 11 August 2026 (close of day) — v1.0.0 signed, configured and handed over
 
 Wrap-up of the release. Artifacts in `reports/11-08-2026/`: signed `FitBox_v1.0.0.apk`,
