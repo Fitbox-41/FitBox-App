@@ -1,5 +1,13 @@
 # iOS — status and what's left
 
+> ✅ **The iOS app compiles.** Verified on Codemagic 13 Aug 2026 (commit `2553bf7`,
+> workflow `ios-validate`, Mac mini M2): pods installed in 10s, unsigned release
+> build succeeded in 4m 5s, producing `Runner.app.zip` (27.7 MB).
+>
+> This was the only part that could not be checked from Windows. Everything
+> remaining is signing, distribution and device testing — all of which need a
+> paid Apple Developer account, not more code.
+
 **Everything that can be done on Windows is done.** The remaining work all needs
 macOS (Xcode/CocoaPods) or a paid Apple Developer account, and is intended to run
 on **Codemagic** rather than a local Mac — see `../codemagic.yaml`.

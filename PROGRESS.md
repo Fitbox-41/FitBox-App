@@ -4,6 +4,46 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 13 August 2026 — iOS compiles on CI; challenge push; admin fixes
+
+**✅ The iOS app builds.** Codemagic `ios-validate` (Mac mini M2, commit `2553bf7`): pods installed,
+unsigned release build succeeded in 4m 5s → `Runner.app.zip` (27.7 MB). This was the only thing that
+could not be verified from Windows. iOS is now blocked purely on a paid Apple Developer account —
+signing, TestFlight, push and device testing — not on code.
+
+Two build failures were fixed to get there, both worth recording:
+
+- **Codemagic rejected the whole config file.** `ios-testflight` declared `publishing.auth: integration`
+  referring to an App Store Connect integration that doesn't exist yet, and a single unresolvable
+  reference invalidates *every* workflow — so it also blocked `ios-validate`, the one workflow needing
+  no Apple account. Publishing block commented out with restore instructions.
+- **`pod install` failed:** *"Specs satisfying the Flutter dependency were found, but they required a
+  higher minimum deployment target."* The Podfile pinned iOS 14.0 (chosen from
+  `google_maps_flutter_ios`, the highest floor visible from Windows), but the Flutter pod itself wants
+  more. Raised to **iOS 15.0** across the Podfile, the pod post-install hook and the Xcode project —
+  covers iPhone 6s (2015) and later.
+  - Root cause was `flutter: stable` in CI: the build followed whatever Flutter shipped most recently
+    rather than the version developed against, so the deployment floor moved with nothing in the repo
+    changing. **Pinned to 3.44.1** to match local.
+
+### Admin + app
+- **Creating a challenge now announces it.** Previously a new challenge sat unseen until someone opened
+  the Challenges screen. An active challenge now pushes to every app user *and* writes an in-app
+  notification each, so it still lands for users with push disabled. Audience is app users only
+  (registered device or has signed in from the app) — website-only customers aren't pinged.
+  Awaited rather than fire-and-forget, since serverless can freeze the function once the response is
+  sent. Returns `announced: {recipients, sent}`.
+- **"Service authentication required" on challenge/push** was the admin backend's `WALLET_SERVICE_KEY`
+  being unset — it defaulted to `''`, so it sent an empty header and surfaced the app backend's generic
+  403. Confirmed by probing: the app backend returned **403 not 503**, proving its own key was fine.
+  Fixed by the owner setting the env var; the code now fails early with an actionable message, reports
+  a 403 from upstream as a key mismatch, and exposes `GET /api/app/config-check` for one-look diagnosis.
+- **Points settings moved** from Website Settings to **FitBox App → Points**, where they belong.
+  Store Settings no longer sends the points fields at all — it had held its own copies, so saving a
+  delivery-fee change could have silently overwritten the economy with stale values.
+
+---
+
 ## 11 August 2026 (close of day, later) — iOS taken as far as Windows allows
 
 v1.0.0 released on GitHub (tag `v1.0.0`, APK + PDF attached) after the Maps key was restricted.
