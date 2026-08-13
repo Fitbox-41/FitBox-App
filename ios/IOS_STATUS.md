@@ -1,8 +1,16 @@
 # iOS — status and what's left
 
-> ✅ **The iOS app compiles.** Verified on Codemagic 13 Aug 2026 (commit `2553bf7`,
-> workflow `ios-validate`, Mac mini M2): pods installed in 10s, unsigned release
-> build succeeded in 4m 5s, producing `Runner.app.zip` (27.7 MB).
+> ✅ **The iOS app compiles, with real configuration.** Verified on Codemagic
+> 13 Aug 2026 (workflow `ios-validate`, Mac mini M2): pods resolved, unsigned
+> release build succeeded, producing `Runner.app.zip` (~27.7 MB).
+>
+> Note there were **two** green runs. The first compiled with *empty* config —
+> the restore step wrote empty files from unset variables without complaining, so
+> the build passed while Firebase config and the Maps key were blank. Guards were
+> added (a missing or malformed value now fails the build by name), the variable
+> group was filled in, and the second run passed **with** the real
+> `GoogleService-Info.plist` and iOS Maps key. That second run is the one that
+> means something.
 >
 > This was the only part that could not be checked from Windows. Everything
 > remaining is signing, distribution and device testing — all of which need a

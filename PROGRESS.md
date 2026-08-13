@@ -6,10 +6,21 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ## 13 August 2026 — iOS compiles on CI; challenge push; admin fixes
 
-**✅ The iOS app builds.** Codemagic `ios-validate` (Mac mini M2, commit `2553bf7`): pods installed,
-unsigned release build succeeded in 4m 5s → `Runner.app.zip` (27.7 MB). This was the only thing that
-could not be verified from Windows. iOS is now blocked purely on a paid Apple Developer account —
-signing, TestFlight, push and device testing — not on code.
+**✅ The iOS app builds, with real config.** Codemagic `ios-validate` (Mac mini M2): pods resolved,
+unsigned release build succeeded → `Runner.app.zip` (~27.7 MB). This was the only thing that could not
+be verified from Windows. iOS is now blocked purely on a paid Apple Developer account — signing,
+TestFlight, push and device testing — not on code.
+
+**A false green first.** The initial passing build had *empty* configuration: the restore step ran
+`base64 --decode` on unset variables, which succeeds and writes empty files, and neither an empty
+`GoogleService-Info.plist` nor an empty Maps key breaks compilation — they only fail at runtime. So a
+green build wrongly implied the config was wired. Every restore step now fails immediately naming the
+missing variable and its group, and verifies the decoded file looks like the file it should be. The
+variable group was then populated and the re-run passed properly.
+
+Also worth noting for later: `ios-validate` only consumes `GOOGLE_SERVICE_INFO_PLIST` and
+`MAPS_API_KEY_IOS`. `GOOGLE_SERVICES_JSON` and `MAPS_API_KEY_ANDROID` sit in the same group for the
+`android-release` workflow, which isn't needed while Android builds locally on Windows.
 
 Two build failures were fixed to get there, both worth recording:
 
