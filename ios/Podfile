@@ -4,10 +4,14 @@
 # normally generates this on the first iOS build. Committing it pins the
 # deployment target so CocoaPods can't pick a lower default and fail.
 #
-# iOS 14.0 is the floor: google_maps_flutter_ios declares `s.platform = :ios,
-# '14.0'`, and `pod install` aborts if the app targets anything lower. Keep this
-# in step with IPHONEOS_DEPLOYMENT_TARGET in the Xcode project.
-platform :ios, '14.0'
+# iOS 15.0 is the floor. Two things push it up:
+#   - google_maps_flutter_ios declares `s.platform = :ios, '14.0'`
+#   - the Flutter pod itself, and firebase_core 4.x, require 15.0
+# `pod install` aborts outright if the app targets lower ("Specs satisfying the
+# Flutter dependency were found, but they required a higher minimum deployment
+# target"). Keep this in step with IPHONEOS_DEPLOYMENT_TARGET in the Xcode
+# project — iOS 15 covers the iPhone 6s (2015) and later.
+platform :ios, '15.0'
 
 # CocoaPods analytics slow the build down and add nothing here.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
@@ -53,7 +57,7 @@ post_install do |installer|
     target.build_configurations.each do |config|
       # Some pods still default to an older target than the app; force them up so
       # the build doesn't warn (or fail) on mismatched deployment targets.
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
 
       # permission_handler compiles every permission by default. Only the ones
       # the app actually asks for are enabled, so the App Store review doesn't

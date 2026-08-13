@@ -21,8 +21,9 @@ iOS. What follows is platform plumbing, not product work.
 | Google Sign-In | Firebase iOS app registered; reversed-client-id URL scheme in `Info.plist` |
 | App Group | `group.com.fitboxsports.app` — shared container for the widget |
 | App icons | Generated into `Assets.xcassets/AppIcon.appiconset` (21 sizes) |
-| Deployment target | **iOS 14.0** — required by `google_maps_flutter_ios`; `pod install` fails below it |
-| `Podfile` | Written by hand and committed, pinning iOS 14.0 and trimming `permission_handler` to the permissions actually used |
+| Deployment target | **iOS 15.0** — the Flutter pod and `firebase_core` 4.x require it (`google_maps_flutter_ios` needs 14.0); `pod install` fails outright below it. Covers iPhone 6s (2015) and later |
+| `Podfile` | Written by hand and committed, pinning iOS 15.0 and trimming `permission_handler` to the permissions actually used |
+| Flutter version | **Pinned to 3.44.1** in `codemagic.yaml`, not `stable` — a floating version silently changed the iOS deployment floor and broke `pod install` |
 | Privacy manifest | `Runner/PrivacyInfo.xcprivacy` — Apple requires it; declares location, email, name, fitness and purchase data plus required-reason API use |
 | Export compliance | `ITSAppUsesNonExemptEncryption = false`, so TestFlight stops asking on every upload |
 | CI pipeline | `codemagic.yaml` — build, sign, TestFlight, plus restoring the gitignored config files from Codemagic secrets |

@@ -41,7 +41,13 @@
 
 definitions:
   flutter_setup: &flutter_setup
-    flutter: stable
+    # Pinned, not `stable`. With `stable` the CI silently follows whatever
+    # Flutter released most recently, so a build that passed yesterday can fail
+    # today for reasons unrelated to the code — which is exactly what happened:
+    # a newer Flutter raised the iOS deployment floor and CocoaPods refused to
+    # resolve. Keep this in step with the Flutter version used locally
+    # (`flutter --version`) and raise it deliberately.
+    flutter: 3.44.1
     xcode: latest
     cocoapods: default
 
