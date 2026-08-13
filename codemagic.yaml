@@ -74,9 +74,22 @@ workflows:
       - name: Restore gitignored config
         script: |
           set -e
+          # Fail loudly if the variable group is missing or a value is empty.
+          # Without this the build still "succeeds": an empty value decodes to an
+          # empty plist and an empty Maps key, both of which only break at
+          # runtime — so a green build would wrongly suggest the config was fine.
+          : "${GOOGLE_SERVICE_INFO_PLIST:?missing — add it to the 'firebase_and_maps' variable group in Codemagic (base64 of ios/Runner/GoogleService-Info.plist)}"
+          : "${MAPS_API_KEY_IOS:?missing — add the iOS-restricted Maps key to the 'firebase_and_maps' variable group}"
+
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          # A truncated or non-base64 value decodes to something unusable; check
+          # the result actually looks like the plist we expect.
+          grep -q "API_KEY\|GOOGLE_APP_ID" ios/Runner/GoogleService-Info.plist \
+            || { echo "GoogleService-Info.plist did not decode to a valid plist — check the base64 value"; exit 1; }
+
           echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Release.xcconfig
           echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Debug.xcconfig
+          echo "Config restored: plist $(wc -c < ios/Runner/GoogleService-Info.plist) bytes, Maps key ${#MAPS_API_KEY_IOS} chars"
       - name: Get Flutter packages
         script: flutter pub get
       - name: Analyze
@@ -110,8 +123,12 @@ workflows:
       - name: Restore gitignored config
         script: |
           set -e
+          : "${GOOGLE_SERVICE_INFO_PLIST:?missing — add it to the 'firebase_and_maps' variable group in Codemagic}"
+          : "${MAPS_API_KEY_IOS:?missing — add the iOS-restricted Maps key to the 'firebase_and_maps' variable group}"
           # Firebase config for iOS — absent from the repo by design.
           echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          grep -q "API_KEY\|GOOGLE_APP_ID" ios/Runner/GoogleService-Info.plist \
+            || { echo "GoogleService-Info.plist did not decode to a valid plist"; exit 1; }
           # Info.plist reads GMSApiKey from $(MAPS_API_KEY); supply it as an Xcode
           # build setting. Must be the iOS-restricted key, not the Android one.
           echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Release.xcconfig
@@ -178,9 +195,13 @@ workflows:
       - name: Restore gitignored config
         script: |
           set -e
+          : "${GOOGLE_SERVICES_JSON:?missing — add it to the 'firebase_and_maps' variable group in Codemagic (base64 of android/app/google-services.json)}"
+          : "${MAPS_API_KEY_ANDROID:?missing — add the Android-restricted Maps key to the 'firebase_and_maps' variable group}"
           # The google-services Gradle plugin fails the build without this file,
           # and it is deliberately not committed.
           echo "$GOOGLE_SERVICES_JSON" | base64 --decode > android/app/google-services.json
+          grep -q "project_id" android/app/google-services.json \
+            || { echo "google-services.json did not decode to valid JSON — check the base64 value"; exit 1; }
           # AndroidManifest reads ${MAPS_API_KEY} from local.properties.
           echo "MAPS_API_KEY=$MAPS_API_KEY_ANDROID" >> android/local.properties
       - name: Get Flutter packages
