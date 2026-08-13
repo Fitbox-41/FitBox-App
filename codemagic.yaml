@@ -46,6 +46,48 @@ definitions:
     cocoapods: default
 
 workflows:
+  # ---------------------------------------------------------------------------
+  # Start here. This workflow needs NO Apple Developer account — it compiles the
+  # iOS app without signing, which is exactly the step that cannot be tested on
+  # Windows: CocoaPods resolving, the deployment target being high enough, and
+  # the native code actually building.
+  #
+  # It only needs the "firebase_and_maps" variable group. Run it as soon as the
+  # repository is connected; fix anything it finds now rather than on the day the
+  # Apple account arrives.
+  # ---------------------------------------------------------------------------
+  ios-validate:
+    name: iOS — compile check (no signing, no Apple account)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    environment:
+      <<: *flutter_setup
+      groups:
+        - firebase_and_maps
+    scripts:
+      - name: Restore gitignored config
+        script: |
+          set -e
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Release.xcconfig
+          echo "MAPS_API_KEY=$MAPS_API_KEY_IOS" >> ios/Flutter/Debug.xcconfig
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Analyze
+        script: flutter analyze
+      - name: Test
+        script: flutter test
+      - name: Install pods
+        script: |
+          # The first real test of ios/Podfile and the iOS 14.0 deployment
+          # target. If a plugin needs a higher floor, it fails loudly here.
+          cd ios && pod install --repo-update
+      - name: Build unsigned iOS app
+        script: flutter build ios --release --no-codesign
+    artifacts:
+      - build/ios/iphoneos/*.app
+      - /tmp/xcodebuild_logs/*.log
+
   ios-testflight:
     name: iOS — build & TestFlight
     instance_type: mac_mini_m2

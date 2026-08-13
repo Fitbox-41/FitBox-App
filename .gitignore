@@ -81,3 +81,6 @@ APKs/*.apk
 # Raw font downloads (we use the google_fonts package at runtime)
 font/
 reports/
+
+# Local debug screenshots — scratch, not part of the project.
+errors/
