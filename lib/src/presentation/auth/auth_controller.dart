@@ -195,6 +195,20 @@ class AuthController extends Notifier<AuthState> {
     state = const AuthState(AuthStatus.unauthenticated);
     await _google.signOut();
   }
+
+  /// Permanently deletes the account and everything the app stored for it.
+  ///
+  /// The server call has to happen while the token is still on the device, so
+  /// this signs out only once deletion has actually succeeded. If it fails the
+  /// session is left intact and the caller shows the error — silently signing
+  /// someone out of an account that still exists would look like it worked.
+  Future<void> deleteAccount() async {
+    await _repo.deleteAccount();
+    await _detachDevice();
+    await _storage.clear();
+    state = const AuthState(AuthStatus.unauthenticated);
+    await _google.signOut();
+  }
 }
 
 final authControllerProvider =

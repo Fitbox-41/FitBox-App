@@ -24,5 +24,10 @@ class AppConfig {
   static const String websiteUrl = 'https://www.fitboxsports.in';
   static const String privacyPolicyUrl = '$websiteUrl/privacy';
   static const String termsUrl = '$websiteUrl/terms';
+
+  /// The FitBox Sports shop, opened in an in-app browser view (see
+  /// `openInAppBrowser`) so points earned here can be spent without leaving the
+  /// app.
+  static const String shopUrl = websiteUrl;
   static const String supportEmail = 'fitboxsports01@gmail.com';
 }

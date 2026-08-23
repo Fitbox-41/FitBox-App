@@ -76,12 +76,25 @@ class TerritoryScreen extends ConsumerWidget {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+              // The switch and the refresh button are controls and keep their
+              // full size; the legend is the only thing here that can give way,
+              // so it gets whatever width is left. On a 360 dp phone all three
+              // at natural width overflowed and the refresh button was clipped
+              // off the right edge.
               child: Row(
                 children: <Widget>[
                   const _ViewSwitch(),
                   const SizedBox(width: 8),
-                  const _MapPill(child: _Legend()),
-                  const Spacer(),
+                  const Flexible(
+                    child: _MapPill(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: _Legend(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   _MapPill(
                     onTap: () => ref.invalidate(territoriesProvider),
                     child: Icon(Icons.refresh,
@@ -396,7 +409,7 @@ class _MapPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final Brightness b = Theme.of(context).brightness;
     final Widget pill = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
       decoration: BoxDecoration(
         color: FitBoxColors.glassFill(b),
         borderRadius: BorderRadius.circular(20),
@@ -419,7 +432,7 @@ class _Legend extends StatelessWidget {
         _dot(FitBoxColors.red),
         const SizedBox(width: 5),
         Text('YOU', style: AppText.labelCaps(context, size: 10)),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         _dot(const Color(0xFF4C8DFF)),
         const SizedBox(width: 5),
         Text('RIVALS', style: AppText.labelCaps(context, size: 10)),

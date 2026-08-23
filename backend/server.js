@@ -11,6 +11,7 @@ const pushRoutes = require('./routes/push');
 const appmaintRoutes = require('./routes/appmaint');
 const configRoutes = require('./routes/config');
 const notificationsRoutes = require('./routes/notifications');
+const accountRoutes = require('./routes/account');
 
 const app = express();
 
@@ -125,6 +126,7 @@ app.use('/api/push', pushRoutes);
 app.use('/api/appmaint', appmaintRoutes);
 app.use('/api/config', configRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/account', accountRoutes);
 
 // Only start a listener when run directly (local dev). On Vercel the exported
 // app is wrapped as a serverless function, so app.listen must not run there.

@@ -7,9 +7,15 @@ import 'models/app_user.dart';
 /// Talks to the website's `/api/auth/*` endpoints — the shared login used by
 /// both the website and the app.
 class AuthRepository {
-  AuthRepository(this._dio);
+  AuthRepository(this._dio, this._appDio);
 
   final Dio _dio;
+
+  /// Account *deletion* lives on the app backend, not the website: only that
+  /// side knows about runs, territory, the points ledger and notifications, and
+  /// deleting the login while that data survived would make the app's
+  /// data-safety promise untrue.
+  final Dio _appDio;
 
   /// Step 1 of sign-up: emails a one-time code to the address.
   Future<void> requestSignupOtp(String email) async {
@@ -85,8 +91,17 @@ class AuthRepository {
     });
     return AuthResult.fromJson(Map<String, dynamic>.from(res.data as Map));
   }
+
+  /// Permanently deletes the signed-in account and every trace of it this app
+  /// stores. Throws on failure so the caller can say so rather than pretending.
+  Future<void> deleteAccount() async {
+    await _appDio.delete<dynamic>('/account');
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => AuthRepository(ref.watch(websiteDioProvider)),
+  (ref) => AuthRepository(
+    ref.watch(websiteDioProvider),
+    ref.watch(appDioProvider),
+  ),
 );

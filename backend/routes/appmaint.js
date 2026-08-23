@@ -479,4 +479,81 @@ router.post('/expire-points', serviceAuth, async (req, res) => {
   }
 });
 
+// POST /api/appmaint/backfill-season-progress — recreate this week's leaderboard
+// rows from runs already recorded.
+//
+// `season_progress` is only written by claimRoute, which means any run saved
+// *before* weekly tracking shipped left no row. On the map that shows up as
+// "This week: 0 m²" next to a lifetime holding the player clearly earned during
+// that same week, and — worse — the Monday settlement would rank nobody and pay
+// nobody, exactly the way the 10 August rollover did.
+//
+// Recomputes from the run routes themselves rather than trusting the stored
+// `claimedAreaSqm`, so the geometry backing the "This week" map view is real.
+router.post('/backfill-season-progress', serviceAuth, async (req, res) => {
+  try {
+    const { currentSeason } = require('../territoryService');
+    const { routeToClaim, areaOf, mergeGeometry } = require('../territoryEngine');
+    const season = req.body && req.body.season ? String(req.body.season) : currentSeason();
+
+    // The ISO week this season key refers to, so we pick up exactly its runs.
+    const [yearStr, weekStr] = season.split('-W');
+    const jan4 = new Date(Date.UTC(Number(yearStr), 0, 4));
+    const weekStart = new Date(jan4);
+    weekStart.setUTCDate(jan4.getUTCDate() - ((jan4.getUTCDay() + 6) % 7) + (Number(weekStr) - 1) * 7);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 86400000);
+
+    const runs = await coll('runs')
+      .find({ startedAt: { $gte: weekStart, $lt: weekEnd }, route: { $ne: null } })
+      .sort({ startedAt: 1 })
+      .toArray();
+
+    const byUser = new Map();
+    for (const r of runs) {
+      if (!r.route || !r.route.coordinates) continue;
+      const claim = routeToClaim(r.route.coordinates);
+      if (!claim) continue;
+      const cur = byUser.get(String(r.userId)) || { userId: r.userId, geometry: null };
+      cur.geometry = mergeGeometry(cur.geometry, claim);
+      byUser.set(String(r.userId), cur);
+    }
+
+    const applied = [];
+    for (const entry of byUser.values()) {
+      const area = areaOf(entry.geometry);
+      const user = await coll('users').findOne({ _id: entry.userId });
+      const existing = await coll('season_progress').findOne({ userId: entry.userId, season });
+      if (existing && existing.areaGainedSqm >= area) {
+        applied.push({ user: user && user.email, skipped: 'already ahead' });
+        continue;
+      }
+      await coll('season_progress').updateOne(
+        { userId: entry.userId, season },
+        {
+          $set: {
+            userName: (user && user.name) || 'Runner',
+            geometry: entry.geometry,
+            areaGainedSqm: area,
+            updatedAt: new Date(),
+          },
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true },
+      );
+      applied.push({ user: user && user.email, areaGainedSqm: Math.round(area) });
+    }
+
+    res.json({
+      success: true,
+      season,
+      window: { from: weekStart.toISOString(), to: weekEnd.toISOString() },
+      runsConsidered: runs.length,
+      applied,
+    });
+  } catch (error) {
+    console.error('backfill-season-progress error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 module.exports = router;

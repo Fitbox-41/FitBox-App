@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../data/challenge_repository.dart';
 import '../../data/models/fitness_stats.dart';
 import '../../data/providers.dart';
 import '../../data/recorded_runs.dart';
 import '../auth/auth_controller.dart';
 import '../widgets/common.dart';
+import '../widgets/external_link.dart';
 import '../widgets/glass.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -22,6 +25,12 @@ class HomeScreen extends ConsumerWidget {
     final String? name = ref.watch(authControllerProvider).user?.name;
     final String greeting =
         (name != null && name.isNotEmpty) ? name.split(' ').first : 'athlete';
+
+    // Warm the challenges list while the user is looking at this screen. It's a
+    // network round trip to a serverless backend, so fetching it only once
+    // Challenges is tapped is what made that tab feel slow to open. The
+    // provider caches, so opening the tab then finds the answer already there.
+    ref.watch(challengesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -86,40 +95,20 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              GlassCard(
-                radius: 22,
-                onTap: () => context.push('/challenges'),
-                child: Row(
-                  children: <Widget>[
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: FitBoxColors.red.withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: const Icon(Icons.emoji_events_outlined,
-                          color: FitBoxColors.red, size: 24),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text('Challenges',
-                              style: AppTypography.title(
-                                  size: 16, color: cs.onSurface)),
-                          const SizedBox(height: 2),
-                          Text('Earn points for hitting goals',
-                              style: AppTypography.body(
-                                  size: 12.5, color: cs.onSurfaceVariant)),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
-                  ],
-                ),
+              const _NavCard(
+                icon: Icons.emoji_events_outlined,
+                title: 'Challenges',
+                subtitle: 'Earn points for hitting goals',
+                route: '/challenges',
+              ),
+              const SizedBox(height: 12),
+              // The shop is the point of the points — opened over the app so
+              // the user never leaves FitBox to spend what they've earned.
+              const _NavCard(
+                icon: Icons.storefront_outlined,
+                title: 'FitBox Shop',
+                subtitle: 'Spend your points on gear',
+                shop: true,
               ),
             ]
                 .animate(interval: 70.ms)
@@ -131,6 +120,66 @@ class HomeScreen extends ConsumerWidget {
   }
 
   void _startRun(BuildContext context) => context.push('/record-run');
+}
+
+/// A full-width tappable card: icon chip, title, subtitle, chevron.
+class _NavCard extends StatelessWidget {
+  const _NavCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.route,
+    this.shop = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String? route;
+
+  /// Opens the shop over the app instead of navigating inside it.
+  final bool shop;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return GlassCard(
+      radius: 22,
+      onTap: () => shop
+          ? openInAppBrowser(context, AppConfig.shopUrl)
+          : context.push(route!),
+      child: Row(
+        children: <Widget>[
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: FitBoxColors.red.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: FitBoxColors.red, size: 24),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(title,
+                    style: AppTypography.title(size: 16, color: cs.onSurface)),
+                const SizedBox(height: 2),
+                Text(subtitle,
+                    style: AppTypography.body(
+                        size: 12.5, color: cs.onSurfaceVariant)),
+              ],
+            ),
+          ),
+          Icon(shop ? Icons.open_in_new : Icons.chevron_right,
+              size: shop ? 18 : 24,
+              color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+        ],
+      ),
+    );
+  }
 }
 
 class _StepsRing extends StatelessWidget {

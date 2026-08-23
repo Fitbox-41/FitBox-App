@@ -11,18 +11,23 @@ const { creditExpiry } = require('../pointsExpiry');
 
 const router = express.Router();
 
-// Progress a user has made toward a challenge from their runs since joining.
-// steps → sum of run.steps; distance → sum of run.distance (m) as km.
-async function computeProgress(userId, challenge, joinedAt, deadline) {
-  const until = new Date(Math.min(Date.now(), new Date(deadline).getTime()));
-  const runs = await Run.find({
-    userId,
-    startedAt: { $gte: new Date(joinedAt), $lte: until },
-  }).select('steps distance').lean();
+// Progress a user has made toward a challenge, summed from a list of runs
+// already loaded. steps → sum of run.steps; distance → sum of run.distance (m)
+// as km.
+//
+// This takes the runs rather than fetching them because the listing below needs
+// the same runs for every challenge the user has joined — see the note there.
+function progressFrom(runs, challenge, joinedAt, deadline) {
+  const from = new Date(joinedAt).getTime();
+  const until = Math.min(Date.now(), new Date(deadline).getTime());
+  const window = runs.filter((r) => {
+    const t = new Date(r.startedAt).getTime();
+    return t >= from && t <= until;
+  });
   if (challenge.goalType === 'steps') {
-    return runs.reduce((a, r) => a + (Number(r.steps) || 0), 0);
+    return window.reduce((a, r) => a + (Number(r.steps) || 0), 0);
   }
-  return runs.reduce((a, r) => a + (Number(r.distance) || 0), 0) / 1000; // km
+  return window.reduce((a, r) => a + (Number(r.distance) || 0), 0) / 1000; // km
 }
 
 function isLive(c) {
@@ -44,20 +49,40 @@ router.get('/', auth, async (req, res) => {
     const byChallenge = {};
     for (const p of progressRows) byChallenge[String(p.challengeId)] = p;
 
+    // One aggregation instead of a countDocuments per challenge. This endpoint
+    // used to issue 2N+2 queries for N challenges — a round trip to Atlas each,
+    // which is what made the Challenges tab feel slow to open. It is now three,
+    // and stays three however many challenges exist.
     const claimedCounts = {};
-    await Promise.all(live.map(async (c) => {
-      claimedCounts[String(c._id)] =
-        await ChallengeProgress.countDocuments({ challengeId: c._id, claimed: true });
-    }));
+    const counts = await ChallengeProgress.aggregate([
+      { $match: { challengeId: { $in: live.map((c) => c._id) }, claimed: true } },
+      { $group: { _id: '$challengeId', n: { $sum: 1 } } },
+    ]);
+    for (const row of counts) claimedCounts[String(row._id)] = row.n;
 
-    const out = await Promise.all(live.map(async (c) => {
+    // Likewise the user's runs, fetched once for the earliest window any joined
+    // challenge needs and then filtered per challenge in memory. The windows
+    // overlap heavily — they all end now — so re-querying per challenge was
+    // fetching the same rows several times over.
+    const joined = live.map((c) => byChallenge[String(c._id)]).filter(Boolean);
+    let runs = [];
+    if (joined.length) {
+      const earliest = new Date(
+        Math.min(...joined.map((p) => new Date(p.joinedAt).getTime())),
+      );
+      runs = await Run.find({ userId, startedAt: { $gte: earliest } })
+        .select('steps distance startedAt')
+        .lean();
+    }
+
+    const out = live.map((c) => {
       const p = byChallenge[String(c._id)];
       let progress = 0;
       let completed = false;
       let canClaim = false;
-      const capReached = c.userCap > 0 && claimedCounts[String(c._id)] >= c.userCap;
+      const capReached = c.userCap > 0 && (claimedCounts[String(c._id)] || 0) >= c.userCap;
       if (p) {
-        progress = await computeProgress(userId, c, p.joinedAt, p.deadline);
+        progress = progressFrom(runs, c, p.joinedAt, p.deadline);
         const withinTime = new Date() <= new Date(p.deadline);
         completed = progress >= c.goalTarget;
         canClaim = completed && withinTime && !p.claimed && !capReached;
@@ -71,7 +96,7 @@ router.get('/', auth, async (req, res) => {
         durationDays: c.durationDays,
         rewardPoints: c.rewardPoints,
         userCap: c.userCap,
-        rewardedSoFar: claimedCounts[String(c._id)],
+        rewardedSoFar: claimedCounts[String(c._id)] || 0,
         joined: !!p,
         deadline: p ? p.deadline : null,
         progress,
@@ -80,7 +105,7 @@ router.get('/', auth, async (req, res) => {
         canClaim,
         capReached,
       };
-    }));
+    });
     res.json({ success: true, challenges: out });
   } catch (error) {
     console.error('Challenges list error:', error);
@@ -122,7 +147,10 @@ router.post('/:id/claim', auth, async (req, res) => {
     if (new Date() > new Date(p.deadline)) {
       return res.status(400).json({ success: false, message: 'Challenge window has ended' });
     }
-    const progress = await computeProgress(userId, challenge, p.joinedAt, p.deadline);
+    const runs = await Run.find({ userId, startedAt: { $gte: new Date(p.joinedAt) } })
+      .select('steps distance startedAt')
+      .lean();
+    const progress = progressFrom(runs, challenge, p.joinedAt, p.deadline);
     if (progress < challenge.goalTarget) {
       return res.status(400).json({ success: false, message: 'Goal not reached yet' });
     }
