@@ -11,7 +11,7 @@ customer account across app + website).
 
 | | |
 |---|---|
-| Android | **Feature complete**, signed, on device. Owner-approved; the only open item is the replacement logo asset, which has not been supplied |
+| Android | **Feature complete**, signed, on device, owner-approved. The new logo is in — nothing outstanding |
 | iOS | All Windows-side work complete — see **[`ios/IOS_STATUS.md`](ios/IOS_STATUS.md)**. Remaining items need a Mac/Codemagic + Apple Developer account. **Needs its own Maps API key** (a key can be restricted to Android *or* iOS, not both). |
 | Backend | Live — check the build with `curl https://fit-box-app.vercel.app/health` |
 
@@ -47,6 +47,22 @@ customer account across app + website).
   if push is off, no device token is registered yet, or the banner was dismissed.
 - **Goals & achievements** — targets and badges computed from the user's own runs
   (streak, distance, best pace, territory held, rank).
+
+## Branding
+
+Every logo asset in the repo is generated from one file, `assets/brand/logo.svg`:
+
+```bash
+pip install cairosvg pillow numpy
+python tool/gen_logo_assets.py     # in-app marks, launcher layers, web icons
+dart run flutter_launcher_icons    # → android/ios per-density icons
+```
+
+Don't hand-edit the PNGs — they're outputs. The script exists because the logo
+needs more than an export: its "Fit Sports" half is light silver, so it has to be
+remapped to graphite for the light theme and given a near-black plate on the app
+icon, or it disappears against a pale background. The full reasoning is in the
+script's header.
 
 ## Architecture
 

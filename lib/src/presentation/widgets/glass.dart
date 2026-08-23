@@ -239,9 +239,13 @@ class _GlowButtonState extends State<GlowButton> {
   }
 }
 
-/// The real FitBox logo, **blended** onto the screen (no white chip): the
-/// light-on-dark mark on dark themes, the dark-on-light mark on light themes,
-/// over a soft red glow so it sits premium on the gradient.
+/// The real FitBox logo, **blended** onto the screen (no white chip), over a
+/// soft red glow so it sits premium on the gradient.
+///
+/// Two artworks, because the logo's "Fit Sports" half is silver: on the light
+/// theme that half is remapped to graphite, or it dissolves into the backdrop.
+/// Both are generated from one source by `tool/gen_logo_assets.py` — don't edit
+/// the PNGs by hand.
 class LogoBadge extends StatelessWidget {
   const LogoBadge({super.key, this.width = 180, this.heroTag, this.glow = true});
 
@@ -253,8 +257,8 @@ class LogoBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool dark = Theme.of(context).brightness == Brightness.dark;
     final String asset = dark
-        ? 'assets/images/logo_mark_dark.png' // "Fit" in white — for dark bg
-        : 'assets/images/logo_mark.png'; // "Fit" in charcoal — for light bg
+        ? 'assets/images/logo_mark_dark.png' // silver "Fit" — for dark bg
+        : 'assets/images/logo_mark.png'; // graphite "Fit" — for light bg
 
     Widget badge = Image.asset(asset, width: width, fit: BoxFit.contain);
 

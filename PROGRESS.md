@@ -4,6 +4,63 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 23 August 2026 — the new logo, everywhere; **v1.1.1+3**
+
+The owner's replacement logo finally arrived (`logo.svg` / `logo.webp`, same artwork
+in two formats). It's the same FitBox wordmark, redrawn with a **metallic silver
+"Fit Sports"** and a glossy bevelled red "BOX" — where the old one was flat charcoal
+and flat red. That single change to the artwork is what made this more than a file
+swap.
+
+**The silver is the whole problem.** Its luminance measures 0.60–0.89, so on the
+light theme's `#F2F4F8` backdrop half the logo simply dissolves — "SPORTS" was
+unreadable. Everywhere the logo lands now gets the treatment it needs:
+
+- **Dark theme** — the artwork as drawn. Silver on near-black is what it was
+  designed for.
+- **Light theme** — the metal is remapped to a graphite gradient. Not flattened to
+  a silhouette: luminance is *rescaled*, so it still reads as lit metal. Only
+  low-saturation pixels move, so the red keeps its own shading, and the hand-over
+  is feathered or the anti-aliased pixels between the two halves show a seam. This
+  is the same split the old assets used (charcoal on light, white on dark), applied
+  to a gradient instead of a flat colour.
+- **App icon** — on the app's own near-black, not white. A white icon plate would
+  have hidden the silver exactly the way the light theme did.
+
+**Everything comes from one source now.** `tool/gen_logo_assets.py` builds both
+in-app marks, the three launcher layers and the five web icons from
+`assets/brand/logo.svg`; `assets/images/logo.png` is gone (it was only ever a
+launcher source, and it was being bundled into the APK for nothing). Hand-editing
+any of the PNGs will be overwritten — that's deliberate, it's how the variants stay
+in step.
+
+**Source quality.** The supplied vector is an auto-trace of a raster: crisp
+silhouettes, but the gradients arrive as ~300 flat facets. It's rendered at 4400 px
+and the *interior* colour smoothed without touching the alpha — blur the
+premultiplied colour, divide the blurred alpha back out, then restore the original
+alpha — so the banding goes and the edges stay exactly as traced.
+
+### Launcher icons, properly this time
+The old setup generated legacy square icons only, so Android 8+ drew the wordmark
+shrunken inside a white rounded square. Now: **adaptive icons** (foreground +
+`#12161A` background), a **monochrome layer** for Android 13 themed icons, and a
+`drawable-night/launch_background.xml` so dark-mode users stop getting a white flash
+before the app's first frame.
+
+Sizing the adaptive foreground took two attempts, and the reason is worth recording:
+two multipliers stack. `flutter_launcher_icons` wraps the layer in a 16% inset (so
+only 0.68 of the drawn artwork reaches the 108dp canvas), and the launcher then
+shows roughly the middle 72dp and may round it. A 2.5:1 wordmark reaches further
+into the corners than its width implies — its tips sit at 0.537× the width from the
+centre. The first build put the mark at 0.90 and **the X clipped on the phone**;
+0.80 lands it ~4dp inside the mask, verified on device under both the squircle and
+the circular mask.
+
+Verified on device: splash in dark *and* light theme, the launcher icon under two
+mask shapes, `flutter analyze` clean, widget test passing.
+
+---
+
 ## 13 August 2026 (later) — owner review changes; **v1.1.0+2**
 
 Owner approved the app and asked for final changes; the full meeting transcript drove this, not the
