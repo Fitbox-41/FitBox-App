@@ -98,7 +98,7 @@ workflows:
         script: flutter test
       - name: Install pods
         script: |
-          # The first real test of ios/Podfile and the iOS 14.0 deployment
+          # The first real test of ios/Podfile and the iOS 15.0 deployment
           # target. If a plugin needs a higher floor, it fails loudly here.
           cd ios && pod install --repo-update
       - name: Build unsigned iOS app
