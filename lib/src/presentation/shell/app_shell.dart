@@ -30,7 +30,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     (
       icon: Icons.account_balance_wallet_outlined,
       active: Icons.account_balance_wallet,
-      label: 'Wallet'
+      label: 'Earned'
     ),
     (icon: Icons.person_outline, active: Icons.person, label: 'Profile'),
   ];

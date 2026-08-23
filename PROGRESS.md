@@ -4,6 +4,76 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 24 August 2026 — account deletion, the shop, and four fixes; **v1.2.0+4**
+
+### Account deletion — the last thing blocking a Play submission
+Google Play requires an app that lets people sign up to let them start deletion
+**from inside the app** as well as from a web page. There was neither in the app, and
+the website's own delete removed only the `users` document — every run, territory,
+season row, wallet entry and notification is keyed by `userId` and was left behind.
+Ticking "users can request their data be deleted" on the data-safety form while
+someone's GPS routes survived would have been a false declaration.
+
+`DELETE /api/account` now clears all six app collections and then the account, in
+that order: if it dies halfway the person still has an account and can retry, where
+the reverse would orphan the data with no way to reach it. Orders are deliberately
+kept — a completed order is the shop's financial record.
+
+In Settings → Account, behind a dialog that names what goes and requires typing
+DELETE. **Verified end to end against production** with a throwaway user: all seven
+collections went to zero, and an unauthenticated call is refused with 401.
+
+### The shop, opened over the app
+The owner wanted the shop reachable from the app without the user leaving it. Three
+options: hand the URL to the browser (bounces them into another app), embed a
+`WebView` (keeps them in, but means shipping a second rendering engine — heavier
+binary, slower first paint, and *our* problem every time the shop's checkout or
+payment sheet misbehaves inside it), or an **in-app browser view**. The third wins
+outright: Chrome Custom Tabs on Android, `SFSafariViewController` on iOS, opened
+*over* the app with its own close button. It is the real browser — full speed, its
+own cookies and autofill, nothing for this app to maintain, and the shop stays the
+shop's responsibility. No new dependency: `url_launcher` was already here.
+Confirmed on the phone that it opens as `CustomTabActivity` and closing it returns
+to FitBox.
+
+### "This week" showed 0 m² — not a bug, missing data
+Reported as a suspected bug: the map showed a lifetime holding claimed *this* week,
+but "This week" read 0. `season_progress` rows are only ever written by `claimRoute`,
+and the runs in question were saved on 19 August — before weekly tracking existed.
+The collection was empty, so the display was correct and the data wasn't there.
+
+Worse than the display: **the Monday payout would have ranked nobody and paid nobody**,
+exactly as the 10 August rollover did. Rebuilt the week's rows from the run routes
+themselves (`POST /api/appmaint/backfill-season-progress`), unioned so re-running a
+loop can't count twice.
+
+**The weekly payout then ran with real players for the first time** — Gautam #1 with
+31,081 m² → 2,000 pts (₹200), Klaus #2 with 18,761 m² → 974 pts. That closes the last
+core loop that had never been exercised end to end.
+
+### Challenges tab was slow to open
+The listing issued **2N+2 database round trips** for N challenges — a `countDocuments`
+and a `Run.find` each, every one a separate trip to Atlas from a serverless function.
+Now three, and it stays three however many challenges exist: one aggregation for the
+claim counts, one query for the user's runs over the widest window any joined
+challenge needs, then all the per-challenge sums in memory. The Home screen also warms
+the provider while the user is looking at it, so opening the tab finds the answer
+already cached — it now renders fully populated in under a second.
+
+### Map header was cut off
+On a 360 dp phone the view switch, the legend and the refresh button at natural width
+overflowed, and the refresh button was clipped off the right edge. The two controls
+keep their size; the legend is the only thing there that can give way, so it now takes
+whatever width is left.
+
+### Also
+- Test wallets reset to a clean **100 pts "Welcome Bonus"** each, ledger cleared.
+- **"Wallet" → "Earned"** in the app's tab and screen title. The 13 August report said
+  this was done, but only the website copy had been changed — the app still said
+  "Wallet".
+
+---
+
 ## 23 August 2026 — the new logo, everywhere; **v1.1.1+3**
 
 The owner's replacement logo finally arrived (`logo.svg` / `logo.webp`, same artwork

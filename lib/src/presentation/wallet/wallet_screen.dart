@@ -21,7 +21,7 @@ class WalletScreen extends ConsumerWidget {
     final bool guest = ref.watch(guestModeProvider);
     if (guest) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Wallet')),
+        appBar: AppBar(title: const Text('Earned')),
         body: const GuestGate(
           icon: Icons.account_balance_wallet_outlined,
           title: 'Your wallet',
@@ -34,7 +34,7 @@ class WalletScreen extends ConsumerWidget {
     final AsyncValue<WalletData> wallet = ref.watch(walletProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Wallet')),
+      appBar: AppBar(title: const Text('Earned')),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(walletProvider.future),
         child: wallet.when(
