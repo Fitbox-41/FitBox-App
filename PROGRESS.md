@@ -4,6 +4,71 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 13 August 2026 (later) — owner review changes; **v1.1.0+2**
+
+Owner approved the app and asked for final changes; the full meeting transcript drove this, not the
+summary (which overstated a few items — see "not doing" below). Report:
+`reports/13-08-2026/FitBox_Android_v1.1_Report_13-08-2026.pdf`, APK `FitBox_v1.1.0.apk`.
+
+**Two decisions from 7 Aug were reversed, on the owner's instruction:**
+- **Per-run points are back** — 10 pts/km (₹1/km) credited on every saved run. The reasoning was that
+  someone running 2 km a day otherwise gets nothing and leaves. The weekly territory prize *also* stays;
+  the two run in parallel.
+- **Territory no longer resets weekly.** "टेरिटरी उड़ाओ मत" — it's meant to be a record of everywhere
+  someone has run, and only another player invading should shrink it.
+
+**Because territory is permanent, the weekly prize had to change basis.** Ranking on total area held —
+the literal wording in the meeting — would hand the prize to whoever built the biggest holding first,
+every week, forever. It now ranks **ground claimed during that week** (new `SeasonProgress` collection),
+so the contest stays winnable. Agreed with Gautam before implementing. The map gained **All time / This
+week** views to match.
+
+**Also shipped:** checkout applies the best discount automatically (tick-box, points field and
+25/50/Max buttons removed — "कस्टमर पजल मारेगा"); "Wallet" → "Earned" in customer copy; **99-day FIFO
+point expiry** with every expiry written to the ledger; territory owner identity (tap a patch → name,
+rank, area, km, steps, regions) plus a ranked owner list under the map.
+
+**Anti-abuse added unprompted:** at ₹1/km, distance now has cash value, so a car journey would earn
+money. Runs at an implausible pace still save and still claim land but earn no points, and the T&C says
+so.
+
+### Bug — notifications reaching the wrong account
+Reported from two-account testing: signed out of A, into B on the same phone, and B capturing A's land
+delivered **A's** "territory lost" push to the handset. Two independent holes:
+`logout()` never called `/push/unregister` (`PushService.unregister()` had **zero callers** repo-wide),
+and `/push/register` never pulled the token off its previous owner. Fixed both — the server side is
+authoritative since it also repairs already-poisoned devices and survives a logout that never reached
+it. Broadcasts now dedupe tokens too. Live data confirmed one token was on **both** test accounts.
+
+### Migrations run against production
+1. Territory merged to one lifetime doc per user (Gautam 17,393 m², Klaus 18,761 m²); dropped the stale
+   `{userId, season}` unique index for `{userId}`.
+2. Point expiry backfilled — earliest expiry 4 Nov 2026, nothing overdue.
+3. Shared device token released.
+
+**A migration bug caught before it did damage:** the first backfill set `remaining = amount` on every
+historical credit, which would have marked **11,195 points as live on an account holding 6,000** —
+points spent months ago counted again — and expiry would later have driven the balance negative. It now
+spreads the *current balance* over the newest credits (what FIFO implies), and records an
+`opening_balance` credit for any balance no ledger row explains (39 pts on one account, left over from
+the earlier reset). Both accounts verified: buckets == balance exactly.
+
+### Not doing (checked against the transcript)
+- **Location permission timing** — the current behaviour was explained in the call and accepted
+  ("ठीक है ठीक है ठीक है"). No change.
+- **Theme selection at startup** — "ना ही रखो बट ठीक है चलो रहने दो" → left as is.
+- **Guest mode** — kept (confirmed with Gautam).
+- **OTP login** — depends on a paid website-side service.
+
+### Blocked
+**The new logo was never sent** ("ओ भेजा नहीं था सर उसने"). Three asset files + `LogoBadge` + a launcher
+icon regen once it arrives — that is the one thing standing between this and a final Android sign-off.
+
+Verified: 24 backend tests, `flutter analyze` clean, widget test passing, website + admin build, APK
+installed on device, backend live at `apiVersion 1.1.0`.
+
+---
+
 ## 13 August 2026 — iOS compiles on CI; challenge push; admin fixes
 
 **✅ The iOS app builds, with real config.** Codemagic `ios-validate` (Mac mini M2): pods resolved,

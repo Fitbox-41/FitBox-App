@@ -21,7 +21,9 @@ macOS (Xcode/CocoaPods) or a paid Apple Developer account, and is intended to ru
 on **Codemagic** rather than a local Mac — see `../codemagic.yaml`.
 
 The app is one Flutter codebase, so every feature and screen already exists for
-iOS. What follows is platform plumbing, not product work.
+iOS. What follows is platform plumbing, not product work. The v1.1.0 owner-review
+changes (permanent territory, the two map views, per-run points, owner identity on
+the map) are all shared Dart or backend, so they add nothing to this list.
 
 ---
 

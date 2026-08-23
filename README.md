@@ -1,7 +1,7 @@
 # FitBox App
 
-**Current release: v1.0.0 (build 1)** — Android, production-signed.
-Artifacts and the progress report live in `reports/11-08-2026/` (gitignored;
+**Current release: v1.1.0 (build 2)** — Android, production-signed.
+Artifacts and the owner report live in `reports/13-08-2026/` (gitignored;
 also attached to the GitHub release).
 
 The FitBox fitness mobile app (Flutter) — GPS run tracking, a contested
@@ -11,7 +11,7 @@ customer account across app + website).
 
 | | |
 |---|---|
-| Android | **Feature complete**, signed, on device |
+| Android | **Feature complete**, signed, on device. Owner-approved; the only open item is the replacement logo asset, which has not been supplied |
 | iOS | All Windows-side work complete — see **[`ios/IOS_STATUS.md`](ios/IOS_STATUS.md)**. Remaining items need a Mac/Codemagic + Apple Developer account. **Needs its own Maps API key** (a key can be restricted to Android *or* iOS, not both). |
 | Backend | Live — check the build with `curl https://fit-box-app.vercel.app/health` |
 
@@ -29,16 +29,19 @@ customer account across app + website).
   every run that covers ground takes land, while looping still pays several
   times more. Runs in separate areas accumulate as separate holdings rather
   than replacing each other. Overlapping a rival's territory transfers it to
-  you. Shared full-screen map + leaderboard. **Weekly seasons** reset every
-  Monday 00:00 UTC. See "Territory rules" below.
+  you. Shared full-screen map + leaderboard. **Territory is permanent** — it is
+  never wiped; only a rival taking it shrinks it. The map has an **All time** and
+  a **This week** view, and tapping a patch shows who holds it. See "Territory
+  rules" below.
 - **Challenges** — admin-created step/distance goals with a "first N users"
   reward cap; join in-app and claim points on completion.
-- **Rewards wallet** — points are won as a **weekly competition**: when a season
-  closes, holders are ranked by the territory they hold and only the **top 20**
-  are paid, rank 1 taking the largest share (`backend/seasonRewards.js`). Nothing
-  is credited per run. Points are redeemable on the website; the value and the
-  redemption cap are **configured in the admin portal**, not compiled in
-  (defaults: 1 point = ₹0.10, up to 10% of an order).
+- **Rewards wallet** — two parallel reward tracks. Every saved run credits
+  **10 points per km** immediately (`run_reward`, idempotent per run), and the
+  **weekly territory competition** pays the **top 20** by *area gained that week*
+  (`backend/seasonRewards.js`). Points are redeemable on the website; the value
+  and the redemption cap are **configured in the admin portal**, not compiled in
+  (defaults: 1 point = ₹0.10, up to 10% of an order). Points **expire 99 days**
+  after being earned and are spent oldest-first (`backend/pointsExpiry.js`).
 - **Push notifications (FCM)** — territory attacks, season results and admin broadcasts.
   Every push is also recorded server-side, so the in-app Notifications list is complete even
   if push is off, no device token is registered yet, or the banner was dismissed.
@@ -68,7 +71,9 @@ applied by `backend/territoryService.js`.
 | Minimum route length | 150 m, and the route's bbox must span more than the corridor width | a phone lying still produces a wandering GPS trace; without this it would claim land for doing nothing |
 | Minimum claim | 200 m² | ignores degenerate geometry |
 | Overlap with a rival | subtracted from them, added to you | the contest — they get an "under attack"/"lost" push |
-| Season | ISO week, resets Monday 00:00 UTC | past weeks are kept as history |
+| Territory lifetime | permanent — never reset | it's a record of everywhere the player has run; only a rival should take it away |
+| Season | ISO week, rolls over Monday 00:00 UTC | decides *when the prize is paid*, not what the player keeps. Each week's gain is tracked separately in `season_progress` |
+| Implausible pace | faster than 2:30/km sustained | the run still saves and still claims land, but earns no points — at ₹1/km a car journey would otherwise pay |
 
 A claim happens **inside `POST /api/runs`**, so land can't be lost to a dropped
 follow-up request. Runs carry a client-generated `clientId` (unique per user),
@@ -76,9 +81,15 @@ which makes re-uploading a run idempotent — no duplicate runs, no double point
 
 ### Season rewards
 
-Territory is only worth points **at the end of the week**. When a season closes,
-holders are ranked by the area they hold at that moment and the **top 20** are
-paid. Nothing is paid per run.
+The weekly prize is on top of the per-run points. When a season closes, players
+are ranked by **the area they gained during that week** and the **top 20** are
+paid.
+
+Ranking on *gain* rather than total held is deliberate. Now that territory is
+permanent, ranking on the total would hand the prize to whoever built the largest
+holding first, every week forever, and a new runner could never place. Gain keeps
+the contest winnable while the lifetime map still shows everything a player owns.
+Each week's gain lives in `SeasonProgress` (`{userId, season, areaGainedSqm}`).
 
 **Rank 1 wins ₹200** (`TOP_REWARD_INR`), and every place below scales down by
 rank and by how much land it holds relative to the leader. The award is set in
@@ -103,21 +114,21 @@ points T&C, which the backend generates from the configured values.
 Run the rules:
 
 ```bash
-cd backend && npm test        # node --test, 8 cases
+cd backend && npm test        # node --test, 24 cases
 ```
 
 ## Backend API (app backend)
 
 | Route | Auth | Purpose |
 |---|---|---|
-| `GET /api/runs`, `POST /api/runs` | user JWT | list / record runs — claims the route's territory; idempotent per `clientId`. Credits **no** points (rewards are weekly) |
-| `GET /api/territories`, `POST /api/territories/capture` | user JWT | current-season map + a standalone claim (older builds / re-claiming a past run) |
-| `GET /api/territories/rewards/preview` | user JWT | live standings — what the season would pay if it ended now |
+| `GET /api/runs`, `POST /api/runs` | user JWT | list / record runs — claims the route's territory; idempotent per `clientId`. Credits **10 points per km** (`run_reward`), unless the pace is implausible |
+| `GET /api/territories?view=lifetime\|week`, `POST /api/territories/capture` | user JWT | the map (all-time or this week's gain) with per-owner name, rank, area, km and steps, plus a standalone claim (older builds / re-claiming a past run) |
+| `GET /api/territories/rewards/preview` | user JWT | live standings by area gained this week — what the season would pay if it ended now |
 | `POST /api/territories/rewards/settle` | service key | pay out a closed season (idempotent per user per season) |
 | `GET /api/config/points` | public | live point value, redemption cap and the T&C wording built from them |
 | `GET /api/notifications`, `POST /api/notifications/read` | user JWT | the user's event history + mark read |
 | `DELETE /api/runs/:id`, `DELETE /api/runs/client/:clientId` | user JWT | delete one of your own runs (territory already claimed is kept) |
-| `GET /api/appmaint/leaked-runs`, `POST /api/appmaint/fix-leaked-runs`, `POST /api/appmaint/rebuild-territory` | service key | repair tools for the pre-v1.19.0 cross-account run leak |
+| `GET /api/appmaint/…`, `POST /api/appmaint/…` | service key | one-off repair + migration tools: `leaked-runs`/`fix-leaked-runs`, `rebuild-territory`, `merge-territory-lifetime`, `duplicate-tokens`/`fix-duplicate-tokens`, `backfill-expiry`/`expiry-status`/`expire-points` |
 | `GET /api/challenges`, `POST /:id/join`, `POST /:id/claim` | user JWT | challenges |
 | `… /api/challenges/admin/*` | service key | challenge CRUD (used by admin portal) |
 | `GET /api/wallet` | user JWT | balance + ledger |
@@ -137,7 +148,7 @@ live:
 
 ```bash
 curl https://fit-box-app.vercel.app/health
-# {"status":"ok","apiVersion":"1.18.0","commit":"d34864b","features":{…}}
+# {"status":"ok","apiVersion":"1.1.0","commit":"460e794","features":{…}}
 ```
 
 ### Required backend env (Vercel)
