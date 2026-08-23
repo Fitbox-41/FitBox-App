@@ -163,10 +163,9 @@ class _BalanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Rewards come from where you finish the weekly season, so point at
-          // holding territory rather than implying every run pays out. The
-          // ranking and payout detail stay in the T&C.
-          Text('Hold territory to win points each week.\nSpend them at checkout.',
+          // Both earning routes, in the order a user meets them: every run pays,
+          // and the weekly contest pays the best on top.
+          Text('Earn points on every run.\nClaim the most ground to win the week.',
               style: AppTypography.caption(
                       size: 12, color: Colors.white.withValues(alpha: 0.8))
                   .copyWith(height: 1.35)),

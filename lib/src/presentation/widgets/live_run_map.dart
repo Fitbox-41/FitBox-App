@@ -21,6 +21,7 @@ class LiveRunMap extends StatefulWidget {
     this.showMyLocation = true,
     this.territories = const <TerritoryArea>[],
     this.currentUserId,
+    this.onTerritoryTap,
   });
 
   final List<GeoPoint> route;
@@ -31,6 +32,9 @@ class LiveRunMap extends StatefulWidget {
   /// Shared territories to draw as filled polygons (yours red, others blue).
   final List<TerritoryArea> territories;
   final String? currentUserId;
+
+  /// Called when a territory is tapped, so the caller can show who owns it.
+  final void Function(TerritoryArea)? onTerritoryTap;
 
   @override
   State<LiveRunMap> createState() => _LiveRunMapState();
@@ -66,6 +70,10 @@ class _LiveRunMapState extends State<LiveRunMap> {
           fillColor: base.withValues(alpha: mine ? 0.30 : 0.16),
           strokeColor: base,
           strokeWidth: 2,
+          consumeTapEvents: widget.onTerritoryTap != null,
+          onTap: widget.onTerritoryTap == null
+              ? null
+              : () => widget.onTerritoryTap!(t),
         ));
       }
     }

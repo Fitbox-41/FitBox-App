@@ -21,6 +21,16 @@ router.post('/register', auth, async (req, res) => {
     if (!token) {
       return res.status(400).json({ success: false, message: 'token required' });
     }
+    // A device token identifies a phone, and a phone has exactly one current
+    // user. Take it off whoever held it before: without this, signing out of A
+    // and into B on the same handset leaves the token on A, so A's pushes keep
+    // landing on a phone that B is now using. Doing it here (rather than only
+    // on logout) also repairs devices that were already mis-attributed, and
+    // survives a logout that never reached the server.
+    await User.updateMany(
+      { _id: { $ne: userId }, fcmTokens: token },
+      { $pull: { fcmTokens: token } },
+    );
     await User.updateOne(
       { _id: userId },
       { $addToSet: { fcmTokens: token } },

@@ -2,6 +2,8 @@ const express = require('express');
 const auth = require('../middleware/auth');
 const serviceAuth = require('../middleware/serviceAuth');
 const Territory = require('../models/Territory');
+const SeasonProgress = require('../models/SeasonProgress');
+const Run = require('../models/Run');
 const { claimRoute, currentSeason, seasonEndsAt } = require('../territoryService');
 const {
   computeSeasonRewards,
@@ -34,18 +36,56 @@ router.get('/', auth, async (req, res) => {
       console.error('Lazy season settle failed:', e.message);
     }
 
-    const territories =
-      await Territory.find({ season, area: { $gt: 0 } }).lean();
+    // Two views of the same map:
+    //   lifetime (default) — everywhere the player still holds, never reset
+    //   week               — only what was claimed during the current season
+    const view = req.query.view === 'week' ? 'week' : 'lifetime';
+
+    const holdings = view === 'week'
+      ? await SeasonProgress.find({ season, areaGainedSqm: { $gt: 0 } }).lean()
+      : await Territory.find({ area: { $gt: 0 } }).lean();
+
+    // Per-owner run totals, so a territory can show who holds it and what they
+    // did to earn it. One aggregation for everyone on the map rather than a
+    // query per territory.
+    const ownerIds = holdings.map((t) => t.userId);
+    const stats = await Run.aggregate([
+      { $match: { userId: { $in: ownerIds } } },
+      {
+        $group: {
+          _id: '$userId',
+          distanceKm: { $sum: { $divide: [{ $ifNull: ['$distance', 0] }, 1000] } },
+          steps: { $sum: { $ifNull: ['$steps', 0] } },
+          runs: { $sum: 1 },
+        },
+      },
+    ]);
+    const byUser = new Map(stats.map((s) => [String(s._id), s]));
+
+    // Ranked here rather than in the app so every client agrees on the order.
+    const sorted = holdings
+      .map((t) => ({ t, area: view === 'week' ? t.areaGainedSqm : t.area }))
+      .sort((a, b) => b.area - a.area);
+
     res.json({
       success: true,
       season,
       seasonEndsAt: seasonEndsAt(),
-      territories: territories.map((t) => ({
-        userId: String(t.userId),
-        userName: t.userName || 'Runner',
-        geometry: t.geometry,
-        area: t.area,
-      })),
+      view,
+      territories: sorted.map(({ t, area }, i) => {
+        const s = byUser.get(String(t.userId));
+        return {
+          userId: String(t.userId),
+          userName: t.userName || 'Runner',
+          photoUrl: t.photoUrl || null,
+          geometry: t.geometry,
+          area,
+          rank: i + 1,
+          distanceKm: s ? Math.round(s.distanceKm * 10) / 10 : 0,
+          steps: s ? s.steps : 0,
+          runs: s ? s.runs : 0,
+        };
+      }),
     });
   } catch (error) {
     console.error('Territories fetch error:', error);
@@ -83,7 +123,10 @@ router.post('/capture', auth, async (req, res) => {
 router.get('/rewards/preview', auth, async (req, res) => {
   try {
     const season = currentSeason();
-    const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
+    // The weekly prize ranks ground gained this week, not the lifetime holding —
+    // otherwise the biggest landowner wins every week and nobody can catch up.
+    const territories = (await SeasonProgress.find({ season, areaGainedSqm: { $gt: 0 } }).lean())
+      .map((p) => ({ ...p, area: p.areaGainedSqm }));
     const { pointValueInr, seasonTopRewardInr } = await readPointsConfig();
     const rewards = computeSeasonRewards(
       territories.map((t) => ({

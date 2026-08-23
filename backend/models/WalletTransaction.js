@@ -33,8 +33,23 @@ const WalletTransactionSchema = new mongoose.Schema({
   },
   description: {
     type: String
+  },
+  // --- Point expiry (99 days from the day the points were earned) ---------
+  // Credits only. `remaining` is how much of this credit is still unspent;
+  // debits consume the oldest live credit first, so points expire in the order
+  // they were earned. Absent on rows written before expiry existed — the
+  // appmaint backfill fills them in.
+  remaining: {
+    type: Number
+  },
+  expiresAt: {
+    type: Date
   }
 }, { timestamps: true });
+
+// Sweeping expired points and walking credits oldest-first both filter on
+// (userId, type, remaining) and order by date — index it so neither scans.
+WalletTransactionSchema.index({ userId: 1, type: 1, remaining: 1, expiresAt: 1 });
 
 // Explicit shared-DB collection name. Must match the website + admin exactly so
 // the wallet ledger is a single source of truth (coordinated with Diwakar).

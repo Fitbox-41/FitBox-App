@@ -232,6 +232,9 @@ module.exports = {
   routeToPolygon, // legacy alias
   applyCapture,
   areaOf,
+  // Exposed for the weekly-progress union, which accumulates a season's claims
+  // separately from the lifetime holding.
+  mergeGeometry: merge,
   MIN_AREA_SQM,
   CLAIM_RADIUS_M,
 };

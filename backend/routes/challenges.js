@@ -7,6 +7,7 @@ const Run = require('../models/Run');
 const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
 const { notifyAllAppUsers } = require('../fcm');
+const { creditExpiry } = require('../pointsExpiry');
 
 const router = express.Router();
 
@@ -139,6 +140,8 @@ router.post('/:id/claim', auth, async (req, res) => {
       userId,
       type: 'credit',
       amount: challenge.rewardPoints,
+      remaining: challenge.rewardPoints,
+      expiresAt: creditExpiry(),
       balanceAfter: updated ? (updated.walletBalance || 0) : challenge.rewardPoints,
       source: 'challenge_reward',
       sourceId: String(challenge._id),

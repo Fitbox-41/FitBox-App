@@ -46,12 +46,12 @@ class LeaderboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final String? myId = ref.watch(authControllerProvider).user?.id;
     final AsyncValue<TerritorySnapshot> async =
-        ref.watch(territoriesProvider);
+        ref.watch(weeklyStandingsProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Leaderboard')),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(territoriesProvider),
+        onRefresh: () async => ref.invalidate(weeklyStandingsProvider),
         child: async.when(
           loading: () => const SkeletonList(count: 6),
           error: (Object e, _) => ListView(
@@ -59,7 +59,7 @@ class LeaderboardScreen extends ConsumerWidget {
               const SizedBox(height: 140),
               AsyncRetry(
                 message: "Couldn't load the leaderboard.",
-                onRetry: () => ref.invalidate(territoriesProvider),
+                onRetry: () => ref.invalidate(weeklyStandingsProvider),
               ),
             ],
           ),
@@ -82,7 +82,7 @@ class LeaderboardScreen extends ConsumerWidget {
             return ListView(
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
               children: <Widget>[
-                Text('Ranked by territory', style: AppText.labelCaps(context)),
+                Text('Ranked by ground claimed this week', style: AppText.labelCaps(context)),
                 const SizedBox(height: 20),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,

@@ -161,7 +161,12 @@ async function notifyAllAppUsers({ title, body, data } = {}) {
       console.error('Broadcast notification persist failed:', err.message);
     }
 
-    const tokens = users.flatMap((u) => u.fcmTokens || []).filter(Boolean);
+    // Deduped: if the same device token is still attached to more than one
+    // account, FCM would otherwise deliver the same broadcast to that phone
+    // once per account.
+    const tokens = [
+      ...new Set(users.flatMap((u) => u.fcmTokens || []).filter(Boolean)),
+    ];
     const { sent, invalid } = await sendToTokens(tokens, { title, body, data });
     if (invalid && invalid.length) {
       await User.updateMany(

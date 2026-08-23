@@ -1,9 +1,22 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const Run = require('../models/Run');
+const User = require('../models/User');
+const WalletTransaction = require('../models/WalletTransaction');
 const { claimRoute } = require('../territoryService');
+const { creditExpiry } = require('../pointsExpiry');
 
 const router = express.Router();
+
+// Distance reward: 10 points per km. At ₹0.10/point that is ₹1 per kilometre.
+// Paid on every saved run, separately from the weekly territory prize — someone
+// running a couple of kilometres a day should still get something back.
+const POINTS_PER_KM = 10;
+
+// A run whose average pace is faster than this was not run. Rewarding it would
+// pay for car and motorbike journeys, so it still saves (and still claims
+// territory, which is self-limiting) but earns nothing.
+const MIN_PLAUSIBLE_PACE_MIN_PER_KM = 2.5;
 
 /// Normalises whatever the client sent into a GeoJSON LineString (or null).
 /// Accepts both the object form `{type, coordinates}` and a bare
@@ -102,14 +115,55 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    // No points are credited here. Rewards are a weekly competition settled when
-    // the season closes (see seasonRewards.js): the top holders are paid by how
-    // much territory they finished the week with. Paying per run would make
-    // holding ground until Monday pointless.
+    // Distance reward, credited immediately. This runs alongside the weekly
+    // territory prize (seasonRewards.js) rather than replacing it: the weekly
+    // prize rewards competing for ground, this rewards simply turning up.
+    //
+    // Idempotent per run, so a re-upload of the same run cannot pay twice, and
+    // never allowed to fail the save — the run matters more than the reward.
+    let pointsAwarded = 0;
+    let rewardMessage = null;
+    try {
+      const km = (Number(run.distance) || 0) / 1000;
+      const minutes = (Number(run.duration) || 0) / 60;
+      const pace = km > 0 ? minutes / km : Infinity;
+
+      if (km > 0 && pace < MIN_PLAUSIBLE_PACE_MIN_PER_KM) {
+        rewardMessage =
+          'This run was too fast to be counted for points, so it earned none.';
+      } else {
+        pointsAwarded = Math.round(km * POINTS_PER_KM);
+      }
+
+      if (pointsAwarded > 0) {
+        const updated = await User.findByIdAndUpdate(
+          userId,
+          { $inc: { walletBalance: pointsAwarded } },
+          { new: true },
+        );
+        await WalletTransaction.create({
+          userId,
+          type: 'credit',
+          amount: pointsAwarded,
+          remaining: pointsAwarded,
+          expiresAt: creditExpiry(),
+          balanceAfter: updated ? updated.walletBalance || 0 : pointsAwarded,
+          source: 'run_reward',
+          sourceId: run._id.toString(),
+          idempotencyKey: 'run_' + run._id.toString(),
+          description: `Reward for a ${km.toFixed(2)} km run`,
+        });
+      }
+    } catch (e) {
+      console.error('Run reward error:', e.message);
+      pointsAwarded = 0;
+    }
+
     res.status(201).json({
       success: true,
       run,
-      pointsAwarded: 0,
+      pointsAwarded,
+      rewardMessage,
       claimedAreaSqm,
       territoryMessage,
     });

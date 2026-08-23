@@ -1,18 +1,22 @@
 // End-of-season territory rewards.
 //
-// Points are NOT paid per run. A season (one ISO week) is a competition: when it
-// closes, the leaderboard is settled and the top holders are paid by how much
-// land they finished with — rank 1 takes the largest share, and only the top
-// TOP_N are paid at all. That's what makes holding territory to Monday matter,
-// rather than banking points the moment a run ends.
+// This runs ALONGSIDE the per-run distance reward (routes/runs.js): running
+// itself always pays, and this is the competitive layer on top. A season (one
+// ISO week) is a contest for new ground — when it closes, players are ranked by
+// how much territory they CLAIMED that week and only the top TOP_N are paid.
+//
+// Ranking on the week's gain rather than the lifetime holding is deliberate:
+// territory is permanent, so ranking on the total would mean the earliest big
+// player wins every week and a newcomer could never place.
 //
 // The payout table is deliberately not shown in the app UI; it's disclosed in
 // the points T&C.
 
 const mongoose = require('mongoose');
-const Territory = require('./models/Territory');
+const SeasonProgress = require('./models/SeasonProgress');
 const WalletTransaction = require('./models/WalletTransaction');
 const User = require('./models/User');
+const { creditExpiry } = require('./pointsExpiry');
 
 // Required lazily inside settleSeason: pulling in firebase-admin at module load
 // would make computeSeasonRewards — a pure function — impossible to unit-test
@@ -95,7 +99,11 @@ function computeSeasonRewards(
 ///
 /// Returns { season, paid, totalPoints, alreadySettled, results }.
 async function settleSeason(season) {
-  const territories = await Territory.find({ season, area: { $gt: 0 } }).lean();
+  // Ranked on ground GAINED during the week, not the lifetime holding.
+  // Territory is permanent now, so ranking on the total would hand the prize to
+  // whoever built the biggest holding first, every week, forever.
+  const territories = (await SeasonProgress.find({ season, areaGainedSqm: { $gt: 0 } }).lean())
+    .map((p) => ({ ...p, area: p.areaGainedSqm }));
   const { notifyUser } = require('./fcm');
   // Prize and rate as configured when the season is settled.
   const { readPointsConfig } = require('./routes/config');
@@ -133,11 +141,13 @@ async function settleSeason(season) {
         userId: r.userId,
         type: 'credit',
         amount: r.points,
+        remaining: r.points,
+        expiresAt: creditExpiry(),
         balanceAfter: updated ? updated.walletBalance || 0 : r.points,
         source: 'season_reward',
         sourceId: season,
         idempotencyKey,
-        description: `Season ${season} — rank #${r.rank} (${(r.area / 1e6).toFixed(2)} km² held)`,
+        description: `Season ${season} — rank #${r.rank} (${(r.area / 1e6).toFixed(2)} km² claimed this week)`,
       });
       // Tell them they won — a silent payout is indistinguishable from no
       // payout, and this is the moment the whole weekly contest pays off.
@@ -146,7 +156,7 @@ async function settleSeason(season) {
           r.rank === 1
             ? `You won the week! #${r.rank}`
             : `You finished #${r.rank} this week`,
-        body: `${r.points.toLocaleString()} points for ${(r.area / 1e6).toFixed(2)} km² held. Season ${season}.`,
+        body: `${r.points.toLocaleString()} points for ${(r.area / 1e6).toFixed(2)} km² claimed this week.`,
         data: {
           type: 'season',
           season,

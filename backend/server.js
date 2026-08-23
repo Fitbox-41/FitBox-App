@@ -85,13 +85,16 @@ app.get('/health', (req, res) => {
     service: 'FitBox App Backend',
     // Tracks the app release this backend is built for; both restarted at 1.0
     // for the first release.
-    apiVersion: '1.0.0',
+    apiVersion: '1.1.0',
     // Capabilities the app can rely on, so a client can tell what it's talking
     // to instead of guessing from behaviour.
     features: {
       runClaimsTerritory: true, // POST /api/runs claims land server-side
       routeCorridorClaims: true, // claims a corridor, not just enclosed loops
       idempotentRuns: true, // clientId-based deduplication of re-uploads
+      perRunPoints: true, // distance reward credited on every saved run
+      permanentTerritory: true, // territory no longer resets weekly
+      pointsExpire99Days: true, // FIFO expiry, 99 days from earning
       weeklySeasonRewards: true, // points paid on season close, not per run
       configurablePoints: true, // GET /api/config/points drives value + cap
     },

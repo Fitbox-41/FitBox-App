@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_repository.dart';
 import '../../data/models/app_user.dart';
 import '../../services/google_auth_service.dart';
+import '../../services/push_service.dart';
 import '../../services/secure_storage.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
@@ -165,11 +166,29 @@ class AuthController extends Notifier<AuthState> {
     final result = await _repo.verifyResetOtp(email: email, otp: otp);
     await _storage.saveToken(result.token); // needed to call updatePassword
     await _repo.updatePassword(newPassword);
+    await _detachDevice();
     await _storage.clear(); // don't keep them signed in
     state = const AuthState(AuthStatus.unauthenticated);
   }
 
+  /// Detaches this device from the account being signed out of.
+  ///
+  /// A push token identifies a phone, and the backend delivers a user's pushes
+  /// to every token on their record — so a token left behind on the previous
+  /// account means that account's notifications keep arriving on a phone
+  /// somebody else is now signed in on. Must run while the JWT is still
+  /// present, because /push/unregister is authenticated.
+  ///
+  /// Best-effort: the server also reassigns the token on the next /push/register,
+  /// so failing here (offline, expired token) is recoverable rather than fatal.
+  Future<void> _detachDevice() async {
+    try {
+      await ref.read(pushServiceProvider).unregister();
+    } catch (_) {/* the next register reassigns it */}
+  }
+
   Future<void> logout() async {
+    await _detachDevice();
     await _storage.clear();
     // Update state first so the router redirects immediately; Google sign-out
     // is best-effort and must never block the logout.

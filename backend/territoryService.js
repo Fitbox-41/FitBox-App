@@ -6,8 +6,9 @@
 // must behave identically, which is why this lives in one place.
 
 const Territory = require('./models/Territory');
+const SeasonProgress = require('./models/SeasonProgress');
 const User = require('./models/User');
-const { routeToClaim, applyCapture, areaOf } = require('./territoryEngine');
+const { routeToClaim, applyCapture, areaOf, mergeGeometry } = require('./territoryEngine');
 const { notifyUser } = require('./fcm');
 
 // ISO year-week, e.g. "2026-W31" — the current weekly territory season.
@@ -51,9 +52,11 @@ async function claimRoute(userId, route) {
     };
   }
 
+  // Lifetime holdings — no season filter. Territory persists until invaded.
   const season = currentSeason();
-  const mine = await Territory.findOne({ userId, season });
-  const others = await Territory.find({ userId: { $ne: userId }, season });
+  const mine = await Territory.findOne({ userId });
+  const others = await Territory.find({ userId: { $ne: userId } });
+  const areaBefore = (mine && mine.area) || 0;
 
   const result = applyCapture(
     mine ? mine.geometry : null,
@@ -82,17 +85,37 @@ async function claimRoute(userId, route) {
   }
 
   await Territory.updateOne(
-    { userId, season },
+    { userId },
     {
       $set: {
         geometry: result.capturerGeometry,
         area: result.capturerArea,
         userName,
-        season,
       },
+      $setOnInsert: { season },
     },
     { upsert: true },
   );
+
+  // Weekly competition progress. The prize ranks on ground gained this week, so
+  // that a newcomer can win it — the lifetime holding above would just hand it
+  // to whoever started first, every week.
+  const gained = Math.max(0, result.capturerArea - areaBefore);
+  try {
+    const week = await SeasonProgress.findOne({ userId, season });
+    const weekGeometry = mergeGeometry(week ? week.geometry : null, claim);
+    await SeasonProgress.updateOne(
+      { userId, season },
+      {
+        $set: { userName, geometry: weekGeometry },
+        $inc: { areaGainedSqm: gained },
+      },
+      { upsert: true },
+    );
+  } catch (e) {
+    // Never fail a claim over leaderboard bookkeeping — the land is what matters.
+    console.error('Season progress update failed:', e.message);
+  }
 
   // Best-effort push to everyone whose land was contested by this run.
   for (const u of result.updatedOthers) {

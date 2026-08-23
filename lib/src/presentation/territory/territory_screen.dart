@@ -15,20 +15,23 @@ import '../widgets/live_run_map.dart';
 class TerritoryScreen extends ConsumerWidget {
   const TerritoryScreen({super.key});
 
-  String _fmtArea(double sqm) {
-    if (sqm <= 0) return '0 m²';
-    if (sqm < 100000) return '${sqm.round()} m²';
-    return '${(sqm / 1000000).toStringAsFixed(2)} km²';
-  }
-
-  /// "RESETS IN 2D 14H" — how long until the weekly season rolls over.
+  /// "PRIZE IN 2D 14H" — how long until this week's prize is decided.
+  ///
+  /// Deliberately not "resets": territory is permanent now, and only the weekly
+  /// competition rolls over. Saying "reset" would suggest the land disappears.
   String? _seasonLabel(DateTime? endsAt) {
     if (endsAt == null) return null;
     final Duration d = endsAt.difference(DateTime.now());
-    if (d.isNegative) return 'RESETTING…';
-    if (d.inDays >= 1) return 'RESETS IN ${d.inDays}D ${d.inHours % 24}H';
-    if (d.inHours >= 1) return 'RESETS IN ${d.inHours}H ${d.inMinutes % 60}M';
-    return 'RESETS IN ${d.inMinutes}M';
+    if (d.isNegative) return 'DECIDING…';
+    if (d.inDays >= 1) return 'PRIZE IN ${d.inDays}D ${d.inHours % 24}H';
+    if (d.inHours >= 1) return 'PRIZE IN ${d.inHours}H ${d.inMinutes % 60}M';
+    return 'PRIZE IN ${d.inMinutes}M';
+  }
+
+  static String fmtArea(double sqm) {
+    if (sqm <= 0) return '0 m²';
+    if (sqm < 100000) return '${sqm.round()} m²';
+    return '${(sqm / 1000000).toStringAsFixed(2)} km²';
   }
 
   @override
@@ -61,20 +64,21 @@ class TerritoryScreen extends ConsumerWidget {
               currentUserId: myId,
               showMyLocation: true,
               interactive: true,
+              // Tapping a patch of land says who holds it and what they ran to
+              // get it — otherwise the map is anonymous colour.
+              onTerritoryTap: (TerritoryArea t) =>
+                  _showOwner(context, t, isMine: t.userId == myId),
             ),
           ),
 
-          // Top: title + legend + refresh.
+          // Top: view switch + legend + refresh.
           SafeArea(
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
               child: Row(
                 children: <Widget>[
-                  _MapPill(
-                    child: Text('TERRITORY',
-                        style: AppText.labelCaps(context, size: 12)),
-                  ),
+                  const _ViewSwitch(),
                   const SizedBox(width: 8),
                   const _MapPill(child: _Legend()),
                   const Spacer(),
@@ -132,8 +136,10 @@ class TerritoryScreen extends ConsumerWidget {
                       children: <Widget>[
                         Expanded(
                           child: _Stat(
-                            label: 'YOUR TERRITORY',
-                            value: _fmtArea(myArea),
+                            label: snap?.view == TerritoryView.week
+                                ? 'CLAIMED THIS WEEK'
+                                : 'YOUR TERRITORY',
+                            value: fmtArea(myArea),
                             color: FitBoxColors.red,
                           ),
                         ),
@@ -161,7 +167,11 @@ class TerritoryScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 10),
+                    // Who else is on this map. Collapsed by default so it can't
+                    // crowd out the map itself.
+                    _OwnersList(areas: ranked, myId: myId),
+                    const SizedBox(height: 10),
                     GlowButton(
                       label: 'Run to claim territory',
                       icon: Icons.directions_run_rounded,
@@ -173,6 +183,204 @@ class TerritoryScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Owner card for a tapped territory: who holds it, their rank, and the running
+/// behind it. Everything shown comes from the server so it matches the
+/// leaderboard exactly.
+void _showOwner(BuildContext context, TerritoryArea t, {required bool isMine}) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (BuildContext ctx) {
+      final ColorScheme cs = Theme.of(ctx).colorScheme;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: GlassCard(
+            radius: 24,
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    _OwnerAvatar(area: t, radius: 26),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(isMine ? '${t.userName} (you)' : t.userName,
+                              style: AppText.kinetic(context, size: 22)),
+                          Text(
+                            t.rank > 0 ? 'Rank #${t.rank}' : 'Unranked',
+                            style: AppText.labelCaps(context, size: 11),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(TerritoryScreen.fmtArea(t.area),
+                        style: AppText.kinetic(context,
+                            size: 20, color: FitBoxColors.red)),
+                  ],
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  children: <Widget>[
+                    Expanded(child: _MiniStat('DISTANCE', '${t.distanceKm.toStringAsFixed(1)} km')),
+                    Expanded(child: _MiniStat('STEPS', _grouped(t.steps))),
+                    Expanded(child: _MiniStat('RUNS', '${t.runs}')),
+                    Expanded(child: _MiniStat('REGIONS', '${t.polygons.length}')),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  isMine
+                      ? 'Your land stays on the map until a rival runs over it.'
+                      : 'Run over this ground to take part of it.',
+                  style: AppTypography.caption(size: 12, color: cs.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+  );
+}
+
+String _grouped(int v) =>
+    v.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+$)'), (Match m) => '${m[1]},');
+
+class _MiniStat extends StatelessWidget {
+  const _MiniStat(this.label, this.value);
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(label, style: AppText.labelCaps(context, size: 9)),
+        const SizedBox(height: 2),
+        Text(value, style: AppText.data(context, size: 16)),
+      ],
+    );
+  }
+}
+
+/// Profile photo when the owner signed in with Google, otherwise their initial —
+/// the same fallback the leaderboard uses, so nobody is a blank circle.
+class _OwnerAvatar extends StatelessWidget {
+  const _OwnerAvatar({required this.area, this.radius = 18});
+  final TerritoryArea area;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color bg = FitBoxColors.red.withValues(alpha: 0.18);
+    if (area.photoUrl != null) {
+      return CircleAvatar(
+        radius: radius,
+        backgroundColor: bg,
+        foregroundImage: NetworkImage(area.photoUrl!),
+        // Falls back to the initial if the image fails to load.
+        child: Text(area.initial,
+            style: AppText.kinetic(context, size: radius * 0.9)),
+      );
+    }
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: bg,
+      child:
+          Text(area.initial, style: AppText.kinetic(context, size: radius * 0.9)),
+    );
+  }
+}
+
+/// Switches the map between the permanent record and this week's claims.
+class _ViewSwitch extends ConsumerWidget {
+  const _ViewSwitch();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final TerritoryView view = ref.watch(territoryViewProvider);
+    Widget tab(String label, TerritoryView value) {
+      final bool on = view == value;
+      return GestureDetector(
+        onTap: () => ref.read(territoryViewProvider.notifier).show(value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: on ? FitBoxColors.red : Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            label,
+            style: AppText.labelCaps(context,
+                size: 10,
+                color: on ? Colors.white : Theme.of(context).colorScheme.onSurface),
+          ),
+        ),
+      );
+    }
+
+    return _MapPill(
+      child: Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+        tab('ALL TIME', TerritoryView.lifetime),
+        const SizedBox(width: 4),
+        tab('THIS WEEK', TerritoryView.week),
+      ]),
+    );
+  }
+}
+
+/// Everyone holding land on the map, ranked. Collapsed by default — the owner
+/// asked for a way to tell whose territory is whose without cluttering the map.
+class _OwnersList extends StatelessWidget {
+  const _OwnersList({required this.areas, required this.myId});
+  final List<TerritoryArea> areas;
+  final String? myId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (areas.isEmpty) return const SizedBox.shrink();
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    return Theme(
+      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        tilePadding: EdgeInsets.zero,
+        childrenPadding: EdgeInsets.zero,
+        dense: true,
+        title: Text('WHO HOLDS THIS MAP · ${areas.length}',
+            style: AppText.labelCaps(context, size: 10)),
+        children: areas.take(20).map((TerritoryArea t) {
+          final bool me = t.userId == myId;
+          return ListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            leading: _OwnerAvatar(area: t, radius: 14),
+            title: Text(
+              me ? '${t.userName} (you)' : t.userName,
+              style: AppTypography.body(
+                  size: 13, color: me ? FitBoxColors.red : cs.onSurface),
+            ),
+            subtitle: Text(
+              '${t.distanceKm.toStringAsFixed(1)} km · ${_grouped(t.steps)} steps',
+              style: AppTypography.caption(size: 11, color: cs.onSurfaceVariant),
+            ),
+            trailing: Text('#${t.rank}  ${TerritoryScreen.fmtArea(t.area)}',
+                style: AppText.labelCaps(context, size: 10)),
+            onTap: () => _showOwner(context, t, isMine: me),
+          );
+        }).toList(),
       ),
     );
   }

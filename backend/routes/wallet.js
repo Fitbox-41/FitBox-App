@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 const serviceAuth = require('../middleware/serviceAuth');
 const User = require('../models/User');
 const WalletTransaction = require('../models/WalletTransaction');
+const { creditExpiry, expireUserPoints, consumeOldestFirst, expiringSoon } = require('../pointsExpiry');
 
 const router = express.Router();
 
@@ -78,11 +79,24 @@ async function applyLedgerEntry({ userId, type, amount, source, sourceId, idempo
       sourceId,
       idempotencyKey,
       description,
+      // Credits start a 99-day clock; debits eat the oldest live credit first
+      // so the FIFO buckets stay in step with the balance.
+      ...(type === 'credit' ? { remaining: amount, expiresAt: creditExpiry() } : {}),
     });
     await tx.save({ session });
 
     await session.commitTransaction();
     session.endSession();
+
+    // Outside the transaction on purpose: which buckets a debit came from only
+    // decides what expires next, so it must never be able to roll back a
+    // redemption that has already been committed.
+    if (type === 'debit') {
+      await consumeOldestFirst(userId, amount).catch((e) =>
+        console.error('FIFO attribution failed:', e.message),
+      );
+    }
+
     return { alreadyProcessed: false, balance: newBalance, transaction: tx };
   } catch (error) {
     await session.abortTransaction().catch(() => {});
@@ -106,10 +120,21 @@ async function applyLedgerEntry({ userId, type, amount, source, sourceId, idempo
 router.get('/', auth, async (req, res) => {
   try {
     const userId = req.user.id || req.user._id;
+
+    // Sweep anything past its 99 days before reporting a balance, so the number
+    // shown is one the customer can actually spend. There is no scheduler in
+    // this project — the same lazy approach as weekly season settlement.
+    try {
+      await expireUserPoints(userId);
+    } catch (e) {
+      console.error('Lazy point expiry failed:', e.message);
+    }
+
     const user = await User.findById(userId).select('walletBalance');
     const balance = user && user.walletBalance ? user.walletBalance : 0;
     const transactions = await WalletTransaction.find({ userId }).sort({ createdAt: -1 });
-    res.json({ success: true, balance, transactions });
+    const soon = await expiringSoon(userId).catch(() => ({ points: 0, nextExpiryAt: null }));
+    res.json({ success: true, balance, transactions, expiringSoon: soon });
   } catch (error) {
     console.error('Wallet read error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
