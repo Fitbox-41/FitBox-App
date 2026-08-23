@@ -131,24 +131,71 @@ async function expiringSoon(userId, days = 14) {
 
 /// Gives existing credits a `remaining` and an `expiresAt`. Needed once, for
 /// points issued before expiry existed; safe to re-run.
+///
+/// It cannot simply set `remaining = amount`: credits earned before this feature
+/// have already been partly or wholly spent, so the sum of every credit a user
+/// ever received is larger than what they hold now. Setting each to its full
+/// amount would mean expiry later removed points that were spent months ago and
+/// pushed the balance negative — on real data one account's credits totalled
+/// 11,195 against a balance of 6,000.
+///
+/// Instead the CURRENT balance is spread over the newest credits first, which is
+/// what FIFO implies: if the oldest points were spent first, the ones still held
+/// must be the most recent. That also errs in the customer's favour, since their
+/// surviving points get the longest remaining life.
 async function backfill() {
-  const res = await WalletTransaction.updateMany(
-    { type: 'credit', remaining: { $exists: false } },
-    [
-      {
-        $set: {
-          remaining: '$amount',
-          expiresAt: {
-            $add: [
-              { $ifNull: ['$createdAt', new Date()] },
-              EXPIRY_DAYS * 24 * 60 * 60 * 1000,
-            ],
-          },
-        },
-      },
-    ],
-  );
-  return res.modifiedCount || 0;
+  const userIds = await WalletTransaction.distinct('userId', {
+    type: 'credit',
+    remaining: { $exists: false },
+  });
+
+  let updated = 0;
+  for (const userId of userIds) {
+    const user = await User.findById(userId).select('walletBalance').lean();
+    let left = Math.max(0, Number(user && user.walletBalance) || 0);
+
+    // Newest first: those are the points still unspent.
+    const credits = await WalletTransaction.find({ type: 'credit', userId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    for (const c of credits) {
+      const keep = Math.min(left, Number(c.amount) || 0);
+      left -= keep;
+      const expiresAt = creditExpiry(c.createdAt || new Date());
+      await WalletTransaction.updateOne(
+        { _id: c._id },
+        { $set: { remaining: keep, expiresAt } },
+      );
+      updated += 1;
+    }
+
+    // Balance the credits can't account for. Balances were adjusted directly in
+    // the past (and some ledger rows were removed with the runs that produced
+    // them), so a user can hold points no credit row explains. Without a bucket
+    // those points would never expire and the ledger would never add up, so
+    // record an opening balance for the difference and start its clock now.
+    if (left > 0) {
+      try {
+        await WalletTransaction.create({
+          userId,
+          type: 'credit',
+          amount: left,
+          remaining: left,
+          expiresAt: creditExpiry(),
+          balanceAfter: Number(user && user.walletBalance) || left,
+          source: 'opening_balance',
+          sourceId: 'expiry-backfill',
+          idempotencyKey: 'opening_' + String(userId),
+          description: 'Opening balance recorded when point expiry was introduced',
+        });
+        updated += 1;
+      } catch (e) {
+        if (!e || e.code !== 11000) throw e; // already recorded on a previous run
+      }
+    }
+  }
+  return updated;
 }
 
 module.exports = {
