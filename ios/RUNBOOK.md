@@ -105,8 +105,31 @@ Signing files are fetched automatically by `app-store-connect fetch-signing-file
 These need a Mac or the Codemagic Mac instance and are **not** blocking a first
 TestFlight build:
 
-- **Home-screen widget** — the Android one exists; the iOS target has to be added
-  to the Xcode project. App Group `group.com.fitboxsports.app` is already declared.
+- **Home-screen widget.** The source is written and complete
+  (`FitBoxRunWidget/FitBoxRunWidget.swift`, a proper WidgetKit `TimelineProvider`
+  and `@main Widget`), but it has **zero references in `Runner.xcodeproj/project.pbxproj`**
+  — an orphan file that is never compiled. That is why the `Runner.app` Codemagic
+  produces has no `PlugIns` folder.
+
+  **Decided: add the target by script, not in Xcode** — there is no Mac to hand.
+  Use the **`xcodeproj` Ruby gem** in a Codemagic build step; it is already on the
+  Mac images because CocoaPods depends on it. The step has to add the extension
+  target, its build phases and the Swift file before `flutter build ipa` runs.
+
+  Three things go with it:
+  1. A second bundle id, `com.fitboxsports.app.FitBoxRunWidget`, registered in the
+     Apple account.
+  2. **A second `app-store-connect fetch-signing-files` call** in the
+     `ios-testflight` workflow for that bundle id. The step currently fetches
+     `$BUNDLE_ID` only, so signing would fail at the very end of an otherwise
+     successful build.
+  3. The App Group `group.com.fitboxsports.app` entitlement on **both** targets —
+     the app side is already declared.
+
+  **Do this after plain-app TestFlight is working, not alongside it.** If signing
+  breaks while both are new, there are two candidates instead of one.
+
+  Testing is covered: there is an iPhone 15 available once TestFlight is live.
 - **Live Activity / Dynamic Island** — a native ActivityKit target, mirroring the
   Android ongoing run notification.
 
