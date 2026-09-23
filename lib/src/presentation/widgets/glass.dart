@@ -264,19 +264,31 @@ class LogoBadge extends StatelessWidget {
         width: width, fit: BoxFit.contain);
 
     if (!dark) {
-      // The plate is sized from the artwork, not the canvas: the mark occupies
-      // 96% of a square PNG's width and about 38% of its height, so padding a
-      // square box would leave a tall slab of empty plate above and below it.
-      final double markHeight = width * 0.40;
+      // The asset is a square canvas with the wordmark as a band across its
+      // middle, so plating the widget as-is would wrap a near-square slab
+      // around a 2.5:1 mark. Trim the transparent top and bottom first, then
+      // pad — and only here, so the dark theme keeps the exact layout (and
+      // every `LogoBadge(width:)` on six screens keeps the exact size) it has
+      // today.
+      badge = ClipRect(
+        child: Align(
+          alignment: Alignment.center,
+          // Both factors: without `widthFactor` the Align takes all the width
+          // offered and the plate bleeds to the screen edges.
+          widthFactor: 1,
+          heightFactor: 0.44,
+          child: badge,
+        ),
+      );
       badge = Container(
         padding: EdgeInsets.symmetric(
-            horizontal: width * 0.05, vertical: markHeight * 0.30),
+            horizontal: width * 0.06, vertical: width * 0.05),
         decoration: BoxDecoration(
           color: FitBoxColors.bgTopDark,
-          borderRadius: BorderRadius.circular(width * 0.10),
+          borderRadius: BorderRadius.circular(width * 0.08),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: FitBoxColors.charcoal.withValues(alpha: 0.18),
+              color: FitBoxColors.charcoal.withValues(alpha: 0.20),
               blurRadius: width * 0.09,
               offset: Offset(0, width * 0.02),
             ),

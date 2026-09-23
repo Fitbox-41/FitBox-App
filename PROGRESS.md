@@ -4,6 +4,105 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
+## 21–24 September 2026 — owner's September changes; **v1.3.0+5**
+
+Nine changes from the owner's list. One was explicitly deferred: **replicating the
+shop inside the app** — redirection to the site already works, and Gautam's call was
+that a second copy of the storefront isn't worth owning.
+
+### The brand logo, in light mode
+The light theme had been showing a *recoloured* logo since August: the artwork's
+"Fit Sports" half is silver (luminance 0.6–0.9) and dissolves on a near-white
+backdrop, so it was remapped to graphite. The owner's point stands — a recoloured
+logo is not the logo. The app now ships **one asset, the artwork exactly as drawn**,
+and on light backgrounds puts it on a soft dark plate, which is what a silver mark
+is designed for. The plate trims the PNG's square canvas first, or it would wrap a
+near-square slab around a 2.5:1 wordmark. `logo_mark_dark.png` and the graphite pass
+in the generator are both gone.
+
+### The map opens where you are
+It used to start over India at zoom 4 and fly to the user once a fix arrived — a
+visible swoop every time, and where it stayed if the fix never came. The last known
+position is now remembered for the life of the process and seeds the first frame, so
+the map opens already looking at the right place; the cached fix moves the camera
+immediately and the live fix only re-animates if it's more than 120 m away. Google's
+own recentre button is enabled where the user can pan, with map padding so it clears
+the view switch and the stats card.
+
+### Steps count all day
+The step counter only moved **while a run was recording**, so the ring on Home read 0
+all day unless you happened to be tracking one. It now reads the phone's hardware
+pedometer.
+
+This is still not a health-platform sync — nothing is read from Apple Health or
+Health Connect, and the project's "only this device, only the user's own activity"
+rule holds. The sensor counts from the last reboot rather than from midnight, so the
+first reading of each day is stored as a baseline and the difference reported; a
+reading *below* the baseline means the phone restarted, and is treated as today's
+total rather than reported as a negative.
+
+### Tap the ring to set your goal
+The daily target was a constant in two different files — 10,000 on Home and 8,000 on
+Goals. It's now one stored value both read, set from a sheet on the ring.
+
+### Goals has its own tab
+It was two taps deep under Profile. It takes the fourth nav slot; **Earned** moves
+into Profile, where a balance belongs.
+
+### The workout reminder actually reminds
+The Settings toggle was local widget state — flipping it changed a bool nothing read.
+It now schedules a real repeating daily notification at a time the user picks, and
+the switch reflects what the phone will actually do rather than starting at `true`.
+Scheduled **inexactly** on purpose: Android 12+ puts exact alarms behind
+`SCHEDULE_EXACT_ALARM`, which Play scrutinises and which is meant for alarm clocks. A
+nudge to go running doesn't need to land on the second, so the app asks for no extra
+permission.
+
+### Runs save by default
+Stopping a run opened a "save or discard?" dialog, putting Discard one stray tap from
+destroying minutes of someone's effort. Stopping now always saves; the summary
+screen's delete button is relabelled "Discard this run" for a run that has just
+finished. Worst case is an unwanted run in the history rather than a lost one.
+
+### Custom name and tag on the map
+Players can set a display name and a short tag shown beside it on their territory
+(Profile → Map name & tag, with a live preview). Deliberately **separate from the
+account name**, which belongs to the shop and goes on deliveries — renaming yourself
+on the map must not rename the person a parcel is addressed to. Both are validated
+server-side against a plain-character allowlist, so a tag can't smuggle markup or an
+invisible-character name onto every other player's screen, and the denormalised copy
+on the territory is refreshed on save rather than waiting for the next run.
+
+### Exit challenge
+A joined challenge can be left, after a confirmation that says the progress is lost
+and rejoining restarts the window. The server refuses once the reward is claimed —
+at that point the join record is the receipt for the points paid, and deleting it
+would allow a second claim.
+
+### Play Store readiness
+`store/` now holds the 512 icon, the 1024×500 feature graphic and `LISTING.md`: the
+short and full descriptions, every Console declaration with its justification, and
+the note that the developer account should be registered as an **organisation** —
+new personal accounts must run a closed test with 12 testers for 14 days before they
+can publish, and organisations are exempt.
+
+### Security pass
+Audited and clean: no secrets tracked (and `.gitignore` covers the keystore, `.env`,
+both Google config files), `node_modules` untracked, every mutating route guarded,
+the two routes that take a `userId` from the body are service-key gated, CORS is an
+allowlist, the body is capped at 1 MB, per-IP rate limiting is in place, JWT
+verification pins HS256, R8 minify and resource shrinking are on, and cleartext
+traffic is blocked. Added the four response headers that matter for a JSON API —
+`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` and HSTS — by hand
+rather than pulling in helmet, most of which is about HTML this API never serves.
+
+Verified end to end against production with a throwaway user: profile read and write,
+a `<script>` tag rejected with 400, a 200-character name truncated to 24,
+unauthenticated write refused with 401, leave-challenge working and refused with 409
+once claimed.
+
+---
+
 ## 24 August 2026 — account deletion, the shop, and four fixes; **v1.2.0+4**
 
 ### Account deletion — the last thing blocking a Play submission

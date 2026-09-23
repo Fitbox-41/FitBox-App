@@ -25,6 +25,24 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
   'http://localhost:5173',
 ];
+// Security headers. Written by hand rather than pulling in helmet: this is a
+// JSON API for a mobile app, so most of helmet's surface (CSP, frame options
+// for HTML) doesn't apply, and a cold start is cheaper without the dependency.
+// These are the four that do matter here.
+app.use((req, res, next) => {
+  // Never let a browser second-guess a response's type — the wallet and config
+  // endpoints return JSON that must not be sniffed into script.
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Nothing here is meant to be framed.
+  res.setHeader('X-Frame-Options', 'DENY');
+  // Don't leak authenticated URLs to third parties via the Referer header.
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  // HTTPS only. Vercel already redirects, but this stops a downgrade attempt
+  // before the request is made.
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
+
 app.use(
   cors({
     origin(origin, callback) {

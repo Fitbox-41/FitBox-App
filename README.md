@@ -1,8 +1,8 @@
 # FitBox App
 
-**Current release: v1.1.0 (build 2)** — Android, production-signed.
-Artifacts and the owner report live in `reports/13-08-2026/` (gitignored;
-also attached to the GitHub release).
+**Current release: v1.3.0 (build 5)** — Android, production-signed.
+Artifacts and owner reports live in `reports/` (gitignored; also attached to the
+GitHub release). Play Store listing copy and assets are in `store/`.
 
 The FitBox fitness mobile app (Flutter) — GPS run tracking, a contested
 "territory" land-grab game, activity challenges, and a rewards wallet shared
@@ -11,7 +11,7 @@ customer account across app + website).
 
 | | |
 |---|---|
-| Android | **Feature complete**, signed, on device, owner-approved. The new logo is in — nothing outstanding |
+| Android | **Feature complete**, signed, on device, owner-approved. Play listing copy and assets ready in `store/` — remaining work is Console paperwork, not code |
 | iOS | All Windows-side work complete — see **[`ios/IOS_STATUS.md`](ios/IOS_STATUS.md)**. Remaining items need a Mac/Codemagic + Apple Developer account. **Needs its own Maps API key** (a key can be restricted to Android *or* iOS, not both). |
 | Backend | Live — check the build with `curl https://fit-box-app.vercel.app/health` |
 
@@ -45,8 +45,17 @@ customer account across app + website).
 - **Push notifications (FCM)** — territory attacks, season results and admin broadcasts.
   Every push is also recorded server-side, so the in-app Notifications list is complete even
   if push is off, no device token is registered yet, or the banner was dismissed.
-- **Goals & achievements** — targets and badges computed from the user's own runs
-  (streak, distance, best pace, territory held, rank).
+- **Goals & achievements** — their own tab: targets and badges computed from the
+  user's own runs (streak, distance, best pace, territory held, rank). The daily
+  step goal is set by tapping the ring on Home.
+- **All-day step count** — from the phone's own step sensor, not just during a
+  recorded run, and not from Apple Health / Health Connect. See
+  `lib/src/data/daily_steps.dart` for how the reboot and midnight cases are
+  handled.
+- **Map identity** — a display name and short tag shown on your territory, kept
+  separate from the account name that goes on shop deliveries.
+- **Daily workout reminder** — an optional scheduled local notification at a time
+  the user picks.
 
 ## Branding
 
@@ -59,10 +68,11 @@ dart run flutter_launcher_icons    # → android/ios per-density icons
 ```
 
 Don't hand-edit the PNGs — they're outputs. The script exists because the logo
-needs more than an export: its "Fit Sports" half is light silver, so it has to be
-remapped to graphite for the light theme and given a near-black plate on the app
-icon, or it disappears against a pale background. The full reasoning is in the
-script's header.
+needs more than an export: its "Fit Sports" half is light silver, so it needs a
+near-black plate on the app icon or it disappears against a pale background. The
+in-app mark is the artwork exactly as drawn on both themes — `LogoBadge` plates it
+on light backgrounds rather than shipping a recoloured copy. Full reasoning is in
+the script's header.
 
 ## Architecture
 
