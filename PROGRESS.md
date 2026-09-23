@@ -118,6 +118,36 @@ the note that the developer account should be registered as an **organisation** 
 new personal accounts must run a closed test with 12 testers for 14 days before they
 can publish, and organisations are exempt.
 
+### iOS build verified in hand
+Gautam ran `ios-validate` on Codemagic — green, and the `Runner.app` it produced
+checks out as **this** build, not a stale one: `CFBundleShortVersionString 1.3.1`,
+`CFBundleVersion 6`, bundle id `com.fitboxsports.app`, `MinimumOSVersion 15.0`, a
+non-empty `GMSApiKey` (so the config guards did their job) and
+`UIBackgroundModes: [location]`.
+
+Both dependencies added that day are in the bundle —
+`flutter_timezone_flutter_timezone.bundle` and
+`flutter_local_notifications.framework` — which is the proof that the workout
+reminder compiles on iOS, not just Android.
+
+### Work the app change forced in the other two repos
+Checked deliberately, because a change in the app can leave a hole somewhere else.
+Two things, both now done:
+
+**The website's account deletion was incomplete.** It removed only the `users`
+document, leaving runs, territory, the points ledger and notifications behind,
+keyed to an account that no longer existed. The app's own deletion has cascaded
+since 24 August; the web one never did. Google requires deletion to work **from
+the web as well as in the app**, so the data-safety declaration was relying on a
+door that only half worked. Fixed in `authController.js`, verified against the
+shared database with a throwaway user: all six collections cleared, and the order
+row deliberately retained as the shop's financial record.
+
+**The admin portal couldn't identify a player.** Once players can call themselves
+something else on the map, the territory leaderboard shows "Speedy" and the Users
+table shows "Gautam Lasgotra", with nothing connecting them. The Users table now
+shows "plays as …" with the tag beside the account name, and is searchable by it.
+
 ### Security pass
 Audited and clean: no secrets tracked (and `.gitignore` covers the keystore, `.env`,
 both Google config files), `node_modules` untracked, every mutating route guarded,
