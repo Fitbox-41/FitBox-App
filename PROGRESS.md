@@ -43,7 +43,9 @@ total rather than reported as a negative.
 
 ### Tap the ring to set your goal
 The daily target was a constant in two different files — 10,000 on Home and 8,000 on
-Goals. It's now one stored value both read, set from a sheet on the ring.
+the Goals screen, so the two disagreed about what a good day was. It's now one stored
+value that both read, set from a sheet on the ring. (Caught on the device: the first
+build of this change left the Goals screen still showing its own 8,000.)
 
 ### Goals has its own tab
 It was two taps deep under Profile. It takes the fourth nav slot; **Earned** moves

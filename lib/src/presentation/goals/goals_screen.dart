@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/models/fitness_stats.dart';
 import '../../data/models/run_activity.dart';
 import '../../data/models/territory.dart';
 import '../../data/providers.dart';
@@ -18,15 +19,18 @@ import '../widgets/motion.dart';
 class GoalsScreen extends ConsumerWidget {
   const GoalsScreen({super.key});
 
-  // Targets. Steps are per day; distance and runs are per week.
-  static const int _dailyStepGoal = 8000;
+  // Targets. Distance and runs are per week; the daily step goal is the one the
+  // user set by tapping the ring on Home, not a constant — this screen used to
+  // declare its own 8,000 while Home showed 10,000, so the two disagreed.
   static const double _weeklyDistanceGoalKm = 20;
   static const int _weeklyRunGoal = 4;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final List<RunActivity> runs = ref.watch(recordedRunsProvider);
-    final int todaySteps = ref.watch(fitnessStatsProvider).steps;
+    final FitnessStats stats = ref.watch(fitnessStatsProvider);
+    final int todaySteps = stats.steps;
+    final int dailyStepGoal = stats.stepGoal;
 
     // "This week" = the last 7 days, matching the weekly chart on History.
     final DateTime weekStart =
@@ -75,8 +79,8 @@ class GoalsScreen extends ConsumerWidget {
             const SectionHeader('Targets'),
             _GoalCard(
               label: 'Daily steps',
-              value: '${_fmtInt(todaySteps)} / ${_fmtInt(_dailyStepGoal)}',
-              progress: (todaySteps / _dailyStepGoal).clamp(0.0, 1.0),
+              value: '${_fmtInt(todaySteps)} / ${_fmtInt(dailyStepGoal)}',
+              progress: (todaySteps / dailyStepGoal).clamp(0.0, 1.0),
             ),
             const SizedBox(height: 12),
             _GoalCard(
