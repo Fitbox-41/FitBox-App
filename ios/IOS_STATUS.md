@@ -16,14 +16,19 @@
 > remaining is signing, distribution and device testing — all of which need a
 > paid Apple Developer account, not more code.
 
+> **Doing this now?** Follow **[`RUNBOOK.md`](RUNBOOK.md)** — the ordered steps for
+> the day the Apple Developer account exists, written 24 Sep 2026 while waiting on
+> the DUNS number. This file is the status; that one is the procedure.
+
 **Everything that can be done on Windows is done.** The remaining work all needs
 macOS (Xcode/CocoaPods) or a paid Apple Developer account, and is intended to run
 on **Codemagic** rather than a local Mac — see `../codemagic.yaml`.
 
 The app is one Flutter codebase, so every feature and screen already exists for
-iOS. What follows is platform plumbing, not product work. The v1.1.0 owner-review
-changes (permanent territory, the two map views, per-run points, owner identity on
-the map) are all shared Dart or backend, so they add nothing to this list.
+iOS. What follows is platform plumbing, not product work. Everything shipped since
+— the v1.1 owner-review changes, the new logo, and the September batch (Goals tab,
+map identity, workout reminder, auto-save) — is shared Dart or backend, so none of
+it adds to this list.
 
 ---
 
@@ -50,7 +55,7 @@ the map) are all shared Dart or backend, so they add nothing to this list.
 
 | Task | Needs | Notes |
 |---|---|---|
-| `pod install` + first compile | Mac / Codemagic | The project has never been built for iOS. Expect to fix small pod issues on the first run — that is normal, not a sign of a problem. |
+| ~~`pod install` + first compile~~ | — | **Done.** Green on Codemagic `ios-validate`, 13 Aug 2026. Re-run it after any dependency change — two were added on 24 Sep for the workout reminder. |
 | Signing & provisioning | Apple account | Certificates, App ID, profiles. `codemagic.yaml` fetches these automatically once App Store Connect is connected. |
 | Push notifications | Apple account | Upload an APNs auth key to Firebase, enable the Push capability on the App ID, and add the `aps-environment` entitlement. **Deliberately not added yet** — the entitlement fails signing until the App ID actually has Push enabled. Android push is already live. |
 | Home-screen widget target | Mac | `FitBoxRunWidget/FitBoxRunWidget.swift` exists but is not registered as a target in the Xcode project. Adding a target safely needs Xcode. |

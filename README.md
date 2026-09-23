@@ -1,6 +1,6 @@
 # FitBox App
 
-**Current release: v1.3.0 (build 5)** — Android, production-signed.
+**Current release: v1.3.1 (build 6)** — Android, production-signed.
 Artifacts and owner reports live in `reports/` (gitignored; also attached to the
 GitHub release). Play Store listing copy and assets are in `store/`.
 

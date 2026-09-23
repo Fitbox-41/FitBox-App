@@ -4,11 +4,23 @@ A running development log. Newest entry on top. Weekly reports are added here ea
 
 ---
 
-## 21–24 September 2026 — owner's September changes; **v1.3.0+5**
+## 21–24 September 2026 — owner's September changes; **v1.3.1+6**
 
 Nine changes from the owner's list. One was explicitly deferred: **replicating the
 shop inside the app** — redirection to the site already works, and Gautam's call was
 that a second copy of the storefront isn't worth owning.
+
+### The app icon, in light mode
+The launcher icon sat on the app's near-black. The owner wants it light on the home
+screen, so the plate is now `#F2F4F8` — the light theme's own backdrop rather than a
+plain white square.
+
+A silver mark cannot survive on a light plate as drawn, so the icon — **and only the
+icon** — has its metal darkened to graphite. That is not a new invention: it is how
+this brand already appears on the white pages of fitboxsports.in. The red is
+untouched, and the in-app mark still ships the artwork exactly as drawn. The Play
+Store's 512 icon is now generated from the launcher icon so the store and the home
+screen can't drift apart.
 
 ### The brand logo, in light mode
 The light theme had been showing a *recoloured* logo since August: the artwork's
@@ -29,17 +41,20 @@ immediately and the live fix only re-animates if it's more than 120 m away. Goog
 own recentre button is enabled where the user can pan, with map padding so it clears
 the view switch and the stats card.
 
-### Steps count all day
-The step counter only moved **while a run was recording**, so the ring on Home read 0
-all day unless you happened to be tracking one. It now reads the phone's hardware
-pedometer.
+### Steps count — tried the device sensor, then reverted it
+"Steps Count" was first read as "the ring shows 0 all day unless you're recording a
+run", and wired to the phone's hardware pedometer. Gautam stopped it the same day,
+and was right: **the step count must be the steps taken on runs recorded in FitBox.**
 
-This is still not a health-platform sync — nothing is read from Apple Health or
-Health Connect, and the project's "only this device, only the user's own activity"
-rule holds. The sensor counts from the last reboot rather than from midnight, so the
-first reading of each day is stored as a baseline and the difference reported; a
-reading *below* the baseline means the phone restarted, and is treated as today's
-total rather than reported as a negative.
+The reason is in the backend. `progressFrom` in `routes/challenges.js` sums
+`run.steps` — steps from in-app runs. Points are per kilometre run; territory is
+claimed from the route. Everything that pays out measures in-app activity. A home
+screen reading 8,000 phone-steps beside a challenge reading "0 / 10,000" would have
+been telling the user two different truths about the same day, and the one that pays
+is the smaller one.
+
+Reverted to in-app run steps. The sensor code and its activity-recognition prompt
+are gone; the settable goal below stayed, since that was a separate request.
 
 ### Tap the ring to set your goal
 The daily target was a constant in two different files — 10,000 on Home and 8,000 on
@@ -80,6 +95,21 @@ A joined challenge can be left, after a confirmation that says the progress is l
 and rejoining restarts the window. The server refuses once the reward is claimed —
 at that point the join record is the receipt for the points paid, and deleting it
 would allow a second claim.
+
+### iOS — ready for the day the account lands
+The DUNS number is due 25–30 Sep and the Apple Developer account follows. Written
+`ios/RUNBOOK.md`: the ordered steps from enrolment through App Store Connect
+integration, registering the bundle ID, switching on the commented-out TestFlight
+publishing block, APNs, and the first `ios-testflight` run — each with how to tell
+it worked, and a list of what is already done so none of it gets redone.
+
+Checked the two dependencies added today (`flutter_timezone`, `timezone`) against
+the iOS floor: both declare 11.0, well under the app's 15.0, so `pod install` is not
+at risk. `ios-validate` needs no Apple account and should be re-run now to prove
+they compile — that is the one thing worth doing before the account exists.
+
+Corrected a stale row in `IOS_STATUS.md` that still claimed the project had never
+been built for iOS; it has been green on Codemagic since 13 August.
 
 ### Play Store readiness
 `store/` now holds the 512 icon, the 1024×500 feature graphic and `LISTING.md`: the

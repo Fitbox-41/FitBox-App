@@ -21,9 +21,11 @@ a recoloured logo is not the brand's logo. The app now ships the artwork exactly
 as drawn and puts a dark plate behind it on light backgrounds instead — see
 `LogoBadge`. So there is a single `logo_mark.png`.
 
-**A dark launcher icon.** For the same reason the icon sits on the app's own
-near-black rather than white — a white icon background would hide the silver
-exactly the way the light theme does.
+**A light launcher icon.** The owner wants the icon light on the home screen. A
+silver mark cannot survive on a light plate as drawn, so the icon — and only the
+icon — gets the metal darkened to graphite, which is how this brand already
+appears on the white pages of fitboxsports.in. The red is untouched. The in-app
+mark is still the artwork exactly as drawn; `LogoBadge` plates it instead.
 
 Requires: pip install cairosvg pillow numpy
 """
@@ -44,9 +46,9 @@ WEB = os.path.join(ROOT, "web")
 # reduction rather than an enlargement.
 SUPER = 4400
 
-# The icon plate: FitBoxColors.bgTopDark, so the icon and the app's first frame
-# are the same black.
-ICON_BG = (18, 22, 26, 255)
+# The icon plate. FitBoxColors.bgTopLight — the light theme's own backdrop, so
+# the icon reads as part of the same product rather than a plain white square.
+ICON_BG = (242, 244, 248, 255)
 
 # Fraction of the square canvas the wordmark spans.
 MARK_FRAC = 0.96      # in-app marks — matches the previous assets exactly
@@ -97,6 +99,38 @@ def deband(im, radius):
     )
 
 
+def graphite(im, out_lo=0.10, out_hi=0.52, src_lo=0.58, src_hi=0.90):
+    """Drop the silver half into graphite so it reads on a light plate.
+
+    Only low-saturation pixels move, so the red keeps its own colour and its own
+    shading. Luminance is *rescaled*, not flattened, so the metal still looks
+    like lit metal rather than a grey cut-out.
+
+    Used for the launcher icon alone. The in-app mark ships the artwork as
+    drawn — see the module docstring.
+    """
+    arr = np.asarray(im, dtype=np.float32) / 255.0
+    rgb, alpha = arr[..., :3], arr[..., 3]
+    mx, mn = rgb.max(2), rgb.min(2)
+    lum = (mx + mn) / 2
+    sat = np.where(
+        mx - mn < 1e-6,
+        0.0,
+        (mx - mn) / np.where(lum < 0.5, mx + mn + 1e-6, 2 - mx - mn + 1e-6),
+    )
+    target = out_lo + np.clip((lum - src_lo) / (src_hi - src_lo), 0, 1) * (out_hi - out_lo)
+    # Feather the metal/red hand-over, or the anti-aliased pixels between them
+    # form a visible seam.
+    metalness = np.clip((0.30 - sat) / 0.12, 0, 1)
+    scale = 1 + (target / np.maximum(lum, 1e-4) - 1) * metalness
+    return Image.fromarray(
+        np.dstack([np.clip(rgb * scale[..., None], 0, 1) * 255, alpha * 255]).astype(
+            np.uint8
+        ),
+        "RGBA",
+    )
+
+
 def square(logo, size, width_frac, bg=None):
     """A square canvas with the wordmark centred — the shape every caller expects.
 
@@ -125,8 +159,12 @@ def main():
     # than shipping a recoloured second copy.
     save(square(art, 600, MARK_FRAC), os.path.join(IMAGES, "logo_mark.png"))
 
-    # iOS icon and the Android legacy icon: opaque, on the app's black.
-    save(square(art, 1024, ICON_FRAC, bg=ICON_BG),
+    # Everything from here down is the launcher icon, on the light plate, so it
+    # uses the graphite metal.
+    icon_art = graphite(art)
+
+    # iOS icon and the Android legacy icon: opaque.
+    save(square(icon_art, 1024, ICON_FRAC, bg=ICON_BG),
          os.path.join(LAUNCHER, "ic_launcher.png"), rgb=True)
 
     # Android adaptive foreground. Two multipliers stack before this reaches a
@@ -141,12 +179,12 @@ def main():
     #
     # 0.80 here lands the mark at ~0.54 of the canvas, so its tips fall ~4dp
     # inside the mask. 0.90 was tried first and the X clipped on a real phone.
-    save(square(art, 1024, ADAPTIVE_FRAC),
+    save(square(icon_art, 1024, ADAPTIVE_FRAC),
          os.path.join(LAUNCHER, "ic_launcher_foreground.png"))
 
     # Android 13 themed icons. Supplying a silhouette is worth it because the
     # fallback is the system flattening the real icon into a grey blob.
-    alpha = np.asarray(square(art, 1024, ADAPTIVE_FRAC).split()[3])
+    alpha = np.asarray(square(icon_art, 1024, ADAPTIVE_FRAC).split()[3])
     save(
         Image.fromarray(
             np.dstack([np.full(alpha.shape, 255, np.uint8)] * 3 + [alpha]), "RGBA"
@@ -157,11 +195,11 @@ def main():
     # Web/PWA. The app doesn't ship on the web, but these were branded with the
     # previous logo, and leaving one stale copy behind is how a logo change ends
     # up being done twice.
-    save(square(art, 64, ICON_FRAC, bg=ICON_BG), os.path.join(WEB, "favicon.png"))
+    save(square(icon_art, 64, ICON_FRAC, bg=ICON_BG), os.path.join(WEB, "favicon.png"))
     for size in (192, 512):
-        save(square(art, size, ICON_FRAC, bg=ICON_BG),
+        save(square(icon_art, size, ICON_FRAC, bg=ICON_BG),
              os.path.join(WEB, "icons", f"Icon-{size}.png"), rgb=True)
-        save(square(art, size, MASKABLE_FRAC, bg=ICON_BG),
+        save(square(icon_art, size, MASKABLE_FRAC, bg=ICON_BG),
              os.path.join(WEB, "icons", f"Icon-maskable-{size}.png"), rgb=True)
 
     for path in written:

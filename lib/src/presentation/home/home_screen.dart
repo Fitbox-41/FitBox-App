@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/challenge_repository.dart';
-import '../../data/daily_steps.dart';
+import '../../data/step_goal.dart';
 import '../../data/models/fitness_stats.dart';
 import '../../data/providers.dart';
 import '../../data/recorded_runs.dart';
@@ -245,8 +245,6 @@ class _StepsRing extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final FitnessStats stats = ref.watch(fitnessStatsProvider);
-    final bool sensorOff =
-        ref.watch(dailyStepsProvider).value?.available == false;
     final NumberFormat fmt = NumberFormat.decimalPattern();
     final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
@@ -295,10 +293,7 @@ class _StepsRing extends ConsumerWidget {
                               style: TextStyle(
                                   color: cs.onSurfaceVariant, fontSize: 13)),
                           const SizedBox(height: 2),
-                          Text(
-                              sensorOff
-                                  ? 'step sensor off'
-                                  : 'tap to set goal',
+                          Text('tap to set goal',
                               style: TextStyle(
                                   color: cs.onSurfaceVariant
                                       .withValues(alpha: 0.7),
