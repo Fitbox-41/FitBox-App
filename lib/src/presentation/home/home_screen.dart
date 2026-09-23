@@ -195,6 +195,9 @@ class _StepsRing extends ConsumerWidget {
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
+      // Present above the shell: the floating nav pill belongs to the shell's
+      // Scaffold and otherwise draws on top of this sheet's Set goal button.
+      useRootNavigator: true,
       builder: (BuildContext ctx) => StatefulBuilder(
         builder: (BuildContext ctx, void Function(void Function()) setLocal) {
           final NumberFormat f = NumberFormat.decimalPattern();

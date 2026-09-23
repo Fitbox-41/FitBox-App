@@ -24,23 +24,24 @@ Everything the Console asks for, ready to paste. Assets are in this folder.
 > on real equipment at the FitBox Sports store.
 >
 > **What's inside**
-> • GPS run tracking — route, distance, pace, calories, and a live step count
+> • GPS run tracking — route, distance, pace, calories and steps
 > • A shared territory map — see who holds what, and take it
-> • Daily step goal you set yourself
+> • A daily step goal you set yourself
 > • Challenges with point rewards
 > • A weekly leaderboard and a weekly prize
 > • Points redeemable at the FitBox Sports shop
 > • Optional daily reminder to get your run in
 >
-> FitBox records only the activity you track in the app and your phone's own step
-> sensor. It does not read from any other health app.
+> FitBox records only the activity you track in the app. It does not read from Apple
+> Health, Health Connect or any other health app, and it does not count steps taken
+> outside a tracked run.
 >
 > FitBox Sports, Jalandhar, Punjab.
 
 ## Assets in this folder
 | File | Use |
 |---|---|
-| `play-icon-512.png` | High-res icon (512×512, 32-bit PNG) |
+| `play-icon-512.png` | High-res icon (512×512, 32-bit PNG). Generated from the launcher icon, so the store and the home screen can't drift apart |
 | `play-feature-graphic-1024x500.png` | Feature graphic (1024×500, no alpha) |
 | `screenshots/` | Phone screenshots, captured from the release build |
 
@@ -66,3 +67,4 @@ Everything the Console asks for, ready to paste. Assets are in this folder.
    for 14 days before they can publish to production. Organisations are exempt.
 2. Upload `build/app/outputs/bundle/release/app-release.aab` (not the APK).
 3. Complete the declarations above.
+4. Screenshots: Gautam is supplying these once the owner signs off the final build.

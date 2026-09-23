@@ -48,10 +48,11 @@ customer account across app + website).
 - **Goals & achievements** — their own tab: targets and badges computed from the
   user's own runs (streak, distance, best pace, territory held, rank). The daily
   step goal is set by tapping the ring on Home.
-- **All-day step count** — from the phone's own step sensor, not just during a
-  recorded run, and not from Apple Health / Health Connect. See
-  `lib/src/data/daily_steps.dart` for how the reboot and midnight cases are
-  handled.
+- **Steps** — counted **only from runs recorded in FitBox**, never the phone's
+  all-day pedometer. Everything that pays out measures in-app activity
+  (challenges sum `run.steps`, points are per km run), so a larger number on Home
+  would contradict the number that earns. The device-sensor version was built and
+  reverted on 24 Sep; don't reintroduce it.
 - **Map identity** — a display name and short tag shown on your territory, kept
   separate from the account name that goes on shop deliveries.
 - **Daily workout reminder** — an optional scheduled local notification at a time
@@ -68,11 +69,17 @@ dart run flutter_launcher_icons    # → android/ios per-density icons
 ```
 
 Don't hand-edit the PNGs — they're outputs. The script exists because the logo
-needs more than an export: its "Fit Sports" half is light silver, so it needs a
-near-black plate on the app icon or it disappears against a pale background. The
-in-app mark is the artwork exactly as drawn on both themes — `LogoBadge` plates it
-on light backgrounds rather than shipping a recoloured copy. Full reasoning is in
-the script's header.
+needs more than an export: its "Fit Sports" half is light silver, so it disappears
+against a pale background. Two different answers, on purpose:
+
+- **In app** — the artwork exactly as drawn, on both themes. `LogoBadge` puts a
+  dark plate behind it on light backgrounds rather than shipping a recoloured copy.
+- **Launcher and web icons** — the owner wants these *light*, so they sit on
+  `#F2F4F8` and the metal is darkened to graphite, which is how the brand already
+  appears on the white pages of fitboxsports.in. The graphite pass applies to the
+  icons only.
+
+Full reasoning is in the script's header.
 
 ## Architecture
 
