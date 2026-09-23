@@ -110,7 +110,7 @@ class _MapIdentityScreenState extends ConsumerState<MapIdentityScreen> {
                       decoration: InputDecoration(
                         labelText: 'Display name',
                         hintText: id.accountName.isEmpty ? 'Runner' : id.accountName,
-                        helperText: 'Leave empty to use your account name.',
+                        helperText: 'Empty = your account name.',
                         border: const OutlineInputBorder(),
                       ),
                     ),
@@ -122,7 +122,7 @@ class _MapIdentityScreenState extends ConsumerState<MapIdentityScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Tag (optional)',
                         hintText: 'e.g. JALANDHAR',
-                        helperText: 'A short badge shown next to your name.',
+                        helperText: 'A badge beside your name.',
                         border: OutlineInputBorder(),
                       ),
                     ),

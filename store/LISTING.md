@@ -10,7 +10,7 @@ Everything the Console asks for, ready to paste. Assets are in this folder.
 - **Privacy policy:** https://www.fitboxsports.in/privacy
 
 ## Short description (80 char max)
-> Run, claim real territory on the map, and earn points to spend at FitBox Sports.
+> Run, claim real territory on the map, earn points to spend at FitBox Sports.
 
 ## Full description
 > **Turn every run into ground you own.**
