@@ -68,49 +68,27 @@ class _RecordRunScreenState extends ConsumerState<RecordRunScreen> {
     return "$m'${s.toString().padLeft(2, '0')}";
   }
 
+  /// Ends the run and **saves it**, with no "save or discard?" dialog.
+  ///
+  /// A run is minutes of the user's effort, and the dialog put Discard one
+  /// stray tap away from destroying it. Stopping now always keeps the run; the
+  /// summary screen offers to discard it, which is the safe way round — the
+  /// worst case is an unwanted run in the history, not a lost one.
   Future<void> _stop() async {
-    ref.read(runSessionProvider.notifier).pause();
     HapticFeedback.mediumImpact();
-    final bool? save = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext ctx) => AlertDialog(
-        title: const Text('Finish run?'),
-        content: const Text('Save this run to your history, or discard it?'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Discard'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (save == null) {
-      // Dismissed → keep recording (resume).
-      ref.read(runSessionProvider.notifier).resume();
-      return;
-    }
-    if (save) {
-      final run = ref.read(runSessionProvider.notifier).finish();
-      // Store locally first — that's fast, and it's what History reads, so the
-      // run is never lost even if the upload fails.
-      await ref.read(recordedRunsProvider.notifier).addRun(run);
-      // Upload in the background: the server saves the run, claims the
-      // territory its route covered and credits the distance points. The
-      // summary opens straight away and fills those in when this lands, so
-      // finishing a run never waits on the network.
-      final Future<RunSyncResult?> sync =
-          ref.read(recordedRunsProvider.notifier).syncRun(run);
-      if (mounted) {
-        context.pushReplacement('/run-summary',
-            extra: RunResult(run: run, sync: sync));
-      }
-    } else {
-      ref.read(runSessionProvider.notifier).discard();
-      if (mounted) context.pop();
+    final run = ref.read(runSessionProvider.notifier).finish();
+    // Store locally first — that's fast, and it's what History reads, so the
+    // run is never lost even if the upload fails.
+    await ref.read(recordedRunsProvider.notifier).addRun(run);
+    // Upload in the background: the server saves the run, claims the territory
+    // its route covered and credits the distance points. The summary opens
+    // straight away and fills those in when this lands, so finishing a run
+    // never waits on the network.
+    final Future<RunSyncResult?> sync =
+        ref.read(recordedRunsProvider.notifier).syncRun(run);
+    if (mounted) {
+      context.pushReplacement('/run-summary',
+          extra: RunResult(run: run, sync: sync));
     }
   }
 

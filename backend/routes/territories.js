@@ -77,6 +77,7 @@ router.get('/', auth, async (req, res) => {
         return {
           userId: String(t.userId),
           userName: t.userName || 'Runner',
+          tag: t.tag || '',
           photoUrl: t.photoUrl || null,
           geometry: t.geometry,
           area,

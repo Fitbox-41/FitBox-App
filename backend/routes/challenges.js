@@ -134,6 +134,31 @@ router.post('/:id/join', auth, async (req, res) => {
   }
 });
 
+// Leave a challenge you've joined.
+//
+// Only while it's still unclaimed: once the reward is paid the progress row is
+// the receipt for that payment, and deleting it would let the same challenge be
+// joined and claimed again. Leaving forfeits the progress made, which is the
+// point — rejoining starts a fresh window.
+router.delete('/:id/leave', auth, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const p = await ChallengeProgress.findOne({ challengeId: req.params.id, userId });
+    if (!p) return res.json({ success: true, alreadyLeft: true });
+    if (p.claimed) {
+      return res.status(409).json({
+        success: false,
+        message: 'You have already claimed this reward, so the challenge cannot be left.',
+      });
+    }
+    await ChallengeProgress.deleteOne({ _id: p._id });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Challenge leave error:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Claim the reward once completed (respects the first-N cap).
 router.post('/:id/claim', auth, async (req, res) => {
   try {

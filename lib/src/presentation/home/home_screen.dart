@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/challenge_repository.dart';
+import '../../data/daily_steps.dart';
 import '../../data/models/fitness_stats.dart';
 import '../../data/providers.dart';
 import '../../data/recorded_runs.dart';
@@ -50,7 +51,7 @@ class HomeScreen extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
           children: <Widget>[
-              _StepsRing(stats: s),
+              const _StepsRing(),
               const SizedBox(height: 18),
               GlowButton(
                 label: 'Start a run',
@@ -182,18 +183,76 @@ class _NavCard extends StatelessWidget {
   }
 }
 
-class _StepsRing extends StatelessWidget {
-  const _StepsRing({required this.stats});
+class _StepsRing extends ConsumerWidget {
+  const _StepsRing();
 
-  final FitnessStats stats;
+  /// Tapping the ring sets the day's target. The goal used to be a constant in
+  /// two different files (10,000 on Home, 8,000 on Goals); it is now one stored
+  /// value that both read.
+  Future<void> _editGoal(BuildContext context, WidgetRef ref, int current) async {
+    int value = current;
+    final int? chosen = await showModalBottomSheet<int>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (BuildContext ctx) => StatefulBuilder(
+        builder: (BuildContext ctx, void Function(void Function()) setLocal) {
+          final NumberFormat f = NumberFormat.decimalPattern();
+          return Padding(
+            padding: EdgeInsets.fromLTRB(
+                24, 8, 24, 24 + MediaQuery.viewInsetsOf(ctx).bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text('Daily step goal',
+                    style: AppTypography.title(
+                        size: 19,
+                        color: Theme.of(ctx).colorScheme.onSurface)),
+                const SizedBox(height: 4),
+                Text('Pick what a good day looks like for you.',
+                    style: AppTypography.body(
+                        size: 13,
+                        color: Theme.of(ctx).colorScheme.onSurfaceVariant)),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(f.format(value),
+                      style: AppText.data(ctx, size: 40, color: FitBoxColors.red)),
+                ),
+                Slider(
+                  value: value.toDouble(),
+                  min: 2000,
+                  max: 30000,
+                  divisions: 28, // 1,000-step steps
+                  activeColor: FitBoxColors.red,
+                  onChanged: (double v) =>
+                      setLocal(() => value = (v / 1000).round() * 1000),
+                ),
+                const SizedBox(height: 8),
+                GlowButton(
+                  label: 'Set goal',
+                  onPressed: () => Navigator.of(ctx).pop(value),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    if (chosen != null) await ref.read(stepGoalProvider.notifier).set(chosen);
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final FitnessStats stats = ref.watch(fitnessStatsProvider);
+    final bool sensorOff =
+        ref.watch(dailyStepsProvider).value?.available == false;
     final NumberFormat fmt = NumberFormat.decimalPattern();
     final ColorScheme cs = Theme.of(context).colorScheme;
     return GlassCard(
       radius: 28,
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      onTap: () => _editGoal(context, ref, stats.stepGoal),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -235,6 +294,16 @@ class _StepsRing extends StatelessWidget {
                           Text('/ ${fmt.format(stats.stepGoal)} steps',
                               style: TextStyle(
                                   color: cs.onSurfaceVariant, fontSize: 13)),
+                          const SizedBox(height: 2),
+                          Text(
+                              sensorOff
+                                  ? 'step sensor off'
+                                  : 'tap to set goal',
+                              style: TextStyle(
+                                  color: cs.onSurfaceVariant
+                                      .withValues(alpha: 0.7),
+                                  fontSize: 10,
+                                  letterSpacing: 0.4)),
                         ],
                       ),
                     ],

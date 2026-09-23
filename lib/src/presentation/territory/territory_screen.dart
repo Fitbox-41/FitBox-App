@@ -230,9 +230,17 @@ void _showOwner(BuildContext context, TerritoryArea t, {required bool isMine}) {
                         children: <Widget>[
                           Text(isMine ? '${t.userName} (you)' : t.userName,
                               style: AppText.kinetic(context, size: 22)),
-                          Text(
-                            t.rank > 0 ? 'Rank #${t.rank}' : 'Unranked',
-                            style: AppText.labelCaps(context, size: 11),
+                          Row(
+                            children: <Widget>[
+                              Text(
+                                t.rank > 0 ? 'Rank #${t.rank}' : 'Unranked',
+                                style: AppText.labelCaps(context, size: 11),
+                              ),
+                              if (t.tag.isNotEmpty) ...<Widget>[
+                                const SizedBox(width: 8),
+                                _TagChip(t.tag),
+                              ],
+                            ],
                           ),
                         ],
                       ),
@@ -444,6 +452,25 @@ class _Legend extends StatelessWidget {
       width: 9,
       height: 9,
       decoration: BoxDecoration(color: c, shape: BoxShape.circle));
+}
+
+/// The short badge a player chose for themselves, shown beside their name.
+class _TagChip extends StatelessWidget {
+  const _TagChip(this.tag);
+  final String tag;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: FitBoxColors.red.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      child: Text(tag.toUpperCase(),
+          style: AppText.labelCaps(context, size: 9, color: FitBoxColors.red)),
+    );
+  }
 }
 
 class _Stat extends StatelessWidget {

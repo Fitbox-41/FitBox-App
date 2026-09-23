@@ -25,6 +25,12 @@ class ChallengeRepository {
     await _dio.post<dynamic>('/challenges/$id/join');
   }
 
+  /// Leaves a joined challenge, forfeiting progress. The server refuses once the
+  /// reward has been claimed.
+  Future<void> leave(String id) async {
+    await _dio.delete<dynamic>('/challenges/$id/leave');
+  }
+
   /// Claims the reward; returns points awarded (0 if none).
   Future<int> claim(String id) async {
     final Response<dynamic> res =

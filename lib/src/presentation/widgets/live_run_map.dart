@@ -45,7 +45,16 @@ class _LiveRunMapState extends State<LiveRunMap> {
   bool _myLocation = false; // true once location permission is granted
   bool _followZoomed = false; // zoomed to street level on the first fix
   static const double _runZoom = 17; // street-level zoom for an active run
+  static const double _homeZoom = 16.5; // where "my area" reads well
   static const LatLng _fallback = LatLng(20.5937, 78.9629); // India
+
+  /// The last place this device saw itself, kept for the life of the process.
+  ///
+  /// Opening the map used to start over India at zoom 4 and then fly to the
+  /// user once a fix arrived — a visible swoop every time, and where it stayed
+  /// if the fix never came. Seeding the first frame from the previous fix means
+  /// the map opens already looking at the right place.
+  static LatLng? _lastKnown;
 
   List<LatLng> get _points =>
       widget.route.map((GeoPoint g) => LatLng(g.lat, g.lng)).toList();
@@ -102,14 +111,38 @@ class _LiveRunMapState extends State<LiveRunMap> {
     } catch (_) {/* location unavailable */}
   }
 
-  Future<void> _centerOnUser() async {
+  /// Puts the camera on the user at street level.
+  ///
+  /// [animate] is false for the very first placement: jumping there is right
+  /// when the map has only just appeared, while animating would replay the
+  /// swoop this is meant to remove.
+  Future<void> _centerOnUser({bool animate = true}) async {
     if (_controller == null || widget.route.isNotEmpty) return;
     try {
-      final Position? pos =
-          await Geolocator.getLastKnownPosition() ?? await _currentPosition();
-      if (pos != null && mounted && widget.route.isEmpty) {
-        await _controller!.animateCamera(
-            CameraUpdate.newLatLngZoom(LatLng(pos.latitude, pos.longitude), 16));
+      // The cached fix returns immediately; the live one can take seconds, so
+      // move on the cheap answer first and refine only if it turns out to be a
+      // long way off.
+      final Position? cached = await Geolocator.getLastKnownPosition();
+      if (cached != null && mounted && widget.route.isEmpty) {
+        _lastKnown = LatLng(cached.latitude, cached.longitude);
+        final CameraUpdate to =
+            CameraUpdate.newLatLngZoom(_lastKnown!, _homeZoom);
+        await (animate
+            ? _controller!.animateCamera(to)
+            : _controller!.moveCamera(to));
+      }
+      final Position? live = await _currentPosition();
+      if (live == null || !mounted || widget.route.isNotEmpty) return;
+      final LatLng at = LatLng(live.latitude, live.longitude);
+      final bool moved = _lastKnown == null ||
+          Geolocator.distanceBetween(
+                  _lastKnown!.latitude, _lastKnown!.longitude,
+                  at.latitude, at.longitude) >
+              120;
+      _lastKnown = at;
+      if (moved) {
+        await _controller!
+            .animateCamera(CameraUpdate.newLatLngZoom(at, _homeZoom));
       }
     } catch (_) {}
   }
@@ -149,7 +182,7 @@ class _LiveRunMapState extends State<LiveRunMap> {
     _controller = controller;
     final List<LatLng> pts = _points;
     if (pts.isEmpty) {
-      await _centerOnUser();
+      await _centerOnUser(animate: _lastKnown != null);
     } else if (!widget.follow && pts.length >= 2) {
       await Future<void>.delayed(const Duration(milliseconds: 300));
       await _controller?.animateCamera(
@@ -183,15 +216,26 @@ class _LiveRunMapState extends State<LiveRunMap> {
     final bool dark = Theme.of(context).brightness == Brightness.dark;
     final List<LatLng> pts = _points;
     final CameraPosition initial = CameraPosition(
-      target: pts.isNotEmpty ? pts.last : _fallback,
-      zoom: pts.isNotEmpty ? 16 : 4,
+      target: pts.isNotEmpty
+          ? pts.last
+          : (_lastKnown ?? _fallback),
+      // Only fall back to the whole-country view when we have genuinely never
+      // had a fix; otherwise open where the user actually is.
+      zoom: pts.isNotEmpty || _lastKnown != null ? _homeZoom : 4,
     );
     return GoogleMap(
       initialCameraPosition: initial,
       // Dark style in dark mode; default (light) map in light mode.
       style: dark ? _darkMapStyle : _lightMapStyle,
       myLocationEnabled: widget.showMyLocation && _myLocation,
-      myLocationButtonEnabled: false,
+      // Google's own recentre button, but only where the user can actually pan
+      // away — during a run the camera follows them anyway. `mapPadding` keeps
+      // it clear of the view switch above and the stats card below.
+      myLocationButtonEnabled:
+          widget.interactive && widget.showMyLocation && _myLocation,
+      padding: widget.interactive && !widget.follow
+          ? const EdgeInsets.only(top: 64, bottom: 220)
+          : EdgeInsets.zero,
       zoomControlsEnabled: false,
       mapToolbarEnabled: false,
       compassEnabled: false,

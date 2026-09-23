@@ -75,10 +75,16 @@ class ProfileScreen extends ConsumerWidget {
                     label: 'Leaderboard',
                     onTap: () => context.push('/leaderboard')),
                 _RowDivider(cs: cs),
+                // Goals moved to its own tab; the wallet took its place here.
                 _ActionRow(
-                    icon: Icons.flag_outlined,
-                    label: 'Goals',
-                    onTap: () => context.push('/goals')),
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Earned',
+                    onTap: () => context.push('/wallet')),
+                _RowDivider(cs: cs),
+                _ActionRow(
+                    icon: Icons.badge_outlined,
+                    label: 'Map name & tag',
+                    onTap: () => context.push('/map-identity')),
                 _RowDivider(cs: cs),
                 if (!guest) ...<Widget>[
                   _ActionRow(

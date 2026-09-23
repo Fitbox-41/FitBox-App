@@ -407,7 +407,9 @@ class RunSummaryScreen extends ConsumerWidget {
                 : () => _confirmDelete(context, ref, run!),
             style: OutlinedButton.styleFrom(foregroundColor: FitBoxColors.debit),
             icon: const Icon(Icons.delete_outline),
-            label: const Text('Delete run'),
+            // Stopping a run now saves it outright instead of asking, so for a
+            // run that has just finished this button *is* the discard choice.
+            label: Text(_justFinished ? 'Discard this run' : 'Delete run'),
           ),
         ].revealStagger(),
       ),

@@ -19,6 +19,7 @@ import '../../presentation/notifications/notifications_screen.dart';
 import '../../presentation/onboarding/onboarding_controller.dart';
 import '../../presentation/onboarding/onboarding_screen.dart';
 import '../../presentation/profile/change_password_screen.dart';
+import '../../presentation/profile/map_identity_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/run/record_run_screen.dart';
 import '../../presentation/run/run_summary_screen.dart';
@@ -130,7 +131,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/leaderboard',
           pageBuilder: (_, _) => _ios(const LeaderboardScreen())),
-      GoRoute(path: '/goals', pageBuilder: (_, _) => _ios(const GoalsScreen())),
+      GoRoute(path: '/wallet', pageBuilder: (_, _) => _ios(const WalletScreen())),
+      GoRoute(
+          path: '/map-identity',
+          pageBuilder: (_, _) => _ios(const MapIdentityScreen())),
       GoRoute(
           path: '/challenges',
           pageBuilder: (_, _) => _ios(const ChallengesScreen())),
@@ -157,8 +161,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(
                 path: '/activity', builder: (_, _) => const ActivityScreen()),
           ]),
+          // Goals took this tab from the wallet at the owner's request: goals
+          // are what bring someone back daily, and they were buried two taps
+          // deep under Profile. The wallet is now a pushed route from Profile,
+          // which is where a balance belongs.
           StatefulShellBranch(routes: <RouteBase>[
-            GoRoute(path: '/wallet', builder: (_, _) => const WalletScreen()),
+            GoRoute(path: '/goals', builder: (_, _) => const GoalsScreen()),
           ]),
           StatefulShellBranch(routes: <RouteBase>[
             GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),

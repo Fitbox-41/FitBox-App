@@ -19,6 +19,7 @@ class TerritoryArea {
     required this.userId,
     required this.userName,
     required this.area,
+    this.tag = '',
     required this.polygons,
     this.rank = 0,
     this.distanceKm = 0,
@@ -29,6 +30,9 @@ class TerritoryArea {
 
   final String userId;
   final String userName;
+
+  /// A short badge the player chose, shown beside their name. Empty when unset.
+  final String tag;
   final double area; // square metres
   final List<TerritoryPolygon> polygons;
 
@@ -50,6 +54,7 @@ class TerritoryArea {
   factory TerritoryArea.fromJson(Map<String, dynamic> j) => TerritoryArea(
         userId: (j['userId'] ?? '').toString(),
         userName: (j['userName'] ?? 'Runner').toString(),
+        tag: (j['tag'] ?? '').toString(),
         area: (j['area'] as num?)?.toDouble() ?? 0,
         polygons: _parseGeometry(j['geometry']),
         rank: (j['rank'] as num?)?.toInt() ?? 0,

@@ -21,6 +21,10 @@ const TerritorySchema = new mongoose.Schema({
   // live; no query filters on it any more.
   season: { type: String, index: true },
   userName: { type: String, default: 'Runner' }, // denormalized for map/leaderboard
+  // A short badge shown beside the name on the map (clan, gym, nickname).
+  // Denormalised for the same reason as userName: the map reads territories,
+  // not users, so one query has to carry everything a patch needs to render.
+  tag: { type: String, default: '' },
   geometry: { type: mongoose.Schema.Types.Mixed, required: true }, // GeoJSON Polygon|MultiPolygon
   area: { type: Number, default: 0 }, // square metres currently held
 }, { timestamps: true });

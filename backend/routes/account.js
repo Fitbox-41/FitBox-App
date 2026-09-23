@@ -79,4 +79,99 @@ router.delete('/', auth, async (req, res) => {
   }
 });
 
+/// The name and tag a player shows on the territory map.
+///
+/// Deliberately separate from the account's real name, which belongs to the
+/// shop and appears on orders. A player renaming themselves on the map must not
+/// rename the person their delivery is addressed to, so these live in their own
+/// fields on the shared user document (`strict: false`, so the website's schema
+/// is untouched).
+const MAX_DISPLAY_NAME = 24;
+const MAX_TAG = 12;
+
+/// A tag is a short badge next to the name on the map — a clan, a gym, a
+/// nickname. Kept to plain characters so it can't smuggle markup or an
+/// invisible-character name into every other player's screen.
+const TAG_ALLOWED = /^[A-Za-z0-9 .'&-]*$/;
+
+router.get('/profile', auth, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const u = await User.findById(userId).select('name displayName tag photoUrl').lean();
+    if (!u) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({
+      success: true,
+      profile: {
+        accountName: u.name || '',
+        displayName: u.displayName || '',
+        tag: u.tag || '',
+        photoUrl: u.photoUrl || null,
+        // What the map will actually show, so the app never has to guess.
+        effectiveName: u.displayName || u.name || 'Runner',
+      },
+    });
+  } catch (err) {
+    console.error('Profile read failed:', err.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+router.patch('/profile', auth, async (req, res) => {
+  try {
+    const userId = req.user.id || req.user._id;
+    const body = req.body || {};
+    const set = {};
+
+    if (body.displayName !== undefined) {
+      const name = String(body.displayName).trim().slice(0, MAX_DISPLAY_NAME);
+      if (name && !TAG_ALLOWED.test(name)) {
+        return res.status(400).json({
+          success: false,
+          message: "A display name can use letters, numbers, spaces and . ' & - only.",
+        });
+      }
+      set.displayName = name; // empty string clears it, falling back to the account name
+    }
+
+    if (body.tag !== undefined) {
+      const tag = String(body.tag).trim().slice(0, MAX_TAG);
+      if (tag && !TAG_ALLOWED.test(tag)) {
+        return res.status(400).json({
+          success: false,
+          message: "A tag can use letters, numbers, spaces and . ' & - only.",
+        });
+      }
+      set.tag = tag;
+    }
+
+    if (!Object.keys(set).length) {
+      return res.status(400).json({ success: false, message: 'Nothing to update' });
+    }
+
+    const u = await User.findByIdAndUpdate(userId, { $set: set }, { new: true })
+      .select('name displayName tag')
+      .lean();
+    if (!u) return res.status(404).json({ success: false, message: 'Not found' });
+
+    const effectiveName = u.displayName || u.name || 'Runner';
+    // The map reads a denormalised copy on the territory, so refresh it now —
+    // otherwise a rename wouldn't show until the player's next run.
+    await Territory.updateOne({ userId }, { $set: { userName: effectiveName, tag: u.tag || '' } });
+    await SeasonProgress.updateMany({ userId }, { $set: { userName: effectiveName } });
+
+    res.json({
+      success: true,
+      profile: {
+        accountName: u.name || '',
+        displayName: u.displayName || '',
+        tag: u.tag || '',
+        effectiveName,
+      },
+    });
+  } catch (err) {
+    console.error('Profile update failed:', err.message);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 module.exports = router;

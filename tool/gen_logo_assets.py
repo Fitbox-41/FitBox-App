@@ -2,9 +2,9 @@
 
     python tool/gen_logo_assets.py          # then: dart run flutter_launcher_icons
 
-Run this instead of editing the PNGs by hand — the light-theme mark and the
-launcher layers are derived from `assets/brand/logo.svg`, so hand-edits get
-overwritten and the variants drift apart.
+Run this instead of editing the PNGs by hand — the in-app mark and the launcher
+layers are all derived from `assets/brand/logo.svg`, so hand-edits get
+overwritten the next time anything else changes.
 
 Three things this handles that a plain export does not:
 
@@ -14,11 +14,12 @@ artwork is rendered far larger than needed and its *interior* colour smoothed
 without touching the alpha, so the banding goes but the edges stay exactly as
 traced.
 
-**A light-theme variant.** The new logo's "Fit Sports" half is light silver
-(luminance 0.6–0.9), which all but disappears on the light theme's #F2F4F8
-backdrop. That half is remapped to graphite for the light mark — the same split
-the previous artwork used (charcoal on light, white on dark), applied to a
-gradient rather than a flat colour. The red is left alone; it reads on both.
+**One mark, not two.** The logo's "Fit Sports" half is light silver (luminance
+0.6–0.9), which all but disappears on the light theme's #F2F4F8 backdrop. That
+was once solved by recolouring the metal to graphite for light backgrounds, but
+a recoloured logo is not the brand's logo. The app now ships the artwork exactly
+as drawn and puts a dark plate behind it on light backgrounds instead — see
+`LogoBadge`. So there is a single `logo_mark.png`.
 
 **A dark launcher icon.** For the same reason the icon sits on the app's own
 near-black rather than white — a white icon background would hide the silver
@@ -96,36 +97,6 @@ def deband(im, radius):
     )
 
 
-def graphite(im, out_lo=0.13, out_hi=0.58, src_lo=0.58, src_hi=0.90):
-    """Drop the silver half into graphite so it reads on a light backdrop.
-
-    Only low-saturation pixels move, so the red keeps its own colour and its own
-    shading. Luminance is *rescaled*, not flattened, so the metal still looks
-    like lit metal rather than a grey cut-out.
-    """
-    arr = np.asarray(im, dtype=np.float32) / 255.0
-    rgb, alpha = arr[..., :3], arr[..., 3]
-    mx, mn = rgb.max(2), rgb.min(2)
-    lum = (mx + mn) / 2
-    sat = np.where(
-        mx - mn < 1e-6,
-        0.0,
-        (mx - mn) / np.where(lum < 0.5, mx + mn + 1e-6, 2 - mx - mn + 1e-6),
-    )
-
-    target = out_lo + np.clip((lum - src_lo) / (src_hi - src_lo), 0, 1) * (out_hi - out_lo)
-    # Feather the metal/red hand-over, or the anti-aliased pixels between them
-    # form a visible seam.
-    metalness = np.clip((0.30 - sat) / 0.12, 0, 1)
-    scale = 1 + (target / np.maximum(lum, 1e-4) - 1) * metalness
-    return Image.fromarray(
-        np.dstack([np.clip(rgb * scale[..., None], 0, 1) * 255, alpha * 255]).astype(
-            np.uint8
-        ),
-        "RGBA",
-    )
-
-
 def square(logo, size, width_frac, bg=None):
     """A square canvas with the wordmark centred — the shape every caller expects.
 
@@ -150,9 +121,9 @@ def main():
         (img.convert("RGB") if rgb else img).save(path, optimize=True)
         written.append(path)
 
-    # In-app marks, chosen by theme in `LogoBadge`.
-    save(square(art, 600, MARK_FRAC), os.path.join(IMAGES, "logo_mark_dark.png"))
-    save(square(graphite(art), 600, MARK_FRAC), os.path.join(IMAGES, "logo_mark.png"))
+    # The one in-app mark. `LogoBadge` plates it on light backgrounds rather
+    # than shipping a recoloured second copy.
+    save(square(art, 600, MARK_FRAC), os.path.join(IMAGES, "logo_mark.png"))
 
     # iOS icon and the Android legacy icon: opaque, on the app's black.
     save(square(art, 1024, ICON_FRAC, bg=ICON_BG),

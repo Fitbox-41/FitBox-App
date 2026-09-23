@@ -143,6 +143,42 @@ class _ChallengeCardState extends ConsumerState<_ChallengeCard> {
     }
   }
 
+  /// Leave a challenge. Confirmed first, because the progress made is lost and
+  /// rejoining restarts the clock rather than resuming it.
+  Future<void> _leave() async {
+    final bool ok = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext ctx) => AlertDialog(
+            title: const Text('Exit this challenge?'),
+            content: const Text(
+                'Your progress so far is lost. You can join again later, but '
+                'the time window starts over.'),
+            actions: <Widget>[
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('Stay in')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: FitBoxColors.red),
+                child: const Text('Exit challenge'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!ok) return;
+    setState(() => _busy = true);
+    try {
+      await ref.read(challengeRepositoryProvider).leave(widget.c.id);
+      ref.invalidate(challengesProvider);
+      _snack('You left the challenge.');
+    } catch (_) {
+      _snack("Couldn't leave the challenge.");
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   void _snack(String m) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -222,6 +258,24 @@ class _ChallengeCardState extends ConsumerState<_ChallengeCard> {
           ],
           const SizedBox(height: 14),
           _action(c),
+          // Leaving is only possible while the reward is unclaimed — after that
+          // the join record is the receipt for the points paid.
+          if (c.joined && !c.claimed) ...<Widget>[
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _busy ? null : _leave,
+                icon: const Icon(Icons.logout, size: 15),
+                label: const Text('Exit challenge'),
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.onSurfaceVariant,
+                  textStyle: const TextStyle(fontSize: 12.5),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

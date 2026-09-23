@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_theme.dart';
+import '../../services/reminder_service.dart';
 import '../auth/auth_controller.dart';
 import '../widgets/external_link.dart';
 import '../widgets/glass.dart';
@@ -22,7 +23,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _metric = true;
-  bool _pushWorkout = true;
   bool _pushWeekly = true;
   String _version = '';
 
@@ -158,12 +158,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ]),
           const SizedBox(height: 20),
           _group(context, 'Notifications', <Widget>[
-            _SwitchRow(
-              icon: Icons.directions_run,
-              title: 'Workout reminders',
-              value: _pushWorkout,
-              onChanged: (bool v) => setState(() => _pushWorkout = v),
-            ),
+            _ReminderRow(),
             _divider(cs),
             _SwitchRow(
               icon: Icons.bar_chart,
@@ -260,6 +255,68 @@ class _IconChip extends StatelessWidget {
         alignment: Alignment.center,
         child: Icon(icon, color: FitBoxColors.red, size: 20),
       );
+}
+
+/// The daily workout reminder: a switch plus the time it fires.
+///
+/// Reads the stored setting rather than starting from a hardcoded `true`, so
+/// what the screen shows is what the phone will actually do.
+class _ReminderRow extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ColorScheme cs = Theme.of(context).colorScheme;
+    final ({bool enabled, int hour, int minute})? setting =
+        ref.watch(reminderSettingProvider).value;
+    final bool on = setting?.enabled ?? false;
+    final int hour = setting?.hour ?? 18;
+    final int minute = setting?.minute ?? 0;
+    final String at =
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+    Future<void> apply({bool? enabled, TimeOfDay? time}) async {
+      await ref.read(reminderServiceProvider).set(
+            enabled: enabled ?? on,
+            hour: time?.hour ?? hour,
+            minute: time?.minute ?? minute,
+          );
+      ref.invalidate(reminderSettingProvider);
+    }
+
+    return Column(
+      children: <Widget>[
+        _SwitchRow(
+          icon: Icons.alarm,
+          title: 'Workout reminder',
+          subtitle: on ? 'Every day at $at' : 'Off',
+          value: on,
+          onChanged: (bool v) => apply(enabled: v),
+        ),
+        if (on)
+          Padding(
+            padding: const EdgeInsets.only(left: 62, right: 12, bottom: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(Icons.schedule, size: 16),
+                label: Text('Change time ($at)'),
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.onSurfaceVariant,
+                  visualDensity: VisualDensity.compact,
+                  textStyle: const TextStyle(fontSize: 12.5),
+                ),
+                onPressed: () async {
+                  final TimeOfDay? picked = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay(hour: hour, minute: minute),
+                  );
+                  if (picked != null) await apply(time: picked);
+                },
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 /// A settings row with a switch control. Toggling gives a subtle haptic tick.
